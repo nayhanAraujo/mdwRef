@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+{% block title %}Editar Fórmula{% endblock %}
+{% set content %}
+<h3>Editar Fórmula</h3>
+<form method="post">
+  <div class="mb-3">
+    <label for="formula" class="form-label">Nova Fórmula:</label>
+    <textarea name="formula" id="formula" rows="4" class="form-control" required>{{ formula }}</textarea>
+  </div>
+  <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+  <a href="{{ url_for('visualizar_formulas') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endset %}

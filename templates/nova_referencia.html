@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-list-ul me-2"></i> Cadastrar referencia
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+<div class="container">
+
+<form method="POST">
+  <div class="mb-3">
+    <label class="form-label">Autor</label>
+    <input type="text" name="autor" id="autor"  class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Ano</label>
+    <input type="number" name="ano" id="ano" class="form-control" required min="1900" max="2100">
+  </div>
+  <button type="submit" class="btn btn-success" onclick="">Salvar</button>
+  <a href="{{ url_for('biblioteca') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
+  </a>
+  
+</form>
+{% endset %}

@@ -1,0 +1,63 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-list-ul me-2"></i> Variáveis Cadastradas
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <input type="text" class="form-control mb-3" id="buscaVariavel" placeholder="Buscar por nome, sigla ou abreviação...">
+
+    <table class="table table-hover table-bordered align-middle" id="tabelaVariaveis">
+      <thead class="table-primary text-center">
+        <tr>
+          <th>#</th>
+          <th>Nome</th>
+          <th>Sigla</th>
+          <th>Variável</th>
+          <th>Abreviação</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cod, nome,variavel, sigla, abreviacao in variaveis %}
+        <tr class="text-center">
+          <td>{{ cod }}</td>
+          <td class="text-start">{{ nome }}</td>
+          <td>{{ sigla }}</td>
+          <td>{{ variavel }}</td>
+          <td>{{ abreviacao }}</td>
+          <td>
+            <a href="{{ url_for('editar_variavel', codvariavel=cod) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil-square"></i> Editar
+            </a>
+            <form action="{{ url_for('excluir_variavel', codvariavel=cod) }}" method="post" class="d-inline" onsubmit="return confirm('Deseja excluir esta variável?')">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i> Excluir
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.getElementById("buscaVariavel").addEventListener("keyup", function() {
+    let termo = this.value.toLowerCase();
+    let linhas = document.querySelectorAll("#tabelaVariaveis tbody tr");
+    linhas.forEach(linha => {
+      let texto = linha.textContent.toLowerCase();
+      linha.style.display = texto.includes(termo) ? "" : "none";
+    });
+  });
+</script>
+{% endset %}

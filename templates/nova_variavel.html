@@ -1,0 +1,223 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-list-ul me-2"></i> Cadastrar variáveis
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+<div class="container">
+
+  
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+    <!--  <h3 class="mb-4">Cadastro de Variável</h3>-->
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST">
+        <h5 class="text-primary">Informações da Variável</h5>
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="possuivariavel" name="possui_formula">
+          <label class="form-check-label" for="possuivariavel">Inserir variaveis</label>
+        </div>
+        <div id="areaVariavel" style="display: none;">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Nome clínico</label>
+              <input type="text" name="nome" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Variável</label>
+              <input type="text" name="variavel" class="form-control" required placeholder="Ex: VR_AE">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Variáveis Alternativas</label>
+            <div id="alternativas-wrapper">
+              <input type="text" name="alternativas[]" class="form-control mb-2" placeholder="Ex: VR_AO1">
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addAlternativa()">Adicionar outra</button>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Sigla</label>
+              <input type="text" name="sigla" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Abreviação</label>
+              <input type="text" name="abreviacao" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Descricao</label>
+            <textarea name="descricao" class="form-control"></textarea>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Unidade de Medida</label>
+              <select name="unidade" class="form-select" required>
+                {% for cod, nome in unidades %}
+                  <option value="{{ cod }}">{{ nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Casas Decimais</label>
+              <input type="number" name="casas_decimais" class="form-control" min="0" required>
+            </div>
+          </div>
+        </div>
+        <hr>
+
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="possuiFormula" name="possui_formula">
+          <label class="form-check-label" for="possuiFormula">Possui Fórmula?</label>
+        </div>
+    
+        <div id="areaFormula" style="display: none;">
+          <div class="mb-3">
+            <label class="form-label">Variáveis disponíveis</label>
+            <div class="input-group mb-2">
+              <select class="form-select" id="variavelSelect">
+                <option value="">-- Selecione uma variável --</option>
+                {% for sigla, nome in variaveis_existentes %}
+                  <option value="<<{{ sigla }}>>">{{ nome }}</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="btn btn-outline-primary" onclick="inserirVariavel()">
+                Inserir na fórmula
+              </button>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fórmula</label>
+            <textarea name="formula" class="form-control"></textarea>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="possuiNormalidade" name="possui_normalidade">
+          <label class="form-check-label" for="possuiNormalidade">Possui Normalidade ou referência?</label>
+        </div>
+        <div id="areaNormalidade" style="display: none;">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Sexo</label>
+              <select name="sexo" class="form-select">
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
+                <option value="A">Ambos</option>
+              </select>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Valor Mínimo</label>
+              <input type="number" step="any" name="valormin" class="form-control">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Valor Máximo</label>
+              <input type="number" step="any" name="valormax" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Idade Mínima</label>
+              <input type="number" name="idade_min" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Idade Máxima</label>
+              <input type="number" name="idade_max" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Referência</label>
+              <select name="referencia" class="form-select">
+                <option value="">-- Nenhuma --</option>
+                {% for cod, autor, ano in referencias %}
+                  <option value="{{ cod }}">{{ autor }} - {{ ano }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-end">
+          <button type="button" class="btn btn-success" onclick="confirmarSalvarVariavel()">
+            <i class="bi bi-save"></i> Salvar
+          </button>
+        </div>
+        <a href="{{ url_for('biblioteca') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
+        </a>
+        
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('possuiFormula').addEventListener('change', function() {
+    document.getElementById('areaFormula').style.display = this.checked ? 'block' : 'none';
+  });
+  document.getElementById('possuiNormalidade').addEventListener('change', function() {
+    document.getElementById('areaNormalidade').style.display = this.checked ? 'block' : 'none';
+  });
+
+  document.getElementById('possuivariavel').addEventListener('change', function() {
+    document.getElementById('areaVariavel').style.display = this.checked ? 'block' : 'none';
+  });
+
+  function confirmarSalvarVariavel() {
+    const sigla = document.querySelector('[name="sigla"]').value.trim().toUpperCase();
+    if (!sigla.startsWith("VR_")) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Sigla inválida',
+        text: 'A sigla deve começar com "VR_"'
+      });
+      return;
+    }
+    Swal.fire({
+      title: 'Salvar variável?',
+      text: 'Deseja realmente salvar essa variável?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, salvar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        document.querySelector('form').submit();
+      }
+    });
+  }
+</script>
+
+
+<script>
+  function addAlternativa() {
+    const container = document.getElementById('alternativas-wrapper');
+    const input = document.createElement('input');
+    input.type = "text";
+    input.name = "alternativas[]";
+    input.className = "form-control mb-2";
+    input.placeholder = "Ex: VR_AO1";
+    container.appendChild(input);
+  }
+  </script>
+  
+{% endset %}

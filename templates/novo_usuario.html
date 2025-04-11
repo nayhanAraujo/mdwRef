@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<h3 class="mb-4">Cadastrar Usuário</h3>
+<form method="POST" class="row g-3">
+  <div class="col-md-6">
+    <label for="nome" class="form-label">Nome</label>
+    <input type="text" class="form-control" id="nome" name="nome" required>
+  </div>
+
+  <div class="col-md-6">
+    <label for="identificacao" class="form-label">Login (identificação)</label>
+    <input type="text" class="form-control" id="identificacao" name="identificacao" required>
+  </div>
+
+  <div class="col-md-6">
+    <label for="senha" class="form-label">Senha</label>
+    <input type="password" class="form-control" id="senha" name="senha" required>
+  </div>
+
+  <div class="col-md-6">
+    <label for="perfil" class="form-label">Perfil</label>
+    <select class="form-select" id="perfil" name="perfil" required>
+      <option value="">Selecione...</option>
+      <option value="admin">Administrador</option>
+      <option value="comum">Comum</option>
+    </select>
+  </div>
+
+  <div class="col-md-6">
+    <label for="status" class="form-label">Status</label>
+    <select class="form-select" id="status" name="status" required>
+      <option value="-1">Ativo</option>
+      <option value="0">Inativo</option>
+    </select>
+  </div>
+
+  <div class="col-12">
+    <button type="button" class="btn btn-success" onclick="confirmarSalvaUsuario()">Salvar</button>
+  </div>
+</form>
+
+{% endset %}

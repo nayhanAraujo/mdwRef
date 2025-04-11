@@ -1,0 +1,11 @@
+{% extends 'layout.html' %}
+{% set content %}
+  <h4>Exclusão de variável vinculada</h4>
+  <p>Essa variável está associada a {{ formulas|length }} fórmula(s).</p>
+  <p>Deseja realmente excluir a variável e todas as fórmulas relacionadas?</p>
+
+  <form method="POST">
+    <button type="submit" class="btn btn-danger">Sim, excluir tudo</button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
+{% endset %}

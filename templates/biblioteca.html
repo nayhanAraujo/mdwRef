@@ -1,0 +1,121 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<style>
+.tile {
+  background-color: #343a40;
+  color: white;
+  padding: 40px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tile i {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.tile:hover {
+  transform: scale(1.05);
+  background-color: #0d6efd;
+  color: white;
+}
+</style>
+
+<div class="container py-4">
+  <h4 class="mb-4">Biblioteca de Recursos</h4>
+
+  <div class="accordion" id="bibliotecaAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingVar">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVar" aria-expanded="true" aria-controls="collapseVar">
+          Variáveis e Fórmulas
+        </button>
+      </h2>
+      <div id="collapseVar" class="accordion-collapse collapse show" aria-labelledby="headingVar">
+        <div class="accordion-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <a href="{{ url_for('nova_variavel') }}" class="tile text-decoration-none">
+                <i class="bi bi-plus-circle"></i>
+                Nova Variável
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('visualizar_variaveis') }}" class="tile text-decoration-none">
+                <i class="bi bi-card-list"></i>
+                Variáveis Cadastradas
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('nova_formula') }}" class="tile text-decoration-none">
+                <i class="bi bi-plus-square"></i>
+                Nova Fórmula
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('visualizar_formulas') }}" class="tile text-decoration-none">
+                <i class="bi bi-kanban"></i>
+                Fórmulas Cadastradas
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingRef">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRef" aria-expanded="true" aria-controls="collapseRef">
+          Referências e Importações
+        </button>
+      </h2>
+      <div id="collapseRef" class="accordion-collapse collapse show" aria-labelledby="headingRef">
+        <div class="accordion-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <a href="{{ url_for('nova_referencia') }}" class="tile text-decoration-none">
+                <i class="bi bi-journal-plus"></i>
+                Nova Referência
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('uploaddll') }}" class="tile text-decoration-none">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+                Importar Variáveis (.json)
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingGer">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGer" aria-expanded="true" aria-controls="collapseGer">
+          Gerenciamento
+        </button>
+      </h2>
+      <div id="collapseGer" class="accordion-collapse collapse show" aria-labelledby="headingGer">
+        <div class="accordion-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <a href="{{ url_for('usuarios') }}" class="tile text-decoration-none">
+                <i class="bi bi-people"></i>
+                Usuários
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endset %}

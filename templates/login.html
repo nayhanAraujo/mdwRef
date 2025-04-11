@@ -1,0 +1,83 @@
+{% extends 'layout.html' %}
+{% block title %}Login - MDW Referências{% endblock %}
+{% set content %}
+
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background-image: url("{{ url_for('static', filename='img/fundo.png') }}");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-container {
+  background: radial-gradient(circle at center, #222 0%, #000 100%);
+  border-radius: 16px;
+  padding: 40px;
+  width: 500px;
+  color: white;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+  text-align: center;
+  transform: translateX(20%);
+}
+
+  .logo-mdw {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #00d1ff;
+    margin-bottom: 25px;
+  }
+
+  .form-control::placeholder {
+    color: #ccc;
+  }
+
+  .btn-login {
+    width: 48%;
+    font-weight: bold;
+  }
+
+  .btn-clear {
+    width: 48%;
+  }
+
+  .login-footer {
+    margin-top: 15px;
+    font-size: 0.9em;
+  }
+</style>
+
+<div class="login-container">
+  <div class="logo-mdw">MDW <span style="color: white;">Referências</span></div>
+  <h5 class="mb-4">Acesso ao Sistema</h5>
+
+  {% if erro %}
+    <div class="alert alert-danger">{{ erro }}</div>
+  {% endif %}
+
+  <form method="post">
+    <div class="mb-3">
+      <input type="text" name="usuario" placeholder="Usuario" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <input type="password" name="senha" placeholder="Senha" class="form-control" required>
+    </div>
+    <div class="d-flex justify-content-between">
+      <button type="submit" class="btn btn-success btn-login">🔑 Login</button>
+      <button type="reset" class="btn btn-outline-light btn-clear">🧽 Limpar</button>
+    </div>
+  </form>
+
+  <div class="login-footer">
+    <a href="#" class="text-white-50 text-decoration-underline">Esqueceu a senha?</a>
+  </div>
+
+  <div class="text-end text-white-50 mt-3" style="font-size: 0.8rem;">v: 1.0.0</div>
+</div>
+{% endset %}

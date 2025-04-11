@@ -1,0 +1,170 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<h3 class="mb-4">Dashboard</h3>
+
+<div class="row text-white mb-4">
+  <div class="col-md-3">
+    <div class="card bg-primary shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title">Total de Variáveis</h6>
+        <h3 class="card-text">{{ com_formula + sem_formula }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-success shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title">Com Fórmula</h6>
+        <h3 class="card-text">{{ com_formula }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-warning shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title">Com Normalidade</h6>
+        <h3 class="card-text">{{ com_normalidade }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-secondary shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title">Sem Fórmula</h6>
+        <h3 class="card-text">{{ sem_formula }}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-6 col-lg-12">
+    <div class="card p-3 h-100">
+      <h6>Variáveis por Unidade</h6>
+      <canvas id="grafico1" style="max-height: 300px;"></canvas>
+    </div>
+  </div>
+
+  <div class="col-xl-6 col-lg-12">
+    <div class="card p-3 h-100">
+      <h6>Variáveis com Fórmula</h6>
+      <canvas id="grafico2" style="max-height: 300px;"></canvas>
+    </div>
+  </div>
+
+  <div class="col-xl-6 col-lg-12">
+    <div class="card p-3 h-100">
+      <h6>Casas Decimais</h6>
+      <canvas id="grafico3" style="max-height: 300px;"></canvas>
+    </div>
+  </div>
+
+  <div class="col-xl-6 col-lg-12">
+    <div class="card p-3 h-100">
+      <h6>Normalidade</h6>
+      <canvas id="grafico4" style="max-height: 300px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script>
+  Chart.register(ChartDataLabels);
+
+  new Chart(document.getElementById('grafico1'), {
+    type: 'bar',
+    data: {
+      labels: {{ labels1 | safe }},
+      datasets: [{
+        label: 'Quantidade',
+        data: {{ dados1 | safe }},
+        backgroundColor: 'rgba(0, 123, 255, 0.6)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end',
+          align: 'top',
+          color: '#000',
+          font: { weight: 'bold' }
+        }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('grafico2'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Com fórmula', 'Sem fórmula'],
+      datasets: [{
+        data: [{{ com_formula }}, {{ sem_formula }}],
+        backgroundColor: ['#28a745', '#dc3545']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        datalabels: {
+          color: '#fff',
+          formatter: (value, ctx) => `${value}`,
+          font: { weight: 'bold' }
+        }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('grafico3'), {
+    type: 'bar',
+    data: {
+      labels: {{ labels2 | safe }},
+      datasets: [{
+        label: 'Variáveis',
+        data: {{ dados2 | safe }},
+        backgroundColor: 'rgba(255, 193, 7, 0.6)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end',
+          align: 'top',
+          color: '#000',
+          font: { weight: 'bold' }
+        }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('grafico4'), {
+    type: 'pie',
+    data: {
+      labels: ['Com normalidade', 'Sem normalidade'],
+      datasets: [{
+        data: [{{ com_normalidade }}, {{ sem_normalidade }}],
+        backgroundColor: ['#0dcaf0', '#6c757d']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        datalabels: {
+          color: '#fff',
+          formatter: (value, ctx) => `${value}`,
+          font: { weight: 'bold' }
+        }
+      }
+    }
+  });
+</script>
+{% endset %}

@@ -1,0 +1,39 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<h3 class="mb-4">Editar Usuário</h3>
+<form method="POST" class="row g-3">
+  <div class="col-md-6">
+    <label for="nome" class="form-label">Nome</label>
+    <input type="text" class="form-control" id="nome" name="nome" value="{{ usuario[0] }}" required>
+  </div>
+
+  <div class="col-md-6">
+    <label for="identificacao" class="form-label">Login (identificação)</label>
+    <input type="text" class="form-control" id="identificacao" name="identificacao" value="{{ usuario[1] }}" required>
+  </div>
+
+  <div class="col-md-6">
+    <label for="perfil" class="form-label">Perfil</label>
+    <select class="form-select" id="perfil" name="perfil" required>
+      <option value="admin" {% if usuario[2] == 'admin' %}selected{% endif %}>Administrador</option>
+      <option value="comum" {% if usuario[2] == 'comum' %}selected{% endif %}>Comum</option>
+    </select>
+  </div>
+
+  <div class="col-md-6">
+    <label for="bloqueado" class="form-label">Status</label>
+    <select class="form-select" id="status" name="status" required>
+      <option value="-1" {% if usuario[3] == -1 %}selected{% endif %}>Ativo</option>
+      <option value="0" {% if usuario[3] == 0 %}selected{% endif %}>Bloqueado</option>
+    </select>
+  </div>
+
+  <div class="col-12 d-flex justify-content-end">
+    <button type="submit" class="btn btn-primary me-2">Salvar alterações</button>
+    <a href="{{ url_for('biblioteca') }}" class="btn btn-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+</form>
+{% endset %}

@@ -1,0 +1,89 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h5 class="mb-4">Upload de Arquivo JSON</h5>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <input type="file" class="form-control" name="dllfile" accept=".json" required>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-upload"></i> Enviar JSON
+      </button>
+    </form>
+
+    {% if variaveis %}
+      <hr>
+      <h6 class="mt-4" data-bs-toggle="collapse" data-bs-target="#variaveisSection" aria-expanded="false" aria-controls="variaveisSection" style="cursor: pointer;">Variáveis ({{ variaveis|length }})</h6>
+      <div class="collapse" id="variaveisSection">
+        <ul class="list-group mb-4">
+          {% for v in variaveis %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ v.sigla }}</strong> — {{ v.nome }}
+              {% if v.unidade %}<span class="text-muted">[{{ v.unidade }}]</span>{% endif %}
+            </div>
+            <form method="POST" action="{{ url_for('importar_variavel') }}">
+              <input type="hidden" name="sigla" value="{{ v.sigla }}">
+              <button type="submit" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-plus-circle"></i> Importar
+              </button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if formulas %}
+      <h6 data-bs-toggle="collapse" data-bs-target="#formulasSection" aria-expanded="false" aria-controls="formulasSection" style="cursor: pointer;">Fórmulas ({{ formulas|length }})</h6>
+      <div class="collapse" id="formulasSection">
+        <ul class="list-group mb-4">
+          {% for f in formulas %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ f.sigla }}</strong>: <code>{{ f.formula }}</code>
+            </div>
+            <form method="POST" action="{{ url_for('importar_formula') }}">
+              <input type="hidden" name="sigla" value="{{ f.sigla }}">
+              <input type="hidden" name="formula" value="{{ f.formula }}">
+              <button type="submit" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-plus-circle"></i> Importar
+              </button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if normalidades %}
+      <h6 data-bs-toggle="collapse" data-bs-target="#normalidadesSection" aria-expanded="false" aria-controls="normalidadesSection" style="cursor: pointer;">Normalidades ({{ normalidades|length }})</h6>
+      <div class="collapse" id="normalidadesSection">
+        <ul class="list-group">
+          {% for n in normalidades %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ n.sigla }}</strong>: {{ n.sexo }} — de {{ n.idade_min }} a {{ n.idade_max }} anos, valores entre {{ n.valormin }} e {{ n.valormax }}
+            </div>
+            <form method="POST" action="{{ url_for('importar_normalidade') }}">
+              <input type="hidden" name="sigla" value="{{ n.sigla }}">
+              <input type="hidden" name="sexo" value="{{ n.sexo }}">
+              <input type="hidden" name="valormin" value="{{ n.valormin }}">
+              <input type="hidden" name="valormax" value="{{ n.valormax }}">
+              <input type="hidden" name="idade_min" value="{{ n.idade_min }}">
+              <input type="hidden" name="idade_max" value="{{ n.idade_max }}">
+              <input type="hidden" name="referencia" value="{{ n.codreferencia }}">
+              <button type="submit" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-plus-circle"></i> Importar
+              </button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endset %}

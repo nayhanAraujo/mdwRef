@@ -1,6 +1,15 @@
 {% extends 'layout.html' %}
 
 {% set content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-file-bar-graph-fill"></i> Biblioteca
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
 <style>
 .tile {
   background-color: #343a40;

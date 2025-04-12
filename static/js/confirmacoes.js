@@ -58,6 +58,7 @@ function confirmarExclusao(cod, rotaBase = '/excluir_variavel') {
       }
     });
   }
+
   function addAlternativa() {
     const container = document.getElementById('alternativas-wrapper');
     const input = document.createElement('input');
@@ -169,4 +170,16 @@ function inserirVariavel() {
     formulaField.value = textBefore + valor + textAfter;
     formulaField.focus();
   }
+}}
+
+function initFlashMessages() {
+  const flashMessages = document.querySelectorAll('.alert');
+  flashMessages.forEach(message => {
+    setTimeout(() => {
+      message.style.opacity = '0';
+      setTimeout(() => {
+        message.remove();
+      }, 500);
+    }, 3000);
+  });
 }

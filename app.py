@@ -1,21 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import firebird.driver as fbd
-
+from database import conectar
 from datetime import datetime
-import re, hashlib
-import os
-
+import re, hashlib, os
 
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_segura'  # Usada para sessão
 
 # Conexão com o banco de dados
-conn = fbd.connect(
-    r"nayhan/3052:C:\Users\nayhan\Documents\BANCO REFERENCIA\BD\REFERENCIAS.FDB",
-    user="SYSDBA",
-    password="masterkey"
-)
+conn = conectar()
 cur = conn.cursor()
 
 @app.context_processor
@@ -405,8 +399,13 @@ def nova_variavel():
         if not sigla.startswith("VR_"):
             flash(("error", "A variável deve começar com 'VR_'"))
             return redirect(request.url)
-
-  # Verifica se já existe a sigla
+        
+        # Verifica se a variável começa com << ou termina com >>
+        if variavel.startswith("<<") or variavel.endswith(">>"):
+            flash(("error", "A variável não pode começar com '<<' ou terminar com '>>'"))
+            return redirect(request.url)
+        
+        # Verifica se já existe a sigla
         cur.execute("SELECT 1 FROM VARIAVEIS WHERE UPPER(VARIAVEL) = ?", (variavel,))
         if cur.fetchone():
             flash("Já existe um rsgistro no banco com essa variável.", "error")

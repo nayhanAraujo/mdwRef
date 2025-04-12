@@ -1,0 +1,26 @@
+# Arquivos do banco de dados
+BANCO REFERENCIA/BD/REFERENCIAS.FDB
+
+# Ambiente virtual Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de ambiente
+.env
+.env.local
+
+# Arquivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de upload
+uploads/
+*.log 

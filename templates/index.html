@@ -1,8 +1,14 @@
 {% extends 'layout.html' %}
 
 {% set content %}
-<h3 class="mb-4">Dashboard</h3>
-
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-file-bar-graph-fill"></i> Dashboards
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
 <div class="row text-white mb-4">
   <div class="col-md-3">
     <div class="card bg-primary shadow-sm">
@@ -68,103 +74,16 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  Chart.register(ChartDataLabels);
-
-  new Chart(document.getElementById('grafico1'), {
-    type: 'bar',
-    data: {
-      labels: {{ labels1 | safe }},
-      datasets: [{
-        label: 'Quantidade',
-        data: {{ dados1 | safe }},
-        backgroundColor: 'rgba(0, 123, 255, 0.6)'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        datalabels: {
-          anchor: 'end',
-          align: 'top',
-          color: '#000',
-          font: { weight: 'bold' }
-        }
-      }
-    }
-  });
-
-  new Chart(document.getElementById('grafico2'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Com fórmula', 'Sem fórmula'],
-      datasets: [{
-        data: [{{ com_formula }}, {{ sem_formula }}],
-        backgroundColor: ['#28a745', '#dc3545']
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        datalabels: {
-          color: '#fff',
-          formatter: (value, ctx) => `${value}`,
-          font: { weight: 'bold' }
-        }
-      }
-    }
-  });
-
-  new Chart(document.getElementById('grafico3'), {
-    type: 'bar',
-    data: {
-      labels: {{ labels2 | safe }},
-      datasets: [{
-        label: 'Variáveis',
-        data: {{ dados2 | safe }},
-        backgroundColor: 'rgba(255, 193, 7, 0.6)'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        datalabels: {
-          anchor: 'end',
-          align: 'top',
-          color: '#000',
-          font: { weight: 'bold' }
-        }
-      }
-    }
-  });
-
-  new Chart(document.getElementById('grafico4'), {
-    type: 'pie',
-    data: {
-      labels: ['Com normalidade', 'Sem normalidade'],
-      datasets: [{
-        data: [{{ com_normalidade }}, {{ sem_normalidade }}],
-        backgroundColor: ['#0dcaf0', '#6c757d']
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        datalabels: {
-          color: '#fff',
-          formatter: (value, ctx) => `${value}`,
-          font: { weight: 'bold' }
-        }
-      }
-    }
+  initDashboards({
+    labels1: {{ labels1 | tojson | safe }},
+    dados1: {{ dados1 | tojson | safe }},
+    labels2: {{ labels2 | tojson | safe }},
+    dados2: {{ dados2 | tojson | safe }},
+    com_formula: {{ com_formula }},
+    sem_formula: {{ sem_formula }},
+    com_normalidade: {{ com_normalidade }},
+    sem_normalidade: {{ sem_normalidade }}
   });
 </script>
 {% endset %}

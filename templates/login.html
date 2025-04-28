@@ -27,30 +27,30 @@ body {
   transform: translateX(20%);
 }
 
-  .logo-mdw {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #00d1ff;
-    margin-bottom: 25px;
-  }
+.logo-mdw {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #00d1ff;
+  margin-bottom: 25px;
+}
 
-  .form-control::placeholder {
-    color: #ccc;
-  }
+.form-control::placeholder {
+  color: #ccc;
+}
 
-  .btn-login {
-    width: 48%;
-    font-weight: bold;
-  }
+.btn-login {
+  width: 48%;
+  font-weight: bold;
+}
 
-  .btn-clear {
-    width: 48%;
-  }
+.btn-clear {
+  width: 48%;
+}
 
-  .login-footer {
-    margin-top: 15px;
-    font-size: 0.9em;
-  }
+.login-footer {
+  margin-top: 15px;
+  font-size: 0.9em;
+}
 </style>
 
 <div class="login-container">
@@ -75,7 +75,7 @@ body {
   </form>
 
   <div class="login-footer">
-    <a href="#" class="text-white-50 text-decoration-underline">Esqueceu a senha?</a>
+    <a href="{{ url_for('forgot_password') }}" class="text-white-50 text-decoration-underline">Esqueceu a senha?</a>
   </div>
 
   <div class="text-end text-white-50 mt-3" style="font-size: 0.8rem;">v: 1.0.0</div>

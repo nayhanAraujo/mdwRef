@@ -317,6 +317,39 @@ def login():
 
     return render_template('login.html')
 
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        identificacao = request.form['identificacao'].strip().lower()
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+
+        # Verify if identification exists
+        cur.execute("SELECT 1 FROM USUARIO WHERE IDENTIFICACAO = ?", (identificacao,))
+        if not cur.fetchone():
+            flash("Identificação não encontrada.", "error")
+            return redirect(url_for('forgot_password'))
+
+        # Verify if passwords match
+        if new_password != confirm_password:
+            flash("As senhas não coincidem.", "error")
+            return redirect(url_for('forgot_password'))
+
+        # Hash the new password
+        senha_criptografada = hashlib.sha256(new_password.encode()).hexdigest()
+
+        # Update the password
+        cur.execute("""
+            UPDATE USUARIO SET SENHA = ?, DTHRULTMODIFICACAO = ?
+            WHERE IDENTIFICACAO = ?
+        """, (senha_criptografada, datetime.now(), identificacao))
+
+        conn.commit()
+        flash("Senha alterada com sucesso! Faça login com a nova senha.", "success")
+        return redirect(url_for('login'))
+
+    return render_template('forgot_password.html')
+
 
 @app.route('/logout')
 def logout():

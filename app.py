@@ -11,10 +11,20 @@ from routes.bibliotecas import biblioteca_pb
 from routes.unidades import unidades_bp
 from routes.especialidades import especialidades_bp
 from routes.linguagens import linguagens_bp
-import os
+import os,logging
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_segura'
+
+
+# Configurar logging
+logging.basicConfig(
+    filename='C:\\Users\\nayhan\\Documents\\PROJETOS AZURE\\6- AZURE - REFERENCIAS\\REFERENCIAS\\logs\\app_debug.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+
 
 app.config['SESSION_TYPE'] = 'filesystem'  # Armazenar sessões em arquivos no servidor
 app.config['SESSION_PERMANENT'] = False  # Sessões não permanentes (expiram ao fechar o navegador)
@@ -38,6 +48,15 @@ if not os.path.exists(app.config['SESSION_FILE_DIR']):
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)  # Criar o diretório se não existir
+
+
+# Conexão com o banco Firebird (ajuste para ambiente Fly.io)
+try:
+    conn = conectar()  # Certifique-se de que 'conectar()' lida com variáveis de ambiente
+    cur = conn.cursor()
+    logging.info("Conexão com o Firebird estabelecida!")
+except Exception as e:
+    logging.error(f"Erro ao conectar ao Firebird: {e}")
 
 # Conexão com o banco
 conn = conectar()
@@ -105,4 +124,5 @@ app.register_blueprint(linguagens_bp, url_prefix='/linguagens')
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.10.34', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8080)
+   # app.run(host='192.168.10.34', port=5000, debug=True) #config local

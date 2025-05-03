@@ -1,0 +1,38 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-pencil-square me-2"></i> Editar Referência
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label">Autor</label>
+        <input type="text" name="autor" class="form-control" value="{{ referencia[1] }}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Ano</label>
+        <input type="number" name="ano" class="form-control" value="{{ referencia[2] }}" required>
+      </div>
+      <div class="text-end">
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-save"></i> Salvar
+        </button>
+        <a href="{{ url_for('referencias.visualizar_anexos', codreferencia=referencia[0]) }}" class="btn btn-outline-info">
+          <i class="bi bi-paperclip"></i> Anexos
+        </a>
+        <a href="{{ url_for('referencias.visualizar_referencias') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endset %}

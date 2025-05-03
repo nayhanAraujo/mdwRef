@@ -24,7 +24,7 @@
               <strong>{{ v.sigla }}</strong> — {{ v.nome }}
               {% if v.unidade %}<span class="text-muted">[{{ v.unidade }}]</span>{% endif %}
             </div>
-            <form method="POST" action="{{ url_for('importar_variavel') }}">
+            <form method="POST" action="{{ url_for('uploads.importar_variavel') }}">
               <input type="hidden" name="sigla" value="{{ v.sigla }}">
               <button type="submit" class="btn btn-sm btn-outline-success">
                 <i class="bi bi-plus-circle"></i> Importar
@@ -45,7 +45,7 @@
             <div>
               <strong>{{ f.sigla }}</strong>: <code>{{ f.formula }}</code>
             </div>
-            <form method="POST" action="{{ url_for('importar_formula') }}">
+            <form method="POST" action="{{ url_for('uploads.importar_formula') }}">
               <input type="hidden" name="sigla" value="{{ f.sigla }}">
               <input type="hidden" name="formula" value="{{ f.formula }}">
               <button type="submit" class="btn btn-sm btn-outline-success">
@@ -67,7 +67,7 @@
             <div>
               <strong>{{ n.sigla }}</strong>: {{ n.sexo }} — de {{ n.idade_min }} a {{ n.idade_max }} anos, valores entre {{ n.valormin }} e {{ n.valormax }}
             </div>
-            <form method="POST" action="{{ url_for('importar_normalidade') }}">
+            <form method="POST" action="{{ url_for('uploads.importar_normalidade') }}">
               <input type="hidden" name="sigla" value="{{ n.sigla }}">
               <input type="hidden" name="sexo" value="{{ n.sexo }}">
               <input type="hidden" name="valormin" value="{{ n.valormin }}">

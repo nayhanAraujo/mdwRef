@@ -1,63 +1,171 @@
 {% extends 'layout.html' %}
 
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-list-ul me-2"></i> Variáveis Cadastradas
+<!-- Incluir o Tailwind CSS via CDN -->
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<div class="flex justify-between items-center mb-4">
+  <h3 class="text-2xl font-bold text-blue-600">
+    <svg class="inline-block w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    Visualizar Variáveis
   </h3>
-  <div class="text-muted small">
+  <div class="text-gray-500 text-sm">
     Usuário logado: <strong>{{ session['usuario'] }}</strong>
   </div>
 </div>
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <input type="text" class="form-control mb-3" id="buscaVariavel" placeholder="Buscar por nome, sigla ou abreviação...">
+<div class="shadow-md rounded-lg">
+  <div class="p-6">
+    <div class="overflow-x-auto">
+      <table class="min-w-full border border-gray-300">
+        <thead class="bg-blue-100">
+          <tr>
+            <th class="py-2 px-4 border-b text-center">Código</th>
+            <th class="py-2 px-4 border-b text-center">Nome</th>
+            <th class="py-2 px-4 border-b text-center">Variável</th>
+            <th class="py-2 px-4 border-b text-center">Sigla</th>
+            <th class="py-2 px-4 border-b text-center">Abreviação</th>
+            <th class="py-2 px-4 border-b text-center">Alternativas</th>
+            <th class="py-2 px-4 border-b text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for detalhe in variaveis_detalhes %}
+            <tr>
+              <td class="py-2 px-4 border-b text-center">{{ detalhe.variavel[0] }}</td>
+              <td class="py-2 px-4 border-b">{{ detalhe.variavel[1] }}</td>
+              <td class="py-2 px-4 border-b">{{ detalhe.variavel[2] }}</td>
+              <td class="py-2 px-4 border-b">{{ detalhe.variavel[3] }}</td>
+              <td class="py-2 px-4 border-b">{{ detalhe.variavel[4] }}</td>
+              <td class="py-2 px-4 border-b">
+                {% if detalhe.alternativas %}
+                  <ul class="list-disc pl-5">
+                    {% for alternativa in detalhe.alternativas %}
+                      <li>{{ alternativa }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="py-2 px-4 border-b text-center space-x-2">
+                <!-- Botão Editar -->
+                <a href="{{ url_for('variaveis.editar_variavel', codvariavel=detalhe.variavel[0]) }}" class="text-blue-500 hover:text-blue-700">
+                  <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </a>
+                <!-- Botão Excluir -->
+                <form action="{{ url_for('variaveis.excluir_variavel', codvariavel=detalhe.variavel[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta variável?');">
+                  <button type="submit" class="text-red-500 hover:text-red-700">
+                    <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                </form>
+                <!-- Botão Detalhes (abre o modal com Normalidade e Equações) -->
+                <button onclick="openDetailsModal('details-modal-{{ detalhe.variavel[0] }}')" class="text-green-500 hover:text-green-700">
+                  <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+                <!-- Botão Fórmula (abre o modal com a Fórmula) -->
+                {% if detalhe.formula %}
+                  <button onclick="openFormulaModal('formula-modal-{{ detalhe.variavel[0] }}')" class="text-purple-500 hover:text-purple-700">
+                    <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m-3-3v6m-9 9h18"></path></svg>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
 
-    <table class="table table-hover table-bordered align-middle" id="tabelaVariaveis">
-      <thead class="table-primary text-center">
-        <tr>
-          <th>#</th>
-          <th>Nome</th>
-          <th>Sigla</th>
-          <th>Variável</th>
-          <th>Abreviação</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for cod, nome,variavel, sigla, abreviacao in variaveis %}
-        <tr class="text-center">
-          <td>{{ cod }}</td>
-          <td class="text-start">{{ nome }}</td>
-          <td>{{ sigla }}</td>
-          <td>{{ variavel }}</td>
-          <td>{{ abreviacao }}</td>
-          <td>
-            <a href="{{ url_for('editar_variavel', codvariavel=cod) }}" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-pencil-square"></i> Editar
-            </a>
-            <form action="{{ url_for('excluir_variavel', codvariavel=cod) }}" method="post" class="d-inline" onsubmit="return confirm('Deseja excluir esta variável?')">
-              <button type="submit" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash"></i> Excluir
-              </button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+            <!-- Modal para Detalhes (Normalidade e Equações) -->
+            <div id="details-modal-{{ detalhe.variavel[0] }}" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+              <div class="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-lg">
+                <h3 class="text-xl font-bold mb-4">Detalhes da Variável {{ detalhe.variavel[2] }}</h3>
+                <div class="mb-4">
+                  <h4 class="font-semibold">Normalidade:</h4>
+                  {% if detalhe.normalidade %}
+                    <p>Sexo: {{ detalhe.normalidade[0] }}, Min: {{ detalhe.normalidade[1] }}, Max: {{ detalhe.normalidade[2] }}, Idade Min: {{ detalhe.normalidade[3] }}, Idade Max: {{ detalhe.normalidade[4] }}, Ref: {{ detalhe.normalidade[5] }} {{ detalhe.normalidade[6] }}</p>
+                  {% else %}
+                    <p>-</p>
+                  {% endif %}
+                </div>
+                <div class="mb-4">
+                  <h4 class="font-semibold">Equações:</h4>
+                  {% if detalhe.equacoes %}
+                    <ul class="list-disc pl-5">
+                      {% for equacao in detalhe.equacoes %}
+                        <li>{{ equacao[0] }}: {{ equacao[1] }} (Ref: {{ equacao[2] }} {{ equacao[3] }})</li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p>-</p>
+                  {% endif %}
+                </div>
+                <button onclick="closeModal('details-modal-{{ detalhe.variavel[0] }}')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                  Fechar
+                </button>
+              </div>
+            </div>
+
+            <!-- Modal para Fórmula -->
+            {% if detalhe.formula %}
+              <div id="formula-modal-{{ detalhe.variavel[0] }}" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-lg">
+                  <h3 class="text-xl font-bold mb-4">Fórmula da Variável {{ detalhe.variavel[2] }}</h3>
+                  <p>{{ detalhe.formula[0] }} (Casas: {{ detalhe.formula[1] }})</p>
+                  <button onclick="closeModal('formula-modal-{{ detalhe.variavel[0] }}')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-4">
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Controles de Paginação -->
+    <div class="flex justify-between items-center mt-4">
+      <div class="text-gray-600">
+        Página {{ pagina }} de {{ total_paginas }}
+      </div>
+      <div class="flex space-x-2">
+        {% if pagina > 1 %}
+          <a href="{{ url_for('variaveis.visualizar_variaveis', page=pagina-1) }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+            <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            Anterior
+          </a>
+        {% else %}
+          <button disabled class="bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed">
+            <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            Anterior
+          </button>
+        {% endif %}
+        {% if pagina < total_paginas %}
+          <a href="{{ url_for('variaveis.visualizar_variaveis', page=pagina+1) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Próximo
+            <svg class="inline-block w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          </a>
+        {% else %}
+          <button disabled class="bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed">
+            Próximo
+            <svg class="inline-block w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          </button>
+        {% endif %}
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-  document.getElementById("buscaVariavel").addEventListener("keyup", function() {
-    let termo = this.value.toLowerCase();
-    let linhas = document.querySelectorAll("#tabelaVariaveis tbody tr");
-    linhas.forEach(linha => {
-      let texto = linha.textContent.toLowerCase();
-      linha.style.display = texto.includes(termo) ? "" : "none";
-    });
-  });
+// Função para abrir o modal
+function openDetailsModal(modalId) {
+  document.getElementById(modalId).classList.remove('hidden');
+}
+
+// Função para abrir o modal de fórmula
+function openFormulaModal(modalId) {
+  document.getElementById(modalId).classList.remove('hidden');
+}
+
+// Função para fechar o modal
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+}
 </script>
 {% endset %}

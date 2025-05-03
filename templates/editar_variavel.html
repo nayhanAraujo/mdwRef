@@ -3,148 +3,237 @@
 {% set content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-pencil-square me-2"></i> Editar variável
+    <i class="bi bi-pencil-square me-2"></i> Editar Variável
   </h3>
   <div class="text-muted small">
     Usuário logado: <strong>{{ session['usuario'] }}</strong>
   </div>
 </div>
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <form method="POST">
-      <h5 class="text-primary">Informações da Variável</h5>
-      
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <label class="form-label">Nome clínico</label>
-          <input type="text" name="nome" class="form-control" value="{{ variavel[0] }}" required>
+      <form method="POST">
+        <h5 class="text-primary">Informações da Variável</h5>
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="possuivariavel" name="possui_formula" {% if variavel[7] %}checked{% endif %}>
+          <label class="form-check-label" for="possuivariavel">Inserir variáveis</label>
         </div>
-        <div class="col-md-6">
-          <label class="form-label">Variável</label>
-          <input type="text" name="variavel" class="form-control" value="{{ variavel[1] }}" required placeholder="Ex: VR_AE">
-        </div>
-      </div>
+        <div id="areaVariavel" style="display: {% if variavel[7] %}block{% else %}none{% endif %};">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Nome clínico</label>
+              <input type="text" name="nome" class="form-control" value="{{ variavel[0] }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Variável</label>
+              <input type="text" name="variavel" class="form-control" value="{{ variavel[1] }}" required placeholder="Ex: <<VR_AE>>">
+            </div>
+          </div>
 
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <label class="form-label">Sigla</label>
-          <input type="text" name="sigla" class="form-control" value="{{ variavel[2] }}" required>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Abreviação</label>
-          <input type="text" name="abreviacao" class="form-control" value="{{ variavel[3] }}" required>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Descrição</label>
-        <textarea name="descricao" class="form-control" rows="3">{{ variavel[4] }}</textarea>
-      </div>
-
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <label class="form-label">Unidade de Medida</label>
-          <select name="unidade" class="form-select" required>
-            <option value="">-- Selecione uma unidade --</option>
-            {% for cod, descricao in unidades %}
-              <option value="{{ cod }}" {% if cod == variavel[5] %}selected{% endif %}>{{ descricao }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Casas Decimais</label>
-          <input type="number" name="casas_decimais" class="form-control" min="0" value="{{ variavel[6] }}" required>
-        </div>
-      </div>
-
-      {% if variavel[7] is not none %}
-      <hr>
-      <div class="form-check form-switch mb-3">
-        <input class="form-check-input" type="checkbox" id="possuiFormula" name="possui_formula" checked>
-        <label class="form-check-label" for="possuiFormula">Alterar Fórmula?</label>
-      </div>
-
-      <div id="areaFormula">
-        <div class="mb-3">
-          <label class="form-label">Variáveis disponíveis</label>
-          <div class="input-group mb-2">
-            <select class="form-select" id="variavelSelect">
-              <option value="">-- Selecione uma variável --</option>
-              {% for sigla, nome in variaveis_existentes %}
-                <option value="<<{{ sigla }}>>">{{ nome }}</option>
+          <div class="mb-3">
+            <label class="form-label">Variáveis Alternativas</label>
+            <div id="alternativas-wrapper">
+              {% for alternativa in alternativas %}
+                <input type="text" name="alternativas[]" class="form-control mb-2" value="{{ alternativa }}" placeholder="Ex: VR_AO1">
               {% endfor %}
-            </select>
-            <button type="button" class="btn btn-outline-primary" onclick="inserirVariavel()">
-              Inserir na fórmula
-            </button>
+              {% if not alternativas %}
+                <input type="text" name="alternativas[]" class="form-control mb-2" placeholder="Ex: VR_AO1">
+              {% endif %}
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addAlternativa()">Adicionar outra</button>
           </div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Fórmula</label>
-          <textarea name="formula" class="form-control">{{ variavel[7] }}</textarea>
-        </div>
-        <div class="col-md-3 mb-3">
-          <label class="form-label">Casas Decimais (Fórmula)</label>
-          <input type="number" name="formula_casas_decimais" class="form-control" min="0" value="{{ variavel[8] }}">
-        </div>
-      </div>
-      {% endif %}
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Sigla</label>
+              <input type="text" name="sigla" class="form-control" value="{{ variavel[2] }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Abreviação</label>
+              <input type="text" name="abreviacao" class="form-control" value="{{ variavel[3] }}" required>
+            </div>
+          </div>
 
-      <hr>
-      <div class="form-check form-switch mb-3">
-        <input class="form-check-input" type="checkbox" id="possuiNormalidade" name="possui_normalidade" {% if variavel[9] is not none %}checked{% endif %}>
-        <label class="form-check-label" for="possuiNormalidade">Alterar Normalidade ou referência?</label>
-      </div>
+          <div class="mb-3">
+            <label class="form-label">Descrição</label>
+            <textarea name="descricao" class="form-control">{{ variavel[5] }}</textarea>
+          </div>
 
-      <div id="areaNormalidade" style="display: {% if variavel[9] is not none %}block{% else %}none{% endif %};">
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label class="form-label">Sexo</label>
-            <select name="sexo" class="form-select">
-              <option value="M" {% if variavel[9] == 'M' %}selected{% endif %}>Masculino</option>
-              <option value="F" {% if variavel[9] == 'F' %}selected{% endif %}>Feminino</option>
-              <option value="A" {% if variavel[9] == 'A' %}selected{% endif %}>Ambos</option>
-            </select>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Unidade de Medida</label>
+              <select name="unidade" class="form-select" required>
+                {% for cod, nome in unidades %}
+                  <option value="{{ cod }}" {% if cod == variavel[6] %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Casas Decimais</label>
+              <input type="number" name="casas_decimais" class="form-control" min="0" value="{{ variavel[4] }}" required>
+            </div>
           </div>
-          <div class="col-md-4 mb-3">
-            <label class="form-label">Valor Mínimo</label>
-            <input type="number" step="any" name="valormin" class="form-control" value="{{ variavel[10] }}">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label class="form-label">Valor Máximo</label>
-            <input type="number" step="any" name="valormax" class="form-control" value="{{ variavel[11] }}">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Idade Mínima</label>
-            <input type="number" name="idade_min" class="form-control" value="{{ variavel[12] }}">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Idade Máxima</label>
-            <input type="number" name="idade_max" class="form-control" value="{{ variavel[13] }}">
+        </div>
+        <hr>
+
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="possuiFormula" name="possui_formula" {% if variavel[7] %}checked{% endif %}>
+          <label class="form-check-label" for="possuiFormula">Possui Fórmula?</label>
+        </div>
+    
+        <div id="areaFormula" style="display: {% if variavel[7] %}block{% else %}none{% endif %};">
+          <div class="mb-3">
+            <label class="form-label">Variáveis disponíveis</label>
+            <div class="input-group mb-2">
+              <select class="form-select" id="variavelSelect">
+                <option value="">-- Selecione uma variável --</option>
+                {% for sigla, nome in variaveis_existentes %}
+                  <option value="<<{{ sigla }}>>">{{ nome }}</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="btn btn-outline-primary" onclick="inserirVariavel()">
+                Inserir na fórmula
+              </button>
+            </div>
           </div>
           <div class="mb-3">
-            <label class="form-label">Referência</label>
-            <select name="referencia" class="form-select">
-              <option value="">-- Nenhuma --</option>
-              {% for cod, autor, ano in referencias %}
-                <option value="{{ cod }}" {% if cod == variavel[14] %}selected{% endif %}>{{ autor }} - {{ ano }}</option>
-              {% endfor %}
-            </select>
+            <label class="form-label">Fórmula</label>
+            <textarea name="formula" class="form-control">{{ variavel[7] or '' }}</textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Casas Decimais da Fórmula</label>
+            <input type="number" name="formula_casas_decimais" class="form-control" min="0" value="{{ variavel[8] or 2 }}">
+          </div>
+
+          <h5 class="text-primary">Equações em Diferentes Linguagens</h5>
+          <div id="equacoes-wrapper">
+            {% for equacao in equacoes %}
+              <div class="equacao-item mb-3 border p-3 rounded">
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Linguagem</label>
+                    <select name="equacoes_linguagem[]" class="form-select" required>
+                      <option value="">-- Selecione --</option>
+                      {% for cod, nome in linguagens %}
+                        <option value="{{ cod }}" {% if cod == equacao.codlinguagem %}selected{% endif %}>{{ nome }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Referência (Autor, Ano)</label>
+                    <select name="equacoes_referencia[]" class="form-select">
+                      <option value="">-- Nenhuma --</option>
+                      {% for cod, autor, ano in referencias %}
+                        <option value="{{ cod }}" {% if cod == equacao.codreferencia %}selected{% endif %}>{{ autor }} - {{ ano }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Equação</label>
+                    <textarea name="equacoes_texto[]" class="form-control" required>{{ equacao.equacao }}</textarea>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-equacao">Remover</button>
+              </div>
+            {% endfor %}
+            {% if not equacoes %}
+              <div class="equacao-item mb-3 border p-3 rounded">
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Linguagem</label>
+                    <select name="equacoes_linguagem[]" class="form-select" required>
+                      <option value="">-- Selecione --</option>
+                      {% for cod, nome in linguagens %}
+                        <option value="{{ cod }}">{{ nome }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Referência (Autor, Ano)</label>
+                    <select name="equacoes_referencia[]" class="form-select">
+                      <option value="">-- Nenhuma --</option>
+                      {% for cod, autor, ano in referencias %}
+                        <option value="{{ cod }}">{{ autor }} - {{ ano }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Equação</label>
+                    <textarea name="equacoes_texto[]" class="form-control" required></textarea>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-equacao">Remover</button>
+              </div>
+            {% endif %}
+          </div>
+          <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="addEquacao()">Adicionar outra equação</button>
+        </div>
+
+        <hr>
+
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="possuiNormalidade" name="possui_normalidade" {% if variavel[9] %}checked{% endif %}>
+          <label class="form-check-label" for="possuiNormalidade">Possui Normalidade ou referência?</label>
+        </div>
+        <div id="areaNormalidade" style="display: {% if variavel[9] %}block{% else %}none{% endif %};">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Sexo</label>
+              <select name="sexo" class="form-select">
+                <option value="M" {% if variavel[9] == 'M' %}selected{% endif %}>Masculino</option>
+                <option value="F" {% if variavel[9] == 'F' %}selected{% endif %}>Feminino</option>
+                <option value="A" {% if variavel[9] == 'A' %}selected{% endif %}>Ambos</option>
+              </select>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Valor Mínimo</label>
+              <input type="number" step="any" name="valormin" class="form-control" value="{{ variavel[10] or '' }}">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Valor Máximo</label>
+              <input type="number" step="any" name="valormax" class="form-control" value="{{ variavel[11] or '' }}">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Idade Mínima</label>
+              <input type="number" name="idade_min" class="form-control" value="{{ variavel[12] or '' }}">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Idade Máxima</label>
+              <input type="number" name="idade_max" class="form-control" value="{{ variavel[13] or '' }}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Referência</label>
+              <select name="referencia" class="form-select">
+                <option value="">-- Nenhuma --</option>
+                {% for cod, autor, ano in referencias %}
+                  <option value="{{ cod }}" {% if cod == variavel[14] %}selected{% endif %}>{{ autor }} - {{ ano }}</option>
+                {% endfor %}
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="text-end">
-        <button type="submit" class="btn btn-success">
-          <i class="bi bi-check-circle me-1"></i> Salvar Alterações
-        </button>
-        <a href="{{ url_for('visualizar_variaveis') }}" class="btn btn-secondary">
-          <i class="bi bi-arrow-left me-1"></i> Cancelar
-        </a>
-      </div>
-      
-    </form>
+        <div class="text-end">
+          <button type="button" class="btn btn-success" onclick="confirmarSalvarVariavel()">
+            <i class="bi bi-save"></i> Salvar
+          </button>
+          <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -154,6 +243,105 @@
   });
   document.getElementById('possuiNormalidade').addEventListener('change', function() {
     document.getElementById('areaNormalidade').style.display = this.checked ? 'block' : 'none';
+  });
+  document.getElementById('possuivariavel').addEventListener('change', function() {
+    document.getElementById('areaVariavel').style.display = this.checked ? 'block' : 'none';
+  });
+
+  function inserirVariavel() {
+    const select = document.getElementById('variavelSelect');
+    const formulaTextarea = document.querySelector('[name="formula"]');
+    const selectedValue = select.value;
+    if (selectedValue) {
+      const cursorPos = formulaTextarea.selectionStart;
+      const textBefore = formulaTextarea.value.substring(0, cursorPos);
+      const textAfter = formulaTextarea.value.substring(formulaTextarea.selectionEnd);
+      formulaTextarea.value = textBefore + selectedValue + textAfter;
+      formulaTextarea.focus();
+      formulaTextarea.selectionStart = cursorPos + selectedValue.length;
+      formulaTextarea.selectionEnd = cursorPos + selectedValue.length;
+    }
+  }
+
+  function confirmarSalvarVariavel() {
+    const sigla = document.querySelector('[name="sigla"]').value.trim().toUpperCase();
+    if (!sigla.startsWith("VR_")) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Sigla inválida',
+        text: 'A sigla deve começar com "VR_"'
+      });
+      return;
+    }
+    Swal.fire({
+      title: 'Salvar alterações?',
+      text: 'Deseja realmente salvar as alterações desta variável?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, salvar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        document.querySelector('form').submit();
+      }
+    });
+  }
+
+  function addAlternativa() {
+    const container = document.getElementById('alternativas-wrapper');
+    const input = document.createElement('input');
+    input.type = "text";
+    input.name = "alternativas[]";
+    input.className = "form-control mb-2";
+    input.placeholder = "Ex: VR_AO1";
+    container.appendChild(input);
+  }
+
+  function addEquacao() {
+    const container = document.getElementById('equacoes-wrapper');
+    const div = document.createElement('div');
+    div.className = 'equacao-item mb-3 border p-3 rounded';
+    div.innerHTML = `
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Linguagem</label>
+          <select name="equacoes_linguagem[]" class="form-select" required>
+            <option value="">-- Selecione --</option>
+            {% for cod, nome in linguagens %}
+              <option value="{{ cod }}">{{ nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Referência (Autor, Ano)</label>
+          <select name="equacoes_referencia[]" class="form-select">
+            <option value="">-- Nenhuma --</option>
+            {% for cod, autor, ano in referencias %}
+              <option value="{{ cod }}">{{ autor }} - {{ ano }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Equação</label>
+          <textarea name="equacoes_texto[]" class="form-control" required></textarea>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline-danger btn-sm remove-equacao">Remover</button>
+    `;
+    container.appendChild(div);
+    attachRemoveEvent();
+  }
+
+  function attachRemoveEvent() {
+    document.querySelectorAll('.remove-equacao').forEach(button => {
+      button.addEventListener('click', function() {
+        this.parentElement.remove();
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    attachRemoveEvent();
   });
 </script>
 {% endset %}

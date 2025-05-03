@@ -1,0 +1,71 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-list-ul me-2"></i> Unidades de Medida Cadastradas
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <a href="{{ url_for('unidades.nova_unidade') }}" class="btn btn-primary mb-3">
+      <i class="bi bi-plus-circle"></i> Nova Unidade
+    </a>
+    <table class="table table-hover table-bordered align-middle">
+      <thead class="table-primary text-center">
+        <tr>
+          <th>#</th>
+          <th>Descrição</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cod, descricao, status in unidades %}
+        <tr class="text-center">
+          <td>{{ cod }}</td>
+          <td class="text-start">{{ descricao }}</td>
+          <td>{{ 'Inativo' if status == 0 else 'Ativo' }}</td>
+          <td>
+            <a href="{{ url_for('unidades.editar_unidade', codunidademedida=cod) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil-square"></i> Editar
+            </a>
+            <form action="{{ url_for('unidades.excluir_unidade', codunidademedida=cod) }}" method="post" class="d-inline excluir-unidade-form">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i> Excluir
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.excluir-unidade-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      Swal.fire({
+        title: 'Confirmar Exclusão',
+        text: 'Deseja excluir esta unidade de medida?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Excluir',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+</script>
+{% endset %}

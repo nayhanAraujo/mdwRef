@@ -12,13 +12,11 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
-
   <style>
     html, body {
       height: 100%;
       margin: 0;
     }
-
     body {
       background-color: #f8f9fa;
     }
@@ -28,17 +26,15 @@
       height: 100vh;
       width: 100%;
     }
-
     .sidebar {
-  width: 220px;
-  background: #0d6efd;
-  color: white;
-  padding-top: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
+      width: 220px;
+      background: #0d6efd;
+      color: white;
+      padding-top: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
     .sidebar a {
       display: flex;
       align-items: center;
@@ -47,25 +43,21 @@
       color: white;
       text-decoration: none;
     }
-
     .sidebar a:hover,
     .sidebar a.active {
       background-color: #0b5ed7;
     }
-
     .content {
       flex: 1;
       padding: 20px;
       overflow-y: auto;
     }
-
     .logout {
       padding: 10px 20px;
       position: absolute;
       bottom: 20px;
       left: 0;
     }
-
     .login-container {
       background: radial-gradient(circle at center, #222 0%, #000 100%);
       border-radius: 16px;
@@ -76,32 +68,26 @@
       text-align: center;
       margin: auto;
     }
-
     .logo-mdw {
       font-size: 2rem;
       font-weight: bold;
       color: #00d1ff;
       margin-bottom: 25px;
     }
-
     .form-control::placeholder {
       color: #ccc;
     }
-
     .btn-login {
       width: 48%;
       font-weight: bold;
     }
-
     .btn-clear {
       width: 48%;
     }
-
     .login-footer {
       margin-top: 15px;
       font-size: 0.9em;
     }
-
     .login-body {
       display: flex;
       justify-content: center;
@@ -114,33 +100,25 @@
   </style>
 </head>
 <body>
-
   {% block content %}
-
-  
     {% if session.get('usuario') %}
       <div class="wrapper">
         <div class="sidebar">
-            <div>
-              <h4 class="text-center mb-3">REFERÊNCIAS</h4>
-              <hr style="border-color: rgba(255,255,255,0.3); width: 80%; margin: auto;">
-          
-              <a href="{{ url_for('home') }}" class="{% if request.endpoint == 'home' %}active{% endif %}">
-                <i class="bi bi-house"></i> Início
+          <div>
+            <h4 class="text-center mb-3">REFERÊNCIAS</h4>
+            <hr style="border-color: rgba(255,255,255,0.3); width: 80%; margin: auto;">
+            {% for texto, endpoint, icone in links_menu %}
+              <a href="{{ url_for(endpoint) }}" class="{% if request.endpoint == endpoint %}active{% endif %}">
+                <i class="bi bi-{{ icone }} me-1"></i> {{ texto }}
               </a>
-              <a class="nav-link {% if request.endpoint == 'biblioteca' %}active{% endif %}" href="{{ url_for('biblioteca') }}">
-                <i class="bi bi-collection me-1"></i> Biblioteca
-              </a>
-
-            </div>
-          
-            <div class="logout mb-3 ms-3">
-              <a href="{{ url_for('logout') }}" class="text-white small">
-                <i class="bi bi-box-arrow-left"></i> Sair
-              </a>
-            </div>
+            {% endfor %}
           </div>
-
+          <div class="logout mb-3 ms-3">
+            <a href="{{ url_for('auth.logout') }}" class="text-white small">
+              <i class="bi bi-box-arrow-left"></i> Sair
+            </a>
+          </div>
+        </div>
         <div class="content">
           {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -157,14 +135,11 @@
     {% endif %}
   {% endblock %}
 
-</body>
-
 <script>
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       const tipo = "{{ messages[0][0] }}";
       const mensagem = "{{ messages[0][1] }}";
-
       Swal.fire({
         toast: true,
         position: 'top-end',
@@ -176,10 +151,9 @@
       });
     {% endif %}
   {% endwith %}
-
   document.addEventListener('DOMContentLoaded', function() {
     initFlashMessages();
   });
 </script>
-
+</body>
 </html>

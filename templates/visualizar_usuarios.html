@@ -26,10 +26,10 @@
         {% endif %}
       </td>
           <td>
-        <a href="{{ url_for('editar_usuario', codusuario=cod) }}" class="btn btn-sm btn-outline-primary">
+        <a href="{{ url_for('users.editar_usuario', codusuario=cod) }}" class="btn btn-sm btn-outline-primary">
           <i class="bi bi-pencil-square"></i> Editar
         </a>
-        <form action="{{ url_for('excluir_usuario', codusuario=cod) }}" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?')">
+        <form action="{{ url_for('users.excluir_usuario', codusuario=cod) }}" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?')">
           <button type="submit" class="btn btn-sm btn-outline-danger">
             <i class="bi bi-trash"></i> Excluir
           </button>

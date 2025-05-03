@@ -1,0 +1,53 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-pencil-square me-2"></i> Editar Anexo
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label">Descrição</label>
+        <input type="text" name="descricao" class="form-control" value="{{ anexo[2] }}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Nome</label>
+        <input type="text" name="nome" class="form-control" value="{{ anexo[3] }}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Link</label>
+        <input type="url" name="link" class="form-control" value="{{ anexo[4] }}" placeholder="https://exemplo.com">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Arquivo Atual</label>
+        <div>
+          {% if anexo[5] %}
+            <a href="{{ url_for('uploaded_file', filename=anexo[5] | basename) }}" target="_blank">Baixar Arquivo Atual</a>
+          {% else %}
+            Nenhum arquivo enviado
+          {% endif %}
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Novo Arquivo (PDF ou outro formato)</label>
+        <input type="file" name="arquivo" class="form-control">
+      </div>
+      <div class="text-end">
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-save"></i> Salvar
+        </button>
+        <a href="{{ url_for('referencias.visualizar_anexos', codreferencia=anexo[1]) }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endset %}

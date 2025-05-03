@@ -1,0 +1,38 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-pencil-square me-2"></i> Editar Unidade de Medida
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label">Descrição</label>
+        <input type="text" name="descricao" class="form-control" value="{{ unidade[1] }}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select" required>
+          <option value="-1" {% if unidade[2] == -1 %}selected{% endif %}>Ativo</option>
+          <option value="0" {% if unidade[2] == 0 %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+      <div class="text-end">
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-save"></i> Salvar
+        </button>
+        <a href="{{ url_for('unidades.visualizar_unidades') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endset %}

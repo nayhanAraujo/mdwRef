@@ -10,12 +10,8 @@
   </div>
 </div>
 <div class="container">
-
-  
   <div class="card shadow-sm mb-4">
     <div class="card-body">
-    <!--  <h3 class="mb-4">Cadastro de Variável</h3>-->
-
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
@@ -31,7 +27,7 @@
         <h5 class="text-primary">Informações da Variável</h5>
         <div class="form-check form-switch mb-3">
           <input class="form-check-input" type="checkbox" id="possuivariavel" name="possui_formula">
-          <label class="form-check-label" for="possuivariavel">Inserir variaveis</label>
+          <label class="form-check-label" for="possuivariavel">Inserir variáveis</label>
         </div>
         <div id="areaVariavel" style="display: none;">
           <div class="row mb-3">
@@ -59,13 +55,13 @@
               <input type="text" name="sigla" class="form-control" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Abreviação</label>
+              <label class="form-label">Abreviatura</label>
               <input type="text" name="abreviacao" class="form-control" required>
             </div>
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Descricao</label>
+            <label class="form-label">Descrição</label>
             <textarea name="descricao" class="form-control"></textarea>
           </div>
 
@@ -110,6 +106,39 @@
             <label class="form-label">Fórmula</label>
             <textarea name="formula" class="form-control"></textarea>
           </div>
+
+          <!-- Nova seção para equações em diferentes linguagens -->
+          <h5 class="text-primary">Equações em Diferentes Linguagens</h5>
+          <div id="equacoes-wrapper">
+            <div class="equacao-item mb-3 border p-3 rounded">
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Linguagem</label>
+                  <select name="equacoes_linguagem[]" class="form-select" required>
+                    <option value="">-- Selecione --</option>
+                    {% for cod, nome in linguagens %}
+                      <option value="{{ cod }}">{{ nome }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Referência (Autor, Ano)</label>
+                  <select name="equacoes_referencia[]" class="form-select">
+                    <option value="">-- Nenhuma --</option>
+                    {% for cod, autor, ano in referencias %}
+                      <option value="{{ cod }}">{{ autor }} - {{ ano }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Equação</label>
+                  <textarea name="equacoes_texto[]" class="form-control" required></textarea>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline-danger btn-sm remove-equacao">Remover</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="addEquacao()">Adicionar outra equação</button>
         </div>
 
         <hr>
@@ -161,10 +190,9 @@
             <i class="bi bi-save"></i> Salvar
           </button>
         </div>
-        <a href="{{ url_for('biblioteca') }}" class="btn btn-outline-secondary">
+        <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-outline-secondary">
           <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
         </a>
-        
       </form>
     </div>
   </div>
@@ -177,10 +205,24 @@
   document.getElementById('possuiNormalidade').addEventListener('change', function() {
     document.getElementById('areaNormalidade').style.display = this.checked ? 'block' : 'none';
   });
-
   document.getElementById('possuivariavel').addEventListener('change', function() {
     document.getElementById('areaVariavel').style.display = this.checked ? 'block' : 'none';
   });
+
+  function inserirVariavel() {
+    const select = document.getElementById('variavelSelect');
+    const formulaTextarea = document.querySelector('[name="formula"]');
+    const selectedValue = select.value;
+    if (selectedValue) {
+      const cursorPos = formulaTextarea.selectionStart;
+      const textBefore = formulaTextarea.value.substring(0, cursorPos);
+      const textAfter = formulaTextarea.value.substring(formulaTextarea.selectionEnd);
+      formulaTextarea.value = textBefore + selectedValue + textAfter;
+      formulaTextarea.focus();
+      formulaTextarea.selectionStart = cursorPos + selectedValue.length;
+      formulaTextarea.selectionEnd = cursorPos + selectedValue.length;
+    }
+  }
 
   function confirmarSalvarVariavel() {
     const sigla = document.querySelector('[name="sigla"]').value.trim().toUpperCase();
@@ -205,10 +247,7 @@
       }
     });
   }
-</script>
 
-
-<script>
   function addAlternativa() {
     const container = document.getElementById('alternativas-wrapper');
     const input = document.createElement('input');
@@ -218,6 +257,52 @@
     input.placeholder = "Ex: VR_AO1";
     container.appendChild(input);
   }
-  </script>
-  
+
+  function addEquacao() {
+    const container = document.getElementById('equacoes-wrapper');
+    const div = document.createElement('div');
+    div.className = 'equacao-item mb-3 border p-3 rounded';
+    div.innerHTML = `
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Linguagem</label>
+          <select name="equacoes_linguagem[]" class="form-select" required>
+            <option value="">-- Selecione --</option>
+            {% for cod, nome in linguagens %}
+              <option value="{{ cod }}">{{ nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Referência (Autor, Ano)</label>
+          <select name="equacoes_referencia[]" class="form-select">
+            <option value="">-- Nenhuma --</option>
+            {% for cod, autor, ano in referencias %}
+              <option value="{{ cod }}">{{ autor }} - {{ ano }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Equação</label>
+          <textarea name="equacoes_texto[]" class="form-control" required></textarea>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline-danger btn-sm remove-equacao">Remover</button>
+    `;
+    container.appendChild(div);
+    attachRemoveEvent();
+  }
+
+  function attachRemoveEvent() {
+    document.querySelectorAll('.remove-equacao').forEach(button => {
+      button.addEventListener('click', function() {
+        this.parentElement.remove();
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    attachRemoveEvent();
+  });
+</script>
 {% endset %}

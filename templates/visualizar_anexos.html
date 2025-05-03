@@ -1,0 +1,116 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-paperclip me-2"></i> Anexos da Referência
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Referência: {{ referencia[1] }} ({{ referencia[2] }})</h5>
+    <a href="{{ url_for('referencias.editar_referencia', codreferencia=referencia[0]) }}" class="btn btn-outline-primary mb-3">
+      <i class="bi bi-pencil-square"></i> Editar Referência
+    </a>
+    <table class="table table-hover table-bordered align-middle">
+      <thead class="table-primary text-center">
+        <tr>
+          <th>#</th>
+          <th>Descrição</th>
+          <th>Nome</th>
+          <th>Link</th>
+          <th>Arquivo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for codanexo, descricao, nome, link, caminho in anexos %}
+        <tr class="text-center">
+          <td>{{ codanexo }}</td>
+          <td class="text-start">{{ descricao }}</td>
+          <td class="text-start">{{ nome }}</td>
+          <td class="text-start">
+            {% if link %}
+              <a href="{{ link }}" target="_blank">{{ link }}</a>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="text-start">
+            {% if caminho %}
+              <a href="{{ url_for('uploaded_file', filename=caminho | basename) }}" target="_blank">Baixar</a>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('referencias.editar_anexo', codanexo=codanexo) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil-square"></i> Editar
+            </a>
+            <form action="{{ url_for('referencias.excluir_anexo', codanexo=codanexo) }}" method="post" class="d-inline excluir-anexo-form">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i> Excluir
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h5 class="mt-4">Adicionar Novo Anexo</h5>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label">Descrição</label>
+        <input type="text" name="descricao" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Nome</label>
+        <input type="text" name="nome" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Link</label>
+        <input type="url" name="link" class="form-control" placeholder="https://exemplo.com">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Arquivo (PDF ou outro formato)</label>
+        <input type="file" name="arquivo" class="form-control">
+      </div>
+      <div class="text-end">
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Adicionar Anexo
+        </button>
+        <a href="{{ url_for('referencias.visualizar_referencias') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.excluir-anexo-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      Swal.fire({
+        title: 'Confirmar Exclusão',
+        text: 'Deseja excluir este anexo?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Excluir',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+</script>
+{% endset %}

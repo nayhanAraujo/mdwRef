@@ -1,0 +1,110 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<!-- Incluir o Tailwind CSS via CDN -->
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<div class="flex justify-between items-center mb-4">
+  <h3 class="text-2xl font-bold text-blue-600">
+    <svg class="inline-block w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    Confirmar Importação de Variáveis
+  </h3>
+  <div class="text-gray-500 text-sm">
+    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+  </div>
+</div>
+
+<div class="shadow-md rounded-lg">
+  <div class="p-6">
+    <form method="POST">
+      <div class="flex justify-between mb-4">
+        <p class="text-lg">Selecione as variáveis que deseja importar:</p>
+        <div>
+          <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded mr-2 hover:bg-blue-600" id="marcarTodas">
+            <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Marcar Todas
+          </button>
+          <button type="button" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600" id="desmarcarTodas">
+            <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            Desmarcar Todas
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-300">
+          <thead class="bg-blue-100">
+            <tr>
+              <th class="py-2 px-4 border-b text-center">Selecionar</th>
+              <th class="py-2 px-4 border-b text-center">Variável</th>
+              <th class="py-2 px-4 border-b text-center">Nome</th>
+              <th class="py-2 px-4 border-b text-center">Sigla</th>
+              <th class="py-2 px-4 border-b text-center">Unidade</th>
+              <th class="py-2 px-4 border-b text-center">Fórmula</th>
+              <th class="py-2 px-4 border-b text-center">Normalidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for variavel in dados.variaveis %}
+              <!-- Log para depuração -->
+              <script>
+                console.log("Variável: {{ variavel.codigo }}, Existe no banco: {{ variavel.existe_no_banco | tojson }}");
+              </script>
+              <tr {% if variavel.existe_no_banco == True %}class="bg-red-200"{% endif %}>
+                <td class="py-2 px-4 border-b text-center">
+                  <input type="checkbox" name="variaveis[]" value="{{ variavel.codigo }}" class="variavel-checkbox">
+                </td>
+                <td class="py-2 px-4 border-b">{{ variavel.codigo }}</td>
+                <td class="py-2 px-4 border-b">{{ variavel.nome }}</td>
+                <td class="py-2 px-4 border-b">{{ variavel.sigla }}</td>
+                <td class="py-2 px-4 border-b">{{ variavel.unidade }}</td>
+                <td class="py-2 px-4 border-b">
+                  {% set formula = dados.formulas | selectattr('variavel', 'equalto', variavel.codigo) | first %}
+                  {% if formula %}
+                    {{ formula.expressao }} (Casas: {{ formula.casas_decimais }})
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td class="py-2 px-4 border-b">
+                  {% set normalidade = dados.normalidades | selectattr('variavel', 'equalto', variavel.codigo) | first %}
+                  {% if normalidade %}
+                    Sexo: {{ normalidade.sexo }}, Min: {{ normalidade.valor_min }}, Max: {{ normalidade.valor_max }}, Idade Min: {{ normalidade.idade_min }}, Idade Max: {{ normalidade.idade_max }}, Ref: {{ normalidade.referencia }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded mr-2 hover:bg-green-600">
+          <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+          Confirmar Importação
+        </button>
+        <a href="{{ url_for('variaveis.importar_variaveis') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Voltar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Botão para marcar todas as checkboxes
+  document.getElementById('marcarTodas').addEventListener('click', function() {
+    document.querySelectorAll('.variavel-checkbox').forEach(checkbox => {
+      checkbox.checked = true;
+    });
+  });
+
+  // Botão para desmarcar todas as checkboxes
+  document.getElementById('desmarcarTodas').addEventListener('click', function() {
+    document.querySelectorAll('.variavel-checkbox').forEach(checkbox => {
+      checkbox.checked = false;
+    });
+  });
+</script>
+{% endset %}

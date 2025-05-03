@@ -52,25 +52,25 @@
         <div class="accordion-body">
           <div class="row g-3">
             <div class="col-md-3">
-              <a href="{{ url_for('nova_variavel') }}" class="tile text-decoration-none">
+              <a href="{{ url_for('variaveis.nova_variavel') }}" class="tile text-decoration-none">
                 <i class="bi bi-plus-circle"></i>
                 Nova Variável
               </a>
             </div>
             <div class="col-md-3">
-              <a href="{{ url_for('visualizar_variaveis') }}" class="tile text-decoration-none">
+              <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="tile text-decoration-none">
                 <i class="bi bi-card-list"></i>
                 Variáveis Cadastradas
               </a>
             </div>
             <div class="col-md-3">
-              <a href="{{ url_for('nova_formula') }}" class="tile text-decoration-none">
+              <a href="{{ url_for('formulas.nova_formula') }}" class="tile text-decoration-none">
                 <i class="bi bi-plus-square"></i>
                 Nova Fórmula
               </a>
             </div>
             <div class="col-md-3">
-              <a href="{{ url_for('visualizar_formulas') }}" class="tile text-decoration-none">
+              <a href="{{ url_for('formulas.visualizar_formulas') }}" class="tile text-decoration-none">
                 <i class="bi bi-kanban"></i>
                 Fórmulas Cadastradas
               </a>
@@ -90,15 +90,33 @@
         <div class="accordion-body">
           <div class="row g-3">
             <div class="col-md-3">
-              <a href="{{ url_for('nova_referencia') }}" class="tile text-decoration-none">
+              <a href="{{ url_for('referencias.nova_referencia') }}" class="tile text-decoration-none">
                 <i class="bi bi-journal-plus"></i>
                 Nova Referência
               </a>
             </div>
             <div class="col-md-3">
-              <a href="{{ url_for('uploaddll') }}" class="tile text-decoration-none">
+              <a href="{{ url_for('referencias.visualizar_referencias') }}" class="tile text-decoration-none">
+                <i class="bi bi-journal-text"></i>
+                Referências Cadastradas
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('referencias.visualizar_referencias') }}" class="tile text-decoration-none">
+                <i class="bi bi-paperclip"></i>
+                Anexos
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('uploads.uploaddll') }}" class="tile text-decoration-none">
                 <i class="bi bi-file-earmark-arrow-up"></i>
                 Importar Variáveis (.json)
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('variaveis.importar_variaveis') }}" class="tile text-decoration-none">
+                <i class="bi bi-file-earmark-code"></i>
+                Importar Variáveis (.cs)
               </a>
             </div>
           </div>
@@ -116,9 +134,27 @@
         <div class="accordion-body">
           <div class="row g-3">
             <div class="col-md-3">
-              <a href="{{ url_for('usuarios') }}" class="tile text-decoration-none">
+              <a href="{{ url_for('users.usuarios') }}" class="tile text-decoration-none">
                 <i class="bi bi-people"></i>
                 Usuários
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('unidades.visualizar_unidades') }}" class="tile text-decoration-none">
+                <i class="bi bi-rulers"></i>
+                Unidades de Medida
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('especialidades.visualizar_especialidades') }}" class="tile text-decoration-none">
+                <i class="bi bi-briefcase"></i>
+                Especialidades
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('linguagens.visualizar_linguagens') }}" class="tile text-decoration-none">
+                <i class="bi bi-code-slash"></i>
+                Linguagens
               </a>
             </div>
           </div>

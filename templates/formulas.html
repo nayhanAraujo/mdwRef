@@ -27,13 +27,13 @@
       <td>{{ nome }}</td>
       <td>{{ formula }}</td>
       <td>
-        <a href="{{ url_for('editar_formula', codformula=cod) }}" class="btn btn-sm btn-warning">Editar</a>
-        <a href="{{ url_for('excluir_formula', codformula=cod) }}" class="btn btn-sm btn-danger"
+        <a href="{{ url_for('formulas.editar_formula', codformula=cod) }}" class="btn btn-sm btn-warning">Editar</a>
+        <a href="{{ url_for('formulas.excluir_formula', codformula=cod) }}" class="btn btn-sm btn-danger"
            onclick="return confirm('Deseja realmente excluir esta fórmula?');">Excluir</a>
       </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
-<a href="{{ url_for('nova_formula') }}" class="btn btn-success">+ Nova Fórmula</a>
+<a href="{{ url_for('formulas.nova_formula') }}" class="btn btn-success">+ Nova Fórmula</a>
 {% endset %}

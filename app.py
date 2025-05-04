@@ -41,6 +41,8 @@ def create_app():
     os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+    # Nova abordagem para inicialização (substituindo before_first_request)
+    got_first_request = False
     # Inicialização da conexão com o banco de dados
     @app.before_request
     def initialize_on_first_request():

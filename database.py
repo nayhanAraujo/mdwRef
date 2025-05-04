@@ -13,7 +13,7 @@ def conectar():
 
     try:
         conn = fbd.connect(
-            dsn=f"{host}/{port}:{database_path}",
+            r"{host}/{port}:{database_path}",
             user=user,
             password=password
         )

@@ -42,17 +42,21 @@ def create_app():
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     # Inicialização da conexão com o banco de dados
-    @app.before_first_request
-    def initialize_database():
-        try:
-            app.logger.info("Inicializando conexão com o banco de dados...")
-            app.config['db_conn'] = conectar()
-            app.config['db_cursor'] = app.config['db_conn'].cursor()
-            app.logger.info("Conexão com o banco estabelecida com sucesso!")
-        except Exception as e:
-            app.logger.error(f"Erro ao conectar ao banco: {e}")
-            app.config['db_conn'] = None
-            app.config['db_cursor'] = None
+    @app.before_request
+    def initialize_on_first_request():
+        nonlocal got_first_request
+        if not got_first_request:
+            try:
+                app.logger.info("Inicializando conexão com o banco de dados...")
+                app.config['db_conn'] = conectar()
+                app.config['db_cursor'] = app.config['db_conn'].cursor()
+                app.logger.info("Conexão com o banco estabelecida com sucesso!")
+            except Exception as e:
+                app.logger.error(f"Erro ao conectar ao banco: {e}")
+                app.config['db_conn'] = None
+                app.config['db_cursor'] = None
+            finally:
+                got_first_request = True
 
     # Filtro para extrair o nome do arquivo do caminho
     @app.template_filter('basename')

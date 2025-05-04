@@ -47,4 +47,4 @@ RUN mkdir -p /app/sessions /app/uploads /app/data
 # Define a porta e comando de execução
 EXPOSE 8080
 # Inicia o Firebird e o Gunicorn
-CMD ["/bin/bash", "-c", "/opt/firebird/bin/fbguard -daemon && gunicorn --bind 0.0.0.0:8080 --timeout 120 app:app"]
+CMD ["/bin/bash", "-c", "echo 'Iniciando Firebird...' >> /opt/firebird/firebird.log && /opt/firebird/bin/fbguard -daemon || echo 'Falha ao iniciar fbguard' >> /opt/firebird/firebird.log && sleep 10 && /opt/firebird/bin/isql -u SYSDBA -p masterkey 127.0.0.1/3052:/app/data/REFERENCIAS.FDB -z >> /opt/firebird/firebird.log 2>&1 || echo 'Erro ao conectar ao Firebird via isql' >> /opt/firebird/firebird.log && netstat -tuln | grep 3052 >> /opt/firebird/firebird.log 2>&1 || echo 'Firebird não está ouvindo na porta 3052' >> /opt/firebird/firebird.log && gunicorn --bind 0.0.0.0:8080 --timeout 120 app:app"]

@@ -59,7 +59,7 @@ def create_app():
     # Configuração do banco de dados por ambiente
     if is_local:
         app.config['DB_CONFIG'] = {
-            'host': os.environ.get('LOCAL_DB_HOST', 'localhost'),
+            'host': os.environ.get('LOCAL_DB_HOST', '127.0.0.1'),
             'port': os.environ.get('LOCAL_DB_PORT', '3052'),
             'database': os.environ.get('LOCAL_DB_PATH', 'C:\\Users\\nayhan\\Documents\\PROJETOS AZURE\\6- AZURE - REFERENCIAS\\REFERENCIAS\\BD\\REFERENCIAS.FDB'),
             'user': os.environ.get('LOCAL_DB_USER', 'SYSDBA'),
@@ -67,7 +67,7 @@ def create_app():
         }
     else:
         app.config['DB_CONFIG'] = {
-            'host': os.environ.get('FIREBIRD_HOST', 'localhost'),
+            'host': os.environ.get('FIREBIRD_HOST', '127.0.0.1'),
             'port': os.environ.get('FIREBIRD_PORT', '3052'),
             'database': os.environ.get('FIREBIRD_DB', '/app/data/REFERENCIAS.FDB'),
             'user': os.environ.get('FIREBIRD_USER', 'SYSDBA'),

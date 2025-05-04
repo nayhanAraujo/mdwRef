@@ -16,13 +16,13 @@ def conectar():
         # Obtém configurações
         if current_app and 'DB_CONFIG' in current_app.config:
             db_config = current_app.config['DB_CONFIG']
-            host = db_config.get('host', 'localhost')
+            host = db_config.get('host', '127.0.0.1')
             port = db_config.get('port', '3052')
             database_path = db_config['database']
             user = db_config.get('user', 'SYSDBA')
             password = db_config.get('password', 'masterkey')
         else:
-            host = os.environ.get('FIREBIRD_HOST', 'localhost')
+            host = os.environ.get('FIREBIRD_HOST', '127.0.0.1')
             port = os.environ.get('FIREBIRD_PORT', '3052')
             
             if os.environ.get('FLY_APP_NAME'):
@@ -44,7 +44,7 @@ def conectar():
             database=connection_string,
             user=user,
             password=password,
-            charset='UTF8'
+            charset='ISO8859_1'
         )
         
         logger.info("Conexão estabelecida com sucesso!")

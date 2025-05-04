@@ -5,12 +5,18 @@ import os
 import uuid
 import subprocess
 import json
-
+import uuid
 variaveis_bp = Blueprint('variaveis', __name__)
 
 def get_db():
-    from app import conn, cur
+    #from app import conn, cur
+    #return conn, cur
+    conn = current_app.config.get('db_conn')
+    cur = current_app.config.get('db_cursor')
+    if conn is None or cur is None:
+        raise Exception("Conexão com o banco de dados não foi inicializada.")
     return conn, cur
+    
 
 def parse_cs_file(file_content):
     """
@@ -26,7 +32,7 @@ def parse_cs_file(file_content):
         # Chamar o script C# para parsear o arquivo
         # Substitua pelo caminho correto do executável gerado
         result = subprocess.run(
-        ['C:/Users/nayhan/Documents/PROJETOS/C#/ParseCSFile/ParseCSFile/bin/Debug/ParseCSFile.exe', temp_file],
+        ['/app/ParseCSFile.exe', temp_file],
         capture_output=True,  # Captura a saída padrão e de erro
         text=True,            # Decodifica a saída como texto usando a codificação padrão
         check=True            # Levanta CalledProcessError se o processo retornar um código de saída diferente de zero

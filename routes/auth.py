@@ -14,7 +14,6 @@ def get_db():
         raise Exception("Conexão com o banco de dados não foi inicializada.")
     return conn, cur
 
-
 # from app import conn, cur  #local
  #   return conn, cur
 

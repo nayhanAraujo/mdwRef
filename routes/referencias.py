@@ -6,7 +6,12 @@ import uuid
 referencias_bp = Blueprint('referencias', __name__)
 
 def get_db():
-    from app import conn, cur
+    #from app import conn, cur
+    #return conn, cur
+    conn = current_app.config.get('db_conn')
+    cur = current_app.config.get('db_cursor')
+    if conn is None or cur is None:
+        raise Exception("Conexão com o banco de dados não foi inicializada.")
     return conn, cur
 
 @referencias_bp.route('/nova_referencia', methods=['GET', 'POST'])

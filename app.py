@@ -11,54 +11,90 @@ from routes.bibliotecas import biblioteca_pb
 from routes.unidades import unidades_bp
 from routes.especialidades import especialidades_bp
 from routes.linguagens import linguagens_bp
+from dotenv import load_dotenv  # Adicione este import
+
 import os
 import logging
+
+# Carrega variáveis do .env localmente
+if os.path.exists('.env'):
+    load_dotenv('.env')
+    
+# Configurações adaptáveis para local/dev
+IS_LOCAL = os.environ.get('FLASK_ENV') == 'development'
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get('SECRET_KEY', 'sua_chave_secreta_segura')
 
+        # Conecta ao banco
+    conn = conectar()
+    cur = conn.cursor()
+
+    # Salva no contexto do app
+    app.config['db_conn'] = conn
+    app.config['db_cursor'] = cur
     # Configurar logging
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
 
+    # Verifica se está rodando localmente (desenvolvimento)
+    is_local = os.environ.get('FLASK_ENV') == 'development' or os.getenv('FLASK_DEBUG') == '1'
     # Configurações de sessão
     app.config['SESSION_TYPE'] = 'filesystem'
     app.config['SESSION_PERMANENT'] = False
     app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_FILE_DIR'] = '/app/sessions'
+    app.config['SESSION_FILE_DIR'] = os.path.join(app.instance_path, 'sessions') if is_local else '/app/sessions'
     app.config['SESSION_FILE_THRESHOLD'] = 500
 
-    # Configuração do diretório de upload
-    app.config['UPLOAD_FOLDER'] = '/app/uploads'
+    # Configuração do diretório de upload dinâmico
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads') if is_local else '/app/uploads'
 
     # Inicializar extensões
     Session(app)
 
     # Criar diretórios necessários
-    os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    try:
+        os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    except OSError as e:
+        app.logger.error(f"Erro ao criar diretórios: {e}")
 
+
+        # Configuração do banco de dados por ambiente
+    if IS_LOCAL:
+        app.config['DB_CONFIG'] = {
+            'host': os.environ.get('LOCAL_DB_HOST', 'localhost'),
+            'port': os.environ.get('LOCAL_DB_PORT', '3052'),
+            'database': os.environ.get('LOCAL_DB_PATH', 'C:\\Users\\nayhan\\Documents\\PROJETOS AZURE\\6- AZURE - REFERENCIAS\\REFERENCIAS\\BD\\REFERENCIAS.FDB'),
+            'user': os.environ.get('LOCAL_DB_USER', 'SYSDBA'),
+            'password': os.environ.get('LOCAL_DB_PASSWORD', 'masterkey')
+        }
+    else:
+        app.config['DB_CONFIG'] = {
+            'host': os.environ.get('FIREBIRD_HOST', 'localhost'),
+            'port': os.environ.get('FIREBIRD_PORT', '3052'),
+            'database': os.environ.get('FIREBIRD_DB', '/app/data/REFERENCIAS.FDB'),
+            'user': os.environ.get('FIREBIRD_USER', 'SYSDBA'),
+            'password': os.environ.get('FIREBIRD_PASSWORD', 'masterkey')
+    }
     # Nova abordagem para inicialização (substituindo before_first_request)
     got_first_request = False
     # Inicialização da conexão com o banco de dados
     @app.before_request
-    def initialize_on_first_request():
-        nonlocal got_first_request
-        if not got_first_request:
-            try:
-                app.logger.info("Inicializando conexão com o banco de dados...")
-                app.config['db_conn'] = conectar()
-                app.config['db_cursor'] = app.config['db_conn'].cursor()
-                app.logger.info("Conexão com o banco estabelecida com sucesso!")
-            except Exception as e:
-                app.logger.error(f"Erro ao conectar ao banco: {e}")
-                app.config['db_conn'] = None
-                app.config['db_cursor'] = None
-            finally:
-                got_first_request = True
+    def before_request():
+        conn = conectar()
+        cur = conn.cursor()
+        current_app.config['db_conn'] = conn
+        current_app.config['db_cursor'] = cur
+
+    @app.teardown_request
+    def teardown_request(exception):
+        conn = current_app.config.get('db_conn')
+        if conn:
+            conn.close()
 
     # Filtro para extrair o nome do arquivo do caminho
     @app.template_filter('basename')
@@ -119,4 +155,9 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    # Configuração específica para desenvolvimento local
+    os.environ['FLASK_ENV'] = 'development'
+    load_dotenv()  # Garante o carregamento das variáveis
+    
+    app = create_app()
+    app.run(host='0.0.0.0', port=5000, debug=True)

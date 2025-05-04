@@ -12,13 +12,13 @@ def conectar():
     password = os.environ.get('FIREBIRD_PASSWORD', 'masterkey')
 
     try:
-        config = fbd.DriverConfig()
-        config.host = host
-        config.port = int(port)
-        config.database = database_path
-        config.user = user
-        config.password = password
-        conn = fbd.connect(config)
+        conn = fbd.connect(
+            database=database_path,
+            host=host,
+            port=int(port),
+            user=user,
+            password=password
+        )
         logger.info("Conexão com o Firebird estabelecida!")
         return conn
     except Exception as e:

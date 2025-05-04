@@ -27,13 +27,6 @@ def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get('SECRET_KEY', 'sua_chave_secreta_segura')
 
-        # Conecta ao banco
-    conn = conectar()
-    cur = conn.cursor()
-
-    # Salva no contexto do app
-    app.config['db_conn'] = conn
-    app.config['db_cursor'] = cur
     # Configurar logging
     logging.basicConfig(
         level=logging.DEBUG,
@@ -42,6 +35,7 @@ def create_app():
 
     # Verifica se está rodando localmente (desenvolvimento)
     is_local = os.environ.get('FLASK_ENV') == 'development' or os.getenv('FLASK_DEBUG') == '1'
+    
     # Configurações de sessão
     app.config['SESSION_TYPE'] = 'filesystem'
     app.config['SESSION_PERMANENT'] = False
@@ -50,7 +44,7 @@ def create_app():
     app.config['SESSION_FILE_THRESHOLD'] = 500
 
     # Configuração do diretório de upload dinâmico
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads') if is_local else '/app/uploads'
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'Uploads') if is_local else '/app/uploads'
 
     # Inicializar extensões
     Session(app)
@@ -62,9 +56,8 @@ def create_app():
     except OSError as e:
         app.logger.error(f"Erro ao criar diretórios: {e}")
 
-
-        # Configuração do banco de dados por ambiente
-    if IS_LOCAL:
+    # Configuração do banco de dados por ambiente
+    if is_local:
         app.config['DB_CONFIG'] = {
             'host': os.environ.get('LOCAL_DB_HOST', 'localhost'),
             'port': os.environ.get('LOCAL_DB_PORT', '3052'),
@@ -79,9 +72,8 @@ def create_app():
             'database': os.environ.get('FIREBIRD_DB', '/app/data/REFERENCIAS.FDB'),
             'user': os.environ.get('FIREBIRD_USER', 'SYSDBA'),
             'password': os.environ.get('FIREBIRD_PASSWORD', 'masterkey')
-    }
-    # Nova abordagem para inicialização (substituindo before_first_request)
-    got_first_request = False
+        }
+
     # Inicialização da conexão com o banco de dados
     @app.before_request
     def before_request():

@@ -17,11 +17,12 @@ RUN mkdir -p /app/data
 COPY ./BD/REFERENCIAS.FDB /app/data/
 RUN chmod 644 /app/data/REFERENCIAS.FDB
 
+COPY ./ParseCSFile/ParseCSFile/bin/Debug/ParseCSFile.exe /app/ParseCSFile.exe
 # Instala dependências Python (otimizado)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./ParseCSFile/ParseCSFile/bin/Debug/ParseCSFile.exe /app/ParseCSFile.exe
+
 # Copia o resto do projeto
 COPY . .
 

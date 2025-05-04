@@ -1,0 +1,33 @@
+# Arquivos do banco de dados (sintaxe universal)
+**/BANCO_REFERENCIA/BD/REFERENCIAS.FDB
+*.fdb
+
+# Ambiente virtual Python
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+
+# Arquivos de ambiente
+**/.env
+**/.env.local
+
+# Arquivos de IDE
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+
+# Arquivos de sistema
+**/.DS_Store
+**/Thumbs.db
+
+# Arquivos de upload e logs
+**/uploads/
+**/*.log
+
+# Arquivos do Fly.io e outros
+fly.toml
+.dockerignore
+.git
+.gitignore

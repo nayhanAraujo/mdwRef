@@ -1,6 +1,6 @@
 # Arquivos do banco de dados
-BANCO REFERENCIA/BD/REFERENCIAS.FDB
-
+BANCO_REFERENCIA/BD/REFERENCIAS.FDB
+ParseCSFile/
 # Ambiente virtual Python
 venv/
 __pycache__/

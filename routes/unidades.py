@@ -1,10 +1,15 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash,current_app
 from datetime import datetime
 
 unidades_bp = Blueprint('unidades', __name__)
 
 def get_db():
-    from app import conn, cur
+    #from app import conn, cur
+    #return conn, cur
+    conn = current_app.config.get('db_conn')
+    cur = current_app.config.get('db_cursor')
+    if conn is None or cur is None:
+        raise Exception("Conexão com o banco de dados não foi inicializada.")
     return conn, cur
 
 @unidades_bp.route('/visualizar_unidades')

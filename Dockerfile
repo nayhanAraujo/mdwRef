@@ -13,7 +13,7 @@ RUN wget -O - https://github.com/FirebirdSQL/firebird/releases/download/v5.0.2/F
     && cd Firebird-5.0.0.1306-0-linux-amd64 \
     && ./install.sh -silent \
     && cd .. \
-    && rm -rf Firebird-5.0.0.1306-0-linux-amd64
+    && rm -rf Firebird-5.0.2.1613-0-linux-x64
 
 # Configura o Firebird
 RUN sed -i 's/RemoteBindAddress = .*/RemoteBindAddress = 0.0.0.0/' /opt/firebird/firebird.conf \

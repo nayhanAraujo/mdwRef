@@ -4,16 +4,22 @@ FROM python:3.12-slim
 # Instala dependências do sistema (necessário para Firebird e Mono)
 RUN apt-get update && apt-get install -y \
     wget \
-    gnupg \
+    tar \
+    libtommath-dev \
+    libicu-dev \
+    libboost-atomic1.74.0 \
+    libboost-system1.74.0 \
+    libboost-filesystem1.74.0 \
+    libboost-regex1.74.0 \
     mono-complete \
     && rm -rf /var/lib/apt/lists/*
 
 # Adiciona o repositório do Firebird 5.0 e instala o servidor
-RUN wget -O - https://github.com/FirebirdSQL/firebird/releases/download/v5.0.2/Firebird-5.0.2.1613-0-linux-arm64.tar.gz | tar -xz \
-    && cd Firebird-5.0.2.1613-0-linux-arm64 \
+RUN wget -O - https://github.com/FirebirdSQL/firebird/releases/download/v5.0.2/Firebird-5.0.2.1613-0-linux-x64.tar.gz | tar -xz \
+    && cd Firebird-5.0.2.1613-0-linux-x64 \
     && ./install.sh -silent \
     && cd .. \
-    && rm -rf Firebird-5.0.2.1613-0-linux-arm64
+    && rm -rf Firebird-5.0.2.1613-0-linux-x64
 
 # Configura o Firebird
 RUN sed -i 's/RemoteBindAddress = .*/RemoteBindAddress = 0.0.0.0/' /opt/firebird/firebird.conf \

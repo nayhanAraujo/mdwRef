@@ -1,12 +1,12 @@
 # Usa uma imagem base Python
 FROM python:3.12-slim
 
-# Instala dependências do sistema (necessário para o Firebird)
+# Instala dependências do sistema (necessário para Firebird e Mono)
 RUN apt-get update && apt-get install -y \
     wget \
-    libfbclient2  \
+    libfbclient2 \
+    mono-complete \
     && rm -rf /var/lib/apt/lists/*
-
 
 
 # Configura o diretório da aplicação

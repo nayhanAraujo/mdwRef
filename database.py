@@ -13,9 +13,8 @@ def conectar():
 
     try:
         conn = fbd.connect(
+            server=f"{host}:{port}",
             database=database_path,
-            host=host,
-            port=int(port),
             user=user,
             password=password
         )
@@ -24,12 +23,3 @@ def conectar():
     except Exception as e:
         logger.error(f"Erro ao conectar ao Firebird: {e}")
         raise
-
-
-
-    #def conectar():
-#    return fbd.connect(
-#        r"nayhan/3052:C:\Users\nayhan\Documents\PROJETOS AZURE\6- AZURE - REFERENCIAS\REFERENCIAS\BANCO REFERENCIA\BD\REFERENCIAS.FDB",
-#        user="SYSDBA",
-#        password="masterkey"
-#    )

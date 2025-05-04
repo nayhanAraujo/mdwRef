@@ -1,7 +1,7 @@
 # Arquivos do banco de dados (sintaxe universal)
 **/BANCO_REFERENCIA/BD/REFERENCIAS.FDB
 *.fdb
-**/ParseCSFile/
+
 # Ambiente virtual Python
 **/venv/
 **/__pycache__/

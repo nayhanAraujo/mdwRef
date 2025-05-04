@@ -9,11 +9,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Adiciona o repositório do Firebird 5.0 e instala o servidor
-RUN wget -O - https://github.com/FirebirdSQL/firebird/releases/download/v5.0.2/Firebird-5.0.2.1613-0-linux-x64.tar.gz | tar -xz \
+RUN wget -O - https://github.com/FirebirdSQL/firebird/releases/download/v5.0.2/Firebird-5.0.0.1306-0-linux-amd64.tar.gz | tar -xz \
     && cd Firebird-5.0.0.1306-0-linux-amd64 \
     && ./install.sh -silent \
     && cd .. \
-    && rm -rf Firebird-5.0.2.1613-0-linux-x64
+    && rm -rf Firebird-5.0.2.1613-0-linux-amd64
 
 # Configura o Firebird
 RUN sed -i 's/RemoteBindAddress = .*/RemoteBindAddress = 0.0.0.0/' /opt/firebird/firebird.conf \

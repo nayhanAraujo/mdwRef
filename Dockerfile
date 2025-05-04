@@ -14,19 +14,17 @@ WORKDIR /app
 
 # Cria diretório para o Firebird e copia o banco de dados
 RUN mkdir -p /app/data
-COPY ./BANCO_REFERENCIA/BD/REFERENCIAS.FDB /app/data/REFERENCIAS.FDB
+COPY ./BD/REFERENCIAS.FDB /app/data/
 RUN chmod 644 /app/data/REFERENCIAS.FDB
 
 # Instala dependências Python (otimizado)
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copia o resto do projeto
 COPY . .
 
-# Instala dependências Python
-RUN pip install -r requirements.txt
-
+RUN mkdir -p /app/sessions /app/uploads /app/data
 # Define a porta e comando de execução
 EXPOSE 8080
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "120", "app:app"]

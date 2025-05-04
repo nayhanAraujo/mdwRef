@@ -19,20 +19,15 @@ app.secret_key = 'sua_chave_secreta_segura'
 
 # Configurar logging
 logging.basicConfig(
-    filename='C:\\Users\\nayhan\\Documents\\PROJETOS AZURE\\6- AZURE - REFERENCIAS\\REFERENCIAS\\logs\\app_debug.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-
-
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
 
 app.config['SESSION_TYPE'] = 'filesystem'  # Armazenar sessões em arquivos no servidor
 app.config['SESSION_PERMANENT'] = False  # Sessões não permanentes (expiram ao fechar o navegador)
 app.config['SESSION_USE_SIGNER'] = True  # Assinar os cookies de sessão
 app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'sessions')  # Diretório para armazenar os arquivos de sessão
 app.config['SESSION_FILE_THRESHOLD'] = 500  # Número máximo de arquivos de sessão antes de limpar os antigos
-
-
 
 
 # Inicializar o Flask-Session
@@ -49,14 +44,6 @@ UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)  # Criar o diretório se não existir
 
-
-# Conexão com o banco Firebird (ajuste para ambiente Fly.io)
-try:
-    conn = conectar()  # Certifique-se de que 'conectar()' lida com variáveis de ambiente
-    cur = conn.cursor()
-    logging.info("Conexão com o Firebird estabelecida!")
-except Exception as e:
-    logging.error(f"Erro ao conectar ao Firebird: {e}")
 
 # Conexão com o banco
 conn = conectar()

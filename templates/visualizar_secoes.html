@@ -1,0 +1,229 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-list me-2"></i> Seções Cadastradas (Modelo: {{ nome_modelo }})
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form id="ordenarForm" method="POST" action="{{ url_for('secoes.ordenar_secoes', codmodelo=codmodelo) }}">
+        <table class="table table-hover table-bordered align-middle" id="secoesTable">
+          <thead class="table-primary text-center">
+            <tr>
+              <th>Nome da Seção</th>
+              <th>Variáveis Associadas</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="sortable">
+            {% if secoes_detalhes %}
+              {% for item in secoes_detalhes %}
+                <tr data-id="{{ item.secao[0] }}">
+                  <td>{{ item.secao[1] }}</td>
+                  <td>
+                    {% if item.variaveis %}
+                      <ul class="list-unstyled mb-0">
+                        {% for variavel in item.variaveis %}
+                          <li>{{ variavel[1] }} ({{ variavel[2] }})</li>
+                        {% endfor %}
+                      </ul>
+                    {% else %}
+                      Nenhuma variável associada.
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <a href="{{ url_for('secoes.editar_secao', codsecao=item.secao[0]) }}" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <form action="{{ url_for('secoes.excluir_secao', codsecao=item.secao[0]) }}" method="POST" class="d-inline excluir-secao-form">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i> Excluir
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="3" class="text-center">Nenhuma seção encontrada.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </form>
+
+      <!-- Paginação -->
+      <nav aria-label="Paginação">
+        <ul class="pagination justify-content-center">
+          {% if pagina > 1 %}
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo, page=pagina-1) }}">Anterior</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Anterior</span>
+            </li>
+          {% endif %}
+          <li class="page-item disabled">
+            <span class="page-link">Página {{ pagina }} de {{ total_paginas }}</span>
+          </li>
+          {% if pagina < total_paginas %}
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo, page=pagina+1) }}">Próxima</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Próxima</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+
+      <!-- Botões de Ação -->
+      <div class="d-flex justify-content-between">
+        <div>
+          <a href="{{ url_for('secoes.nova_secao', codmodelo=codmodelo) }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Nova Seção
+          </a>
+          <button onclick="salvarOrdem()" class="btn btn-primary">
+            <i class="bi bi-sort-down"></i> Salvar Ordem
+          </button>
+          <a href="{{ url_for('variaveis.gerar_modo_texto', codmodelo=codmodelo) }}" class="btn btn-primary">
+            <i class="bi bi-download"></i> Gerar Modo Texto
+          </a>
+          <button type="button" class="btn btn-outline-warning edit-modelo-btn" 
+                  data-codmodelo="{{ codmodelo }}" data-nome="{{ nome_modelo }}">
+            <i class="bi bi-pencil-square"></i> Editar Modelo
+          </button>
+        </div>
+        <a href="{{ url_for('modelos.visualizar_modelos') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Incluir jQuery e jQuery UI para drag-and-drop -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script>
+  $(document).ready(function() {
+    $("#sortable").sortable({
+      placeholder: "ui-state-highlight",
+      update: function(event, ui) {
+        // Atualizar a ordem visualmente (não necessária para o backend, apenas para UX)
+      }
+    });
+    $("#sortable").disableSelection();
+
+    // Debugging: Log variables to check for undefined
+    console.log('Template variables:', {
+      codmodelo: '{{ codmodelo }}',
+      nome_modelo: '{{ nome_modelo }}',
+      pagina: '{{ pagina }}',
+      total_paginas: '{{ total_paginas }}'
+    });
+  });
+
+  function salvarOrdem() {
+    var ordem = [];
+    $("#sortable tr").each(function() {
+      var id = $(this).data("id");
+      if (id) {
+        ordem.push(id);
+      }
+    });
+    // Adicionar campos ocultos dinamicamente ao formulário
+    var form = $("#ordenarForm");
+    form.find("input[name='ordem[]']").remove(); // Limpar campos anteriores
+    ordem.forEach(function(id) {
+      form.append('<input type="hidden" name="ordem[]" value="' + id + '">');
+    });
+    form.submit();
+  }
+
+  document.querySelectorAll('.excluir-secao-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      Swal.fire({
+        title: 'Confirmar Exclusão',
+        text: 'Tem certeza que deseja excluir esta seção?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Excluir',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+
+  document.querySelectorAll('.edit-modelo-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      console.log('Botão Editar Modelo clicado:', this.dataset); // Depuração
+      const codmodelo = this.dataset.codmodelo;
+      const nomeAtual = this.dataset.nome;
+
+      Swal.fire({
+        title: 'Editar Nome do Modelo',
+        html: `
+          <input type="text" id="nome-modelo" class="swal2-input" value="${nomeAtual}" placeholder="Digite o novo nome">
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Salvar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+          const novoNome = document.getElementById('nome-modelo').value.trim();
+          if (!novoNome) {
+            Swal.showValidationMessage('O nome do modelo é obrigatório');
+            return false;
+          }
+          return { codmodelo: codmodelo, nome: novoNome };
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch('/secoes/editar_nome_modelo', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(result.value)
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (data.success) {
+              Swal.fire('Sucesso', 'Nome do modelo atualizado com sucesso!', 'success')
+                .then(() => {
+                  window.location.reload(); // Recarregar a página para refletir o novo nome
+                });
+            } else {
+              Swal.fire('Erro', data.error || 'Falha ao atualizar o nome do modelo.', 'error');
+            }
+          })
+          .catch(error => {
+            console.error('Erro ao atualizar nome do modelo:', error);
+            Swal.fire('Erro', 'Erro ao atualizar o nome do modelo: ' + error.message, 'error');
+          });
+        }
+      });
+    });
+  });
+</script>
+{% endset %}

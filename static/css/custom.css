@@ -1,0 +1,181 @@
+/* Estilo para SweetAlert2 */
+.swal-wide {
+    width: 600px !important;
+    padding: 20px;
+  }
+  
+  .swal-wide .swal2-content {
+    text-align: left;
+  }
+  
+  .swal-wide ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  
+  .swal-wide ul li {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .swal-wide a.anexo-select {
+    color: #007bff;
+    text-decoration: none;
+    flex-grow: 1;
+  }
+  
+  .swal-wide a.anexo-select:hover {
+    text-decoration: underline;
+  }
+  
+  .swal-wide a.anexo-link {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  
+  .swal-wide a.anexo-link:hover {
+    color: #0056b3;
+  }
+  
+  .swal-wide .text-muted {
+    color: #6c757d;
+  }
+  
+  /* Estilo para visualização de anexos */
+  .anexo-preview {
+    max-width: 100%;
+    max-height: 400px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .anexo-preview img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+  
+  .anexo-preview canvas {
+    width: 100%;
+    height: auto;
+  }
+  
+  .anexo-nav {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .anexo-nav button {
+    padding: 5px 10px;
+    font-size: 14px;
+  }
+
+
+  /* Estilo para formulários e tabelas */
+.table-responsive {
+  margin-bottom: 20px;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+
+.table-primary th {
+  background-color: #007bff;
+  color: white;
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+.btn-outline-primary, .btn-outline-danger, .btn-outline-warning, .btn-outline-secondary {
+  font-size: 0.875rem;
+}
+
+
+/* Estilo para listas */
+.list-unstyled {
+  margin-bottom: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+
+
+/* Estilo para Select2 */
+.select2-container--default .select2-selection--multiple {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  min-height: 38px;
+  font-size: 0.875rem;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+  padding: 4px 8px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 2px 6px;
+  margin: 2px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+  color: white;
+  margin-right: 4px;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  border: 1px solid #ced4da;
+  padding: 4px;
+  font-size: 0.875rem;
+}
+
+.select2-container--default .select2-results__option {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+}
+
+.select2-container--default .select2-results__option--highlighted {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Estilo existente para formulários e tabelas */
+.form-select {
+  width: 100%;
+  padding: 8px;
+  font-size: 0.875rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
+
+.form-text {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.alert-success, .alert-danger {
+  margin-bottom: 1rem;
+}
+
+
+.swal-wide .text-red-500 {
+  color: #ef4444; /* Cor red-500 do Tailwind */
+}
+
+/* Estilo para botões e tabelas */
+.text-teal-500 {
+  color: #14b8a6; /* Cor teal-500 do Tailwind */
+}
+
+.text-teal-700 {
+  color: #0f766e; /* Cor teal-700 do Tailwind */
+}

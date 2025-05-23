@@ -1,0 +1,63 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-plus-circle me-2"></i> Cadastrar Novo Script
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario'] ['nome']}}</strong>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="POST">
+        <h5 class="text-primary">Informações do Script</h5>
+        <div class="mb-3">
+          <label class="form-label">Nome do Script *</label>
+          <input type="text" class="form-control" id="nome" name="nome" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Descrição</label>
+          <textarea class="form-control" id="descricao" name="descricao" rows="5"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Linguagem</label>
+          <input type="text" class="form-control" id="linguagem" name="linguagem" placeholder="Ex.: C#, Python">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Caminho do Projeto</label>
+          <input type="text" class="form-control" id="caminho_projeto" name="caminho_projeto" placeholder="Ex.: /caminho/do/projeto">
+        </div>
+        <div class="text-end">
+          <button type="button" class="btn btn-success" onclick="confirmarSalvarScript()">
+            <i class="bi bi-save"></i> Salvar
+          </button>
+          <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function confirmarSalvarScript() {
+    Swal.fire({
+      title: 'Salvar script?',
+      text: 'Deseja realmente salvar esse script?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, salvar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        document.querySelector('form').submit();
+      }
+    });
+  }
+</script>
+{% endset %}

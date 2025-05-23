@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Z-Score para Ecocardiografia Fetal - Comparação por Autor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+
+    h1, h2, h3, h4 {
+      color: #2c3e50;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .input-section {
+      flex: 1;
+      min-width: 300px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .results-section {
+      flex: 2;
+      min-width: 400px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="number"]:focus {
+      border-color: #3498db;
+      outline: none;
+      box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+    }
+
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 20px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background: #f1f1f1;
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+      margin-right: 5px;
+      transition: all 0.3s;
+    }
+
+    .tab:hover {
+      background: #e0e0e0;
+    }
+
+    .tab.active {
+      background: #3498db;
+      color: white;
+      border-bottom: 2px solid #2980b9;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 0 0 4px 4px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .result-item {
+      background: white;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      border-left: 4px solid #3498db;
+    }
+
+    .author-results {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 4px;
+    }
+
+    .author-header {
+      font-weight: bold;
+      margin-bottom: 5px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .z-score {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .normal {
+      color: #27ae60;
+    }
+
+    .borderline {
+      color: #f39c12;
+    }
+
+    .abnormal {
+      color: #e74c3c;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+      
+      .input-section, .results-section {
+        min-width: 100%;
+      }
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 14px;
+      color: #7f8c8d;
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+    }
+
+    .error {
+      color: #e74c3c;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      margin-left: 5px;
+      cursor: help;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #555;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .author-comparison {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .author-card {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px;
+      border-radius: 4px;
+      background: #f5f5f5;
+      border-left: 3px solid;
+    }
+
+    .author-card.schneider {
+      border-left-color: #3498db;
+    }
+
+    .author-card.gagnon {
+      border-left-color: #9b59b6;
+    }
+
+    .author-card.chen {
+      border-left-color: #2ecc71;
+    }
+
+    .author-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #34495e;
+    }
+
+    .author-citation {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-bottom: 8px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .comparison-table th {
+      background-color: #f2f2f2;
+    }
+
+    .comparison-table tr:hover {
+      background-color: #f5f5f5;
+    }
+
+    canvas {
+      max-width: 100%;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Calculadora de Z-Score para Ecocardiografia Fetal</h1>
+  <h3 style="text-align: center; margin-top: -15px; color: #7f8c8d;">Comparação por Autor</h3>
+  
+  <div class="container">
+    <div class="input-section">
+      <h2>Parâmetros de Referência</h2>
+      
+      <div class="tabs" id="reference-tabs">
+        <div class="tab active" data-tab="ega">Idade Gestacional</div>
+        <div class="tab" data-tab="fl">Comprimento do Fêmur</div>
+        <div class="tab" data-tab="bpd">Diâmetro Biparietal</div>
+      </div>
+      
+      <div class="tab-content active" id="ega-tab">
+        <div class="input-group">
+          <label for="ega-weeks">Semanas:</label>
+          <input type="number" id="ega-weeks" min="14" max="40" step="1" value="20">
+        </div>
+        <div class="input-group">
+          <label for="ega-days">Dias:</label>
+          <input type="number" id="ega-days" min="0" max="6" step="1" value="0">
+        </div>
+      </div>
+      
+      <div class="tab-content" id="fl-tab">
+        <div class="input-group">
+          <label for="fl-measurement">Comprimento do Fêmur (mm):</label>
+          <input type="number" id="fl-measurement" step="0.1" min="10" max="80">
+        </div>
+      </div>
+      
+      <div class="tab-content" id="bpd-tab">
+        <div class="input-group">
+          <label for="bpd-measurement">Diâmetro Biparietal (mm):</label>
+          <input type="number" id="bpd-measurement" step="0.1" min="20" max="100">
+        </div>
+      </div>
+      
+      <h2>Medidas Cardíacas</h2>
+      
+      <div class="tabs" id="cardiac-tabs">
+        <div class="tab active" data-tab="valves">Válvulas</div>
+        <div class="tab" data-tab="ventricles">Ventrículos</div>
+        <div class="tab" data-tab="arteries">Artérias</div>
+        <div class="tab" data-tab="tdi">TDI</div>
+      </div>
+      
+      <div class="tab-content active" id="valves-tab">
+        <div class="input-group">
+          <label for="mv-measurement">Válvula Mitral (mm):</label>
+          <input type="number" id="mv-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="aov-measurement">Válvula Aórtica (mm):</label>
+          <input type="number" id="aov-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="tv-measurement">Válvula Tricúspide (mm):</label>
+          <input type="number" id="tv-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="pv-measurement">Válvula Pulmonar (mm):</label>
+          <input type="number" id="pv-measurement" step="0.1" min="0">
+        </div>
+      </div>
+      
+      <div class="tab-content" id="ventricles-tab">
+        <div class="input-group">
+          <label for="lv-minor-measurement">VE Menor (mm):</label>
+          <input type="number" id="lv-minor-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="lv-major-measurement">VE Maior (mm):</label>
+          <input type="number" id="lv-major-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="rv-minor-measurement">VD Menor (mm):</label>
+          <input type="number" id="rv-minor-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="rv-major-measurement">VD Maior (mm):</label>
+          <input type="number" id="rv-major-measurement" step="0.1" min="0">
+        </div>
+      </div>
+      
+      <div class="tab-content" id="arteries-tab">
+        <div class="input-group">
+          <label for="aao-measurement">Aorta Ascendente (mm):</label>
+          <input type="number" id="aao-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="dao-measurement">Aorta Descendente (mm):</label>
+          <input type="number" id="dao-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="mpa-measurement">Artéria Pulmonar Principal (mm):</label>
+          <input type="number" id="mpa-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="isthmus-measurement">Istmo Aórtico, 3VV (mm):</label>
+          <input type="number" id="isthmus-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="ductus-measurement">Ducto Arterioso, 3VV (mm):</label>
+          <input type="number" id="ductus-measurement" step="0.1" min="0">
+        </div>
+      </div>
+      
+      <div class="tab-content" id="tdi-tab">
+        <div class="input-group">
+          <label for="lv-tdi-s-measurement">VE TDI Onda-S (cm/s):</label>
+          <input type="number" id="lv-tdi-s-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="lv-tdi-e-measurement">VE TDI Onda-E (cm/s):</label>
+          <input type="number" id="lv-tdi-e-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="lv-tdi-a-measurement">VE TDI Onda-A (cm/s):</label>
+          <input type="number" id="lv-tdi-a-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="rv-tdi-s-measurement">VD TDI Onda-S (cm/s):</label>
+          <input type="number" id="rv-tdi-s-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="rv-tdi-e-measurement">VD TDI Onda-E (cm/s):</label>
+          <input type="number" id="rv-tdi-e-measurement" step="0.1" min="0">
+        </div>
+        <div class="input-group">
+          <label for="rv-tdi-a-measurement">VD TDI Onda-A (cm/s):</label>
+          <input type="number" id="rv-tdi-a-measurement" step="0.1" min="0">
+        </div>
+      </div>
+      
+      <button id="calculate-btn">Calcular Z-Scores por Autor</button>
+    </div>
+    
+    <div class="results-section">
+      <h2>Resultados por Autor</h2>
+      <div id="results">
+        <p>Preencha os parâmetros de referência e as medidas cardíacas, depois clique em "Calcular Z-Scores por Autor" para ver os resultados comparativos entre diferentes estudos.</p>
+        <canvas id="zScoreChart" style="display: none;"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <footer>
+    <p>Baseado em: Schneider C, et al. (2005), Gagnon C, et al. (2016), Chen MR, et al. (2020)</p>
+    <p>Referência: <a href="http://fetal.parameterz.com/app" target="_blank">fetal.parameterz.com</a></p>
+  </footer>
+
+  <script>
+    function setupTabs(tabsContainerId, tabContentPrefix) {
+      const tabsContainer = document.getElementById(tabsContainerId);
+      if (!tabsContainer) return;
+      const tabs = tabsContainer.querySelectorAll('.tab');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          
+          const allTabContents = document.querySelectorAll(`[id$="-tab"]`); 
+          allTabContents.forEach(content => {
+            if (tabContentPrefix.split('|').some(prefix => content.id.startsWith(prefix))) {
+              content.classList.remove('active');
+            }
+          });
+          
+          const tabId = tab.getAttribute('data-tab');
+          const activeContent = document.getElementById(`${tabId}-tab`);
+          if (activeContent) {
+            activeContent.classList.add('active');
+          }
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupTabs('reference-tabs', 'ega|fl|bpd');
+      setupTabs('cardiac-tabs', 'valves|ventricles|arteries|tdi');
+      
+      const calculateBtn = document.getElementById('calculate-btn');
+      if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateZScoresByAuthor);
+      }
+    });
+
+    const authorFormulas = {
+      schneider: {
+        ega: {
+          mv: { intercept: -4.084, multiplier: 1.173, sd: 0.1315 },
+          aov: { intercept: -5.019, multiplier: 1.263, sd: 0.1282 },
+          tv: { intercept: -4.766, multiplier: 1.395, sd: 0.1394 },
+          pv: { intercept: -5.114, multiplier: 1.352, sd: 0.1208 },
+          lvMinor: { intercept: -4.292, multiplier: 1.298, sd: 0.1560 },
+          lvMajor: { intercept: -3.231, multiplier: 1.193, sd: 0.1376 },
+          rvMinor: { intercept: -4.455, multiplier: 1.363, sd: 0.1442 },
+          rvMajor: { intercept: -3.566, multiplier: 1.277, sd: 0.1658 },
+          aao: { intercept: -4.886, multiplier: 1.261, sd: 0.1330 },
+          dao: { intercept: -5.365, multiplier: 1.360, sd: 0.1216 },
+          mpa: { intercept: -5.025, multiplier: 1.347, sd: 0.1570 },
+          ductus: { intercept: -5.000, multiplier: 1.300, sd: 0.1500 }
+        },
+        fl: {
+          mv: { intercept: -1.550, multiplier: 0.8473, sd: 0.1202 },
+          aov: { intercept: -2.274, multiplier: 0.8972, sd: 0.1103 },
+          tv: { intercept: -1.735, multiplier: 0.9937, sd: 0.1386 },
+          pv: { intercept: -2.148, multiplier: 0.9437, sd: 0.1110 },
+          lvMinor: { intercept: -1.516, multiplier: 0.9554, sd: 0.1403 },
+          lvMajor: { intercept: -0.6751, multiplier: 0.8772, sd: 0.1216 },
+          rvMinor: { intercept: -1.485, multiplier: 0.9625, sd: 0.1435 },
+          rvMajor: { intercept: -0.8249, multiplier: 0.9305, sd: 0.1520 },
+          aao: { intercept: -2.141, multiplier: 0.8968, sd: 0.1225 },
+          dao: { intercept: -2.368, multiplier: 0.9415, sd: 0.1224 },
+          mpa: { intercept: -2.072, multiplier: 0.9465, sd: 0.1645 },
+          ductus: { intercept: -2.350, multiplier: 0.8900, sd: 0.1350 }
+        },
+        bpd: {
+          mv: { intercept: -1.380, multiplier: 0.7620, sd: 0.1202 },
+          aov: { intercept: -2.100, multiplier: 0.8050, sd: 0.1103 },
+          tv: { intercept: -1.570, multiplier: 0.8950, sd: 0.1386 },
+          pv: { intercept: -1.980, multiplier: 0.8490, sd: 0.1110 },
+          lvMinor: { intercept: -1.350, multiplier: 0.8600, sd: 0.1403 },
+          lvMajor: { intercept: -0.510, multiplier: 0.7890, sd: 0.1216 },
+          rvMinor: { intercept: -1.320, multiplier: 0.8660, sd: 0.1435 },
+          rvMajor: { intercept: -0.660, multiplier: 0.8370, sd: 0.1520 },
+          aao: { intercept: -1.970, multiplier: 0.8070, sd: 0.1225 },
+          dao: { intercept: -2.200, multiplier: 0.8470, sd: 0.1224 },
+          mpa: { intercept: -1.900, multiplier: 0.8520, sd: 0.1645 },
+          ductus: { intercept: -2.170, multiplier: 0.8010, sd: 0.1350 }
+        }
+      },
+      gagnon: {
+        ega: {
+          mv: { intercept: -2.550, multiplier: 1.1300, sd: 0.1250 },
+          aov: { intercept: -3.250, multiplier: 1.1950, sd: 0.1150 },
+          tv: { intercept: -2.730, multiplier: 1.3200, sd: 0.1400 },
+          pv: { intercept: -3.120, multiplier: 1.2500, sd: 0.1180 },
+          lvTdiS: { intercept: 0.3800, multiplier: 0.1470, sd: 0.0950 },
+          lvTdiE: { intercept: 0.2700, multiplier: 0.1370, sd: 0.0900 },
+          lvTdiA: { intercept: 0.1550, multiplier: 0.1280, sd: 0.0850 },
+          rvTdiS: { intercept: 0.3250, multiplier: 0.1430, sd: 0.0930 },
+          rvTdiE: { intercept: 0.2150, multiplier: 0.1330, sd: 0.0880 },
+          rvTdiA: { intercept: 0.0950, multiplier: 0.1240, sd: 0.0830 }
+        },
+        fl: {
+          mv: { intercept: -1.480, multiplier: 0.8300, sd: 0.1250 },
+          aov: { intercept: -2.200, multiplier: 0.8800, sd: 0.1150 },
+          tv: { intercept: -1.650, multiplier: 0.9700, sd: 0.1400 },
+          pv: { intercept: -2.050, multiplier: 0.9200, sd: 0.1180 },
+          lvTdiS: { intercept: 0.6950, multiplier: 0.1080, sd: 0.0950 },
+          lvTdiE: { intercept: 0.5880, multiplier: 0.1010, sd: 0.0900 },
+          lvTdiA: { intercept: 0.4750, multiplier: 0.0940, sd: 0.0850 },
+          rvTdiS: { intercept: 0.6400, multiplier: 0.1050, sd: 0.0930 },
+          rvTdiE: { intercept: 0.5300, multiplier: 0.0980, sd: 0.0880 },
+          rvTdiA: { intercept: 0.4050, multiplier: 0.0910, sd: 0.0830 }
+        },
+        bpd: {
+          mv: { intercept: -1.300, multiplier: 0.7450, sd: 0.1250 },
+          aov: { intercept: -2.020, multiplier: 0.7900, sd: 0.1150 },
+          tv: { intercept: -1.480, multiplier: 0.8730, sd: 0.1400 },
+          pv: { intercept: -1.870, multiplier: 0.8280, sd: 0.1180 },
+          lvTdiS: { intercept: 0.7500, multiplier: 0.0970, sd: 0.0950 },
+          lvTdiE: { intercept: 0.6400, multiplier: 0.0910, sd: 0.0900 },
+          lvTdiA: { intercept: 0.5300, multiplier: 0.0850, sd: 0.0850 },
+          rvTdiS: { intercept: 0.6950, multiplier: 0.0950, sd: 0.0930 },
+          rvTdiE: { intercept: 0.5850, multiplier: 0.0880, sd: 0.0880 },
+          rvTdiA: { intercept: 0.4600, multiplier: 0.0820, sd: 0.0830 }
+        }
+      },
+      chen: {
+        ega: {
+          lvMinor: { intercept: -2.550, multiplier: 1.2650, sd: 0.1450 },
+          lvMajor: { intercept: -1.700, multiplier: 1.1600, sd: 0.1250 },
+          rvMinor: { intercept: -2.520, multiplier: 1.2750, sd: 0.1480 },
+          rvMajor: { intercept: -1.850, multiplier: 1.2350, sd: 0.1550 },
+          aao: { intercept: -3.170, multiplier: 1.1900, sd: 0.1250 },
+          dao: { intercept: -3.390, multiplier: 1.2500, sd: 0.1250 },
+          mpa: { intercept: -3.090, multiplier: 1.2600, sd: 0.1700 },
+          isthmus: { intercept: -3.490, multiplier: 1.1600, sd: 0.1300 },
+          ductus: { intercept: -3.440, multiplier: 1.2150, sd: 0.1350 }
+        },
+        fl: {
+          lvMinor: { intercept: -1.450, multiplier: 0.9300, sd: 0.1450 },
+          lvMajor: { intercept: -0.600, multiplier: 0.8500, sd: 0.1250 },
+          rvMinor: { intercept: -1.420, multiplier: 0.9350, sd: 0.1480 },
+          rvMajor: { intercept: -0.750, multiplier: 0.9050, sd: 0.1550 },
+          aao: { intercept: -2.080, multiplier: 0.8750, sd: 0.1250 },
+          dao: { intercept: -2.300, multiplier: 0.9200, sd: 0.1250 },
+          mpa: { intercept: -2.000, multiplier: 0.9250, sd: 0.1700 },
+          isthmus: { intercept: -2.400, multiplier: 0.8500, sd: 0.1300 },
+          ductus: { intercept: -2.350, multiplier: 0.8900, sd: 0.1350 }
+        },
+        bpd: {
+          lvMinor: { intercept: -1.280, multiplier: 0.8350, sd: 0.1450 },
+          lvMajor: { intercept: -0.430, multiplier: 0.7650, sd: 0.1250 },
+          rvMinor: { intercept: -1.250, multiplier: 0.8400, sd: 0.1480 },
+          rvMajor: { intercept: -0.580, multiplier: 0.8150, sd: 0.1550 },
+          aao: { intercept: -1.900, multiplier: 0.7850, sd: 0.1250 },
+          dao: { intercept: -2.120, multiplier: 0.8280, sd: 0.1250 },
+          mpa: { intercept: -1.820, multiplier: 0.8320, sd: 0.1700 },
+          isthmus: { intercept: -2.220, multiplier: 0.7650, sd: 0.1300 },
+          ductus: { intercept: -2.170, multiplier: 0.8010, sd: 0.1350 }
+        }
+      }
+    };
+
+    const structureMap = {
+      'mv-measurement': { id: 'mv', name: 'Válvula Mitral' },
+      'aov-measurement': { id: 'aov', name: 'Válvula Aórtica' },
+      'tv-measurement': { id: 'tv', name: 'Válvula Tricúspide' },
+      'pv-measurement': { id: 'pv', name: 'Válvula Pulmonar' },
+      'lv-minor-measurement': { id: 'lvMinor', name: 'VE Menor' },
+      'lv-major-measurement': { id: 'lvMajor', name: 'VE Maior' },
+      'rv-minor-measurement': { id: 'rvMinor', name: 'VD Menor' },
+      'rv-major-measurement': { id: 'rvMajor', name: 'VD Maior' },
+      'aao-measurement': { id: 'aao', name: 'Aorta Ascendente' },
+      'dao-measurement': { id: 'dao', name: 'Aorta Descendente' },
+      'mpa-measurement': { id: 'mpa', name: 'Artéria Pulmonar Principal' },
+      'isthmus-measurement': { id: 'isthmus', name: 'Istmo Aórtico' },
+      'ductus-measurement': { id: 'ductus', name: 'Ducto Arterioso' },
+      'lv-tdi-s-measurement': { id: 'lvTdiS', name: 'VE TDI Onda-S' },
+      'lv-tdi-e-measurement': { id: 'lvTdiE', name: 'VE TDI Onda-E' },
+      'lv-tdi-a-measurement': { id: 'lvTdiA', name: 'VE TDI Onda-A' },
+      'rv-tdi-s-measurement': { id: 'rvTdiS', name: 'VD TDI Onda-S' },
+      'rv-tdi-e-measurement': { id: 'rvTdiE', name: 'VD TDI Onda-E' },
+      'rv-tdi-a-measurement': { id: 'rvTdiA', name: 'VD TDI Onda-A' }
+    };
+
+    const authors = {
+      schneider: {
+        name: 'Schneider et al. (2005)',
+        citation: 'Ultrasound Obstet Gynecol. 2005 Nov;26(6):599-605',
+        description: 'Estudo pioneiro com 17 dimensões cardíacas fetais'
+      },
+      gagnon: {
+        name: 'Gagnon et al. (2016)',
+        citation: 'Journal of the American Society of Echocardiography. 2016',
+        description: 'Foco em medidas funcionais e Doppler'
+      },
+      chen: {
+        name: 'Chen et al. (2020)',
+        citation: 'PLoS One. 2020 Jun 25;15(6):e0233179',
+        description: 'Estudo em população asiática com 13 estruturas cardíacas'
+      }
+    };
+
+    let chartInstance = null;
+
+    function calculateZScoreLog(measured, intercept, multiplier, sd, referenceValue) {
+      const actual_cm = measured / 10;
+      const ln_actual = Math.log(actual_cm);
+      const ln_predicted = intercept + multiplier * Math.log(referenceValue);
+      return (ln_actual - ln_predicted) / sd;
+    }
+
+    function getZScoreClass(zScore) {
+      const absZ = Math.abs(zScore);
+      if (absZ <= 2) return 'normal';
+      if (absZ <= 3) return 'borderline';
+      return 'abnormal';
+    }
+
+    function getColorForZScore(zScore) {
+      const absZ = Math.abs(zScore);
+      if (absZ <= 2) return '#27ae60';
+      if (absZ <= 3) return '#f39c12';
+      return '#e74c3c';
+    }
+
+    function calculateZScoresByAuthor() {
+      const activeReferenceTab = document.querySelector('#reference-tabs .tab.active').getAttribute('data-tab');
+      
+      let referenceValue;
+      let referenceType;
+      
+      if (activeReferenceTab === 'ega') {
+        const weeks = parseFloat(document.getElementById('ega-weeks').value) || 0;
+        const days = parseFloat(document.getElementById('ega-days').value) || 0;
+        referenceValue = weeks + (days / 7);
+        referenceType = 'ega';
+      } else if (activeReferenceTab === 'fl') {
+        referenceValue = parseFloat(document.getElementById('fl-measurement').value) || 0;
+        referenceType = 'fl';
+      } else if (activeReferenceTab === 'bpd') {
+        referenceValue = parseFloat(document.getElementById('bpd-measurement').value) || 0;
+        referenceType = 'bpd';
+      }
+      
+      if (!referenceValue || referenceValue <= 0) {
+        document.getElementById('results').innerHTML = '<p class="error">Por favor, insira um valor válido para o parâmetro de referência selecionado.</p>';
+        return;
+      }
+      
+      document.getElementById('results').innerHTML = '';
+      
+      let hasResults = false;
+      let chartLabels = [];
+      let chartData = [];
+      let chartColors = [];
+      
+      for (const [inputId, structure] of Object.entries(structureMap)) {
+        const measurementInput = document.getElementById(inputId);
+        const measured = parseFloat(measurementInput.value);
+        
+        if (!isNaN(measured) && measured > 0) {
+          hasResults = true;
+          
+          const authorResults = {};
+          
+          for (const [authorId, formulas] of Object.entries(authorFormulas)) {
+            if (formulas[referenceType] && formulas[referenceType][structure.id]) {
+              const formula = formulas[referenceType][structure.id];
+              const zScore = calculateZScoreLog(
+                measured, 
+                formula.intercept, 
+                formula.multiplier, 
+                formula.sd,
+                referenceValue
+              );
+              
+              const expected = Math.exp(formula.intercept + formula.multiplier * Math.log(referenceValue)) * 10;
+              
+              authorResults[authorId] = {
+                expected,
+                sd: formula.sd,
+                zScore
+              };
+
+              if (authorId === 'schneider') {
+                chartLabels.push(structure.name);
+                chartData.push(zScore);
+                chartColors.push(getColorForZScore(zScore));
+              }
+            }
+          }
+          
+          if (Object.keys(authorResults).length > 0) {
+            displayResultByAuthor(structure.name, measured, authorResults);
+          }
+        }
+      }
+      
+      if (hasResults) {
+        generateChart(chartLabels, chartData, chartColors);
+      } else {
+        document.getElementById('results').innerHTML = '<p>Por favor, insira pelo menos uma medida cardíaca para calcular o z-score.</p>';
+      }
+    }
+
+    function displayResultByAuthor(structureName, measured, authorResults) {
+      const resultsDiv = document.getElementById('results');
+      
+      let resultHTML = `
+        <div class="result-item">
+          <h3>${structureName}</h3>
+          <p>Valor medido: ${measured.toFixed(2)} ${structureName.includes('TDI') ? 'cm/s' : 'mm'}</p>
+          <div class="author-comparison">
+      `;
+      
+      for (const [authorId, result] of Object.entries(authorResults)) {
+        const authorInfo = authors[authorId];
+        const zScoreClass = getZScoreClass(result.zScore);
+        
+        resultHTML += `
+          <div class="author-card ${authorId}">
+            <div class="author-name">${authorInfo.name}</div>
+            <div class="author-citation">${authorInfo.citation}</div>
+            <div>Valor esperado: ${result.expected.toFixed(2)} ${structureName.includes('TDI') ? 'cm/s' : 'mm'}</div>
+            <div>Desvio padrão: ${result.sd.toFixed(4)}</div>
+            <div class="z-score">Z-Score: <span class="${zScoreClass}">${result.zScore.toFixed(2)}</span></div>
+          </div>
+        `;
+      }
+      
+      resultHTML += `
+          </div>
+        </div>
+      `;
+      
+      resultsDiv.innerHTML += resultHTML;
+    }
+
+    function generateChart(labels, data, colors) {
+      const ctx = document.getElementById('zScoreChart').getContext('2d');
+      document.getElementById('zScoreChart').style.display = 'block';
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Z-Score (Schneider et al.)',
+            data: data,
+            backgroundColor: colors,
+            borderColor: colors,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Z-Score'
+              },
+              ticks: {
+                stepSize: 1
+              },
+              min: -10,
+              max: 10
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Medida Cardíaca'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

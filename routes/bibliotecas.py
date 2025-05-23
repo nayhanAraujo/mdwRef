@@ -16,5 +16,5 @@ def get_db():
 @biblioteca_pb.route('/biblioteca')
 def biblioteca():
     if 'usuario' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     return render_template('biblioteca.html')

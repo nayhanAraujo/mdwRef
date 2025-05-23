@@ -1,0 +1,121 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-plus-circle me-2"></i> Nova Seção
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+  </div>
+</div>
+
+<style>
+  .variavel-item {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    transition: background-color 0.2s ease;
+  }
+  .variavel-item:hover {
+    background-color: #e9ecef;
+  }
+  .variavel-item label {
+    cursor: pointer;
+    display: block;
+  }
+  .variavel-item .form-check-input {
+    margin-right: 10px;
+  }
+  .variavel-item .nome-sigla {
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  .variavel-item .info {
+    margin-top: 5px;
+    color: #6c757d;
+    font-size: 0.95rem;
+  }
+  .variavel-item .info span {
+    display: block;
+    margin-left: 24px;
+  }
+  #filtroVariaveis {
+    border-radius: 20px;
+    padding-left: 35px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="gray" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    background-size: 16px;
+  }
+  .variaveis-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #fff;
+  }
+</style>
+
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label">Nome da Seção *</label>
+          <input type="text" class="form-control" id="nome" name="nome" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Variáveis Associadas</label>
+          <input type="text" class="form-control mb-2" id="filtroVariaveis" placeholder="Pesquisar por nome ou sigla...">
+          <div class="variaveis-container">
+            {% for variavel in variaveis %}
+              <div class="variavel-item"
+                   data-nome="{{ variavel.nome|lower }}"
+                   data-sigla="{{ variavel.sigla|lower }}">
+                <label>
+                  <input type="checkbox" name="variaveis[]" value="{{ variavel.codvariavel }}" class="form-check-input">
+                  <span class="nome-sigla">{{ variavel.nome }} ({{ variavel.sigla }})</span>
+                  <div class="info">
+                    <span><strong>Fórmula:</strong> {{ variavel.formula }}</span>
+                    <span><strong>Normalidade:</strong> {{ variavel.normalidade }}</span>
+                  </div>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+          <small class="form-text text-muted">Marque as caixas para selecionar variáveis.</small>
+        </div>
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save"></i> Salvar
+          </button>
+          <a href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Filtro dinâmico para variáveis
+  document.getElementById('filtroVariaveis').addEventListener('input', function() {
+    const filtro = this.value.toLowerCase();
+    const items = document.querySelectorAll('.variavel-item');
+    items.forEach(item => {
+      const nome = item.getAttribute('data-nome');
+      const sigla = item.getAttribute('data-sigla');
+      if (nome.includes(filtro) || sigla.includes(filtro)) {
+        item.style.display = '';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  });
+</script>
+{% endset %}

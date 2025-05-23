@@ -3,41 +3,32 @@
 {% set content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-list-ul me-2"></i> Cadastrar variáveis
+    <i class="bi bi-list-ul me-2"></i> Cadastrar Variáveis
   </h3>
+
   <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
   </div>
 </div>
+
 <div class="container">
   <div class="card shadow-sm mb-4">
     <div class="card-body">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-            </div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
-
       <form method="POST">
         <h5 class="text-primary">Informações da Variável</h5>
         <div class="form-check form-switch mb-3">
-          <input class="form-check-input" type="checkbox" id="possuivariavel" name="possui_formula">
+          <input class="form-check-input" type="checkbox" id="possuivariavel" name="possui_formula" checked>
           <label class="form-check-label" for="possuivariavel">Inserir variáveis</label>
         </div>
-        <div id="areaVariavel" style="display: none;">
+        <div id="areaVariavel" style="display: block;">
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Nome clínico</label>
+              <label class="form-label">Nome Clínico</label>
               <input type="text" name="nome" class="form-control" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">Variável</label>
-              <input type="text" name="variavel" class="form-control" required placeholder="Ex: <<VR_AE>>">
+              <input type="text" name="variavel" class="form-control" required placeholder="">
             </div>
           </div>
 
@@ -55,7 +46,7 @@
               <input type="text" name="sigla" class="form-control" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Abreviatura</label>
+              <label class="form-label">Abreviação</label>
               <input type="text" name="abreviacao" class="form-control" required>
             </div>
           </div>
@@ -79,9 +70,30 @@
               <input type="number" name="casas_decimais" class="form-control" min="0" required>
             </div>
           </div>
+<!--
+          <div class="mb-3">
+            <label class="form-label">Scripts Vinculados</label>
+            <select class="form-select" id="scripts" name="scripts[]" multiple>
+              <option value="">-- Selecione --</option>
+              {% for script in scripts %}
+                <option value="{{ script[0] }}">{{ script[1] }}</option>
+              {% endfor %}
+            </select>
+            <small class="form-text text-muted">Segure Ctrl (ou Cmd no Mac) para selecionar múltiplos scripts.</small>
+          </div>
         </div>
         <hr>
-
+        <div class="mb-3">
+          <label class="form-label">Códigos DICOM Vinculados</label>
+          <select class="form-select" id="dicom_codes" name="dicom_codes[]" multiple>
+            <option value="">-- Selecione --</option>
+            {% for cod_universal, codigo, descricaoptbr in codigos_universais %}
+              <option value="{{ cod_universal }}">{{ codigo }} - {{ descricaoptbr|default('Sem descrição em PT-BR') }}</option>
+            {% endfor %}
+          </select>
+          <small class="form-text text-muted">Segure Ctrl (ou Cmd no Mac) para selecionar múltiplos códigos DICOM.</small>
+        </div>
+-->
         <div class="form-check form-switch mb-3">
           <input class="form-check-input" type="checkbox" id="possuiFormula" name="possui_formula">
           <label class="form-check-label" for="possuiFormula">Possui Fórmula?</label>
@@ -89,7 +101,7 @@
     
         <div id="areaFormula" style="display: none;">
           <div class="mb-3">
-            <label class="form-label">Variáveis disponíveis</label>
+            <label class="form-label">Variáveis Disponíveis</label>
             <div class="input-group mb-2">
               <select class="form-select" id="variavelSelect">
                 <option value="">-- Selecione uma variável --</option>
@@ -107,29 +119,51 @@
             <textarea name="formula" class="form-control"></textarea>
           </div>
 
-          <!-- Nova seção para equações em diferentes linguagens -->
           <h5 class="text-primary">Equações em Diferentes Linguagens</h5>
           <div id="equacoes-wrapper">
             <div class="equacao-item mb-3 border p-3 rounded">
               <div class="row">
-                <div class="col-md-4 mb-3">
-                  <label class="form-label">Linguagem</label>
-                  <select name="equacoes_linguagem[]" class="form-select" required>
-                    <option value="">-- Selecione --</option>
-                    {% for cod, nome in linguagens %}
-                      <option value="{{ cod }}">{{ nome }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="col-md-4 mb-3">
-                  <label class="form-label">Referência (Autor, Ano)</label>
-                  <select name="equacoes_referencia[]" class="form-select">
-                    <option value="">-- Nenhuma --</option>
-                    {% for cod, autor, ano in referencias %}
-                      <option value="{{ cod }}">{{ autor }} - {{ ano }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
+            <!-- Seção de Equações -->
+<div class="col-md-4 mb-3">
+  <label class="form-label">Referência (Título, Ano, Autores)</label>
+  <div class="input-group">
+    <select name="equacoes_referencia[]" class="form-select" onchange="updatePreviewButton(this)">
+      <option value="">-- Nenhuma --</option>
+      {% for cod, titulo, ano, autores in referencias %}
+        <option value="{{ cod }}" data-titulo="{{ titulo }}" data-ano="{{ ano }}" data-autores="{{ autores }}">{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
+      {% endfor %}
+    </select>
+    <button type="button" class="btn btn-outline-info btn-sm ms-2 preview-btn" data-bs-toggle="modal" data-bs-target="#referenciaModal" disabled>Pré-visualizar</button>
+  </div>
+</div>
+
+
+<!-- Modal de Pré-visualização -->
+<div class="modal fade" id="referenciaModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalhes da Referência</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Título:</strong> <span id="modal-titulo"></span></p>
+        <p><strong>Ano:</strong> <span id="modal-ano"></span></p>
+        <p><strong>Autores:</strong> <span id="modal-autores"></span></p>
+        <div id="modal-anexos">
+          <strong>Anexos:</strong>
+          <ul id="modal-anexos-list"></ul>
+        </div>
+      </div>
+  
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+    </div>
+  </div>
+</div>
+</div>
+
+
                 <div class="col-md-4 mb-3">
                   <label class="form-label">Equação</label>
                   <textarea name="equacoes_texto[]" class="form-control" required></textarea>
@@ -145,164 +179,493 @@
 
         <div class="form-check form-switch mb-3">
           <input class="form-check-input" type="checkbox" id="possuiNormalidade" name="possui_normalidade">
-          <label class="form-check-label" for="possuiNormalidade">Possui Normalidade ou referência?</label>
+          <label class="form-check-label" for="possuiNormalidade">Possui Normalidade ou Referência?</label>
         </div>
         <div id="areaNormalidade" style="display: none;">
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Sexo</label>
-              <select name="sexo" class="form-select">
-                <option value="M">Masculino</option>
-                <option value="F">Feminino</option>
-                <option value="A">Ambos</option>
-              </select>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Sexo *</label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="sexo_masculino" name="sexo[]" value="M" onchange="toggleNormalidadeCampos()">
+                <label class="form-check-label" for="sexo_masculino">Masculino</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="sexo_feminino" name="sexo[]" value="F" onchange="toggleNormalidadeCampos()">
+                <label class="form-check-label" for="sexo_feminino">Feminino</label>
+              </div>
             </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Valor Mínimo</label>
-              <input type="number" step="any" name="valormin" class="form-control">
+
+            <div class="col-md-8">
+              <div id="normalidade_masculino" style="display: none;">
+                <h6 class="text-primary">Normalidade - Masculino</h6>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Valor Mínimo (M) *</label>
+                    <input type="number" step="any" name="valormin_m" class="form-control">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Valor Máximo (M) *</label>
+                    <input type="number" step="any" name="valormax_m" class="form-control">
+                  </div>
+                </div>
+              </div>
+
+              <div id="normalidade_feminino" style="display: none;">
+                <h6 class="text-primary">Normalidade - Feminino</h6>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Valor Mínimo (F) *</label>
+                    <input type="number" step="any" name="valormin_f" class="form-control">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Valor Máximo (F) *</label>
+                    <input type="number" step="any" name="valormax_f" class="form-control">
+                  </div>
+                </div>
+              </div>
+              <div id="normalidade_unico" style="display: none;">
+                <h6 class="text-primary">Normalidade</h6>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Valor Mínimo *</label>
+                    <input type="number" step="any" name="valormin" class="form-control">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Valor Máximo *</label>
+                    <input type="number" step="any" name="valormax" class="form-control">
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Valor Máximo</label>
-              <input type="number" step="any" name="valormax" class="form-control">
-            </div>
-            <div class="col-md-6 mb-3">
+          </div>
+          <!--
+          <div class="row mb-3">
+            <div class="col-md-6">
               <label class="form-label">Idade Mínima</label>
               <input type="number" name="idade_min" class="form-control">
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-6">
               <label class="form-label">Idade Máxima</label>
               <input type="number" name="idade_max" class="form-control">
             </div>
-            <div class="mb-3">
-              <label class="form-label">Referência</label>
-              <select name="referencia" class="form-select">
-                <option value="">-- Nenhuma --</option>
-                {% for cod, autor, ano in referencias %}
-                  <option value="{{ cod }}">{{ autor }} - {{ ano }}</option>
-                {% endfor %}
-              </select>
-            </div>
           </div>
-        </div>
+          -->
+         <!-- Seção de Normalidade -->
+<div class="mb-3">
+  <label class="form-label">Referência</label>
+  <div class="input-group">
+    <select name="referencia" class="form-select" onchange="updatePreviewButton(this)">
+      <option value="">-- Nenhuma --</option>
+      {% for cod, titulo, ano, autores in referencias %}
+        <option value="{{ cod }}" data-titulo="{{ titulo }}" data-ano="{{ ano }}" data-autores="{{ autores }}">{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
+      {% endfor %}
+    </select>
+    <button type="button" class="btn btn-outline-info btn-sm ms-2 preview-btn" disabled>Pré-visualizar</button>
+      </div>
+</div>
 
         <div class="text-end">
           <button type="button" class="btn btn-success" onclick="confirmarSalvarVariavel()">
             <i class="bi bi-save"></i> Salvar
           </button>
+          <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
+          </a>
         </div>
-        <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
-        </a>
       </form>
     </div>
   </div>
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Toggle das áreas do formulário
   document.getElementById('possuiFormula').addEventListener('change', function() {
     document.getElementById('areaFormula').style.display = this.checked ? 'block' : 'none';
   });
+  
   document.getElementById('possuiNormalidade').addEventListener('change', function() {
     document.getElementById('areaNormalidade').style.display = this.checked ? 'block' : 'none';
+    toggleNormalidadeCampos();
   });
+  
   document.getElementById('possuivariavel').addEventListener('change', function() {
     document.getElementById('areaVariavel').style.display = this.checked ? 'block' : 'none';
   });
 
-  function inserirVariavel() {
-    const select = document.getElementById('variavelSelect');
-    const formulaTextarea = document.querySelector('[name="formula"]');
-    const selectedValue = select.value;
-    if (selectedValue) {
-      const cursorPos = formulaTextarea.selectionStart;
-      const textBefore = formulaTextarea.value.substring(0, cursorPos);
-      const textAfter = formulaTextarea.value.substring(formulaTextarea.selectionEnd);
-      formulaTextarea.value = textBefore + selectedValue + textAfter;
-      formulaTextarea.focus();
-      formulaTextarea.selectionStart = cursorPos + selectedValue.length;
-      formulaTextarea.selectionEnd = cursorPos + selectedValue.length;
-    }
-  }
+  // Inicialização
+  toggleNormalidadeCampos();
+  attachRemoveEvent();
 
-  function confirmarSalvarVariavel() {
-    const sigla = document.querySelector('[name="sigla"]').value.trim().toUpperCase();
-    if (!sigla.startsWith("VR_")) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Sigla inválida',
-        text: 'A sigla deve começar com "VR_"'
+  // Delegação de eventos para botões dinâmicos
+  document.body.addEventListener('click', function(e) {
+    // Botões de pré-visualização
+    if (e.target.classList.contains('preview-btn')) {
+      e.preventDefault();
+      showModal(e.target);
+    }
+    
+    // Botões de remover equação
+    if (e.target.classList.contains('remove-equacao')) {
+      e.target.closest('.equacao-item').remove();
+    }
+  });
+});
+
+// Função para mostrar o modal de referência
+
+
+// Função para buscar anexos via AJAX
+async function fetchAnexos(codReferencia) {
+  const anexosList = document.getElementById('modal-anexos-list');
+  
+  try {
+    const response = await fetch(`/referencias/get_anexos/${codReferencia}`);
+    const data = await response.json();
+    
+    anexosList.innerHTML = '';
+    if (data.error) {
+      anexosList.innerHTML = `<li>Erro ao carregar anexos: ${data.error}</li>`;
+    } else if (data.length > 0) {
+      data.forEach(anexo => {
+        const li = document.createElement('li');
+        if (anexo.caminho && anexo.caminho.startsWith('/static/uploads/')) {
+          li.innerHTML = `${anexo.descricao} (${anexo.tipo}) - <a href="${anexo.caminho}" target="_blank" class="anexo-link">Visualizar</a>`;
+        } else {
+          li.innerHTML = `${anexo.descricao} (${anexo.tipo}) - <span class="text-muted">Link inválido</span>`;
+        }
+        anexosList.appendChild(li);
       });
-      return;
+    } else {
+      anexosList.innerHTML = '<li>Nenhum anexo disponível.</li>';
     }
-    Swal.fire({
-      title: 'Salvar variável?',
-      text: 'Deseja realmente salvar essa variável?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sim, salvar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        document.querySelector('form').submit();
-      }
+  } catch (error) {
+    console.error('Erro ao buscar anexos:', error);
+    anexosList.innerHTML = '<li>Erro ao carregar anexos.</li>';
+  }
+}
+
+
+
+function updatePreviewButton(select) {
+    const button = select.nextElementSibling;
+    const selectedOption = select.options[select.selectedIndex];
+    if (selectedOption.value) {
+      button.disabled = false;
+      button.dataset.codReferencia = selectedOption.value;
+      button.dataset.titulo = selectedOption.dataset.titulo;
+      button.dataset.ano = selectedOption.dataset.ano;
+      button.dataset.autores = selectedOption.dataset.autores || 'Nenhum autor';
+    } else {
+      button.disabled = true;
+      delete button.dataset.codReferencia;
+      delete button.dataset.titulo;
+      delete button.dataset.ano;
+      delete button.dataset.autores;
+    }
+  }
+
+  document.querySelectorAll('.preview-btn').forEach(button => {
+    button.addEventListener('click', async function(event) {
+      console.log('Botão Pré-visualizar clicado:', this.dataset); // Depuração
+
+      // Preparar conteúdo inicial do SweetAlert2
+      let htmlContent = `
+        <p><strong>Título:</strong> ${this.dataset.titulo || '-'}</p>
+        <p><strong>Ano:</strong> ${this.dataset.ano || '-'}</p>
+        <p><strong>Autores:</strong> ${this.dataset.autores || 'Nenhum autor'}</p>
+        <div id="anexos-content">
+          <strong>Anexos:</strong>
+          <ul id="anexos-list"><li>Carregando...</li></ul>
+          <div id="anexo-preview" class="anexo-preview"></div>
+          <div id="anexo-nav" class="anexo-nav"></div>
+        </div>
+      `;
+
+      // Exibir SweetAlert2
+      Swal.fire({
+        title: 'Detalhes da Referência',
+        html: htmlContent,
+        showCloseButton: true,
+        showConfirmButton: false,
+        customClass: {
+          popup: 'swal-wide'
+        },
+        didOpen: async () => {
+          try {
+            const response = await fetch(`/referencias/get_anexos/${this.dataset.codReferencia}`);
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const anexos = await response.json();
+            console.log('Resposta da rota /get_anexos:', anexos); // Depuração
+
+            const anexosList = document.getElementById('anexos-list');
+            const anexoPreview = document.getElementById('anexo-preview');
+            const anexoNav = document.getElementById('anexo-nav');
+
+            if (!anexosList || !anexoPreview || !anexoNav) {
+              console.error('Elementos do SweetAlert2 não encontrados:', {
+                anexosList: !!anexosList,
+                anexoPreview: !!anexoPreview,
+                anexoNav: !!anexoNav
+              });
+              return;
+            }
+
+            anexosList.innerHTML = '';
+            anexoPreview.innerHTML = '';
+            anexoNav.innerHTML = '';
+
+            if (anexos.error) {
+              anexosList.innerHTML = `<li>Erro ao carregar anexos: ${anexos.error}</li>`;
+            } else if (anexos.length > 0) {
+              // Renderizar lista de anexos com link para nova aba
+              anexos.forEach((anexo, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                  <a href="#" class="anexo-select" data-index="${index}">${anexo.descricao} (${anexo.tipo})</a>
+                  ${anexo.caminho && anexo.caminho.startsWith('/static/uploads/') ? 
+                    `<a href="${anexo.caminho}" target="_blank" class="anexo-link ms-2" title="Abrir em nova aba"><i class="bi bi-box-arrow-up-right"></i></a>` : 
+                    '<span class="text-muted ms-2">(Link inválido)</span>'}
+                `;
+                anexosList.appendChild(li);
+              });
+
+              // Função para renderizar anexo
+              const renderAnexo = async (index) => {
+                const anexo = anexos[index];
+                anexoPreview.innerHTML = '';
+
+                if (anexo.caminho && anexo.caminho.startsWith('/static/uploads/')) {
+                  if (anexo.tipo === 'IMAGEM') {
+                    // Exibir imagem
+                    const img = document.createElement('img');
+                    img.src = anexo.caminho;
+                    img.alt = anexo.descricao;
+                    anexoPreview.appendChild(img);
+                  } else if (anexo.tipo === 'PDF') {
+                    // Renderizar PDF com PDF.js
+                    const canvas = document.createElement('canvas');
+                    anexoPreview.appendChild(canvas);
+                    try {
+                      const pdf = await pdfjsLib.getDocument(anexo.caminho).promise;
+                      const page = await pdf.getPage(1);
+                      const viewport = page.getViewport({ scale: 1 });
+                      canvas.height = viewport.height;
+                      canvas.width = viewport.width;
+                      const context = canvas.getContext('2d');
+                      await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    } catch (error) {
+                      console.error('Erro ao renderizar PDF:', error);
+                      anexoPreview.innerHTML = `<p class="text-danger">Erro ao carregar PDF: ${error.message}</p>`;
+                    }
+                  } else {
+                    // Fallback para outros tipos
+                    anexoPreview.innerHTML = `<p><a href="${anexo.caminho}" target="_blank" class="anexo-link">Abrir ${anexo.descricao} (${anexo.tipo}) em nova aba</a></p>`;
+                  }
+                } else {
+                  anexoPreview.innerHTML = `<p class="text-muted">Link inválido para ${anexo.descricao} (${anexo.tipo})</p>`;
+                }
+
+                // Atualizar navegação
+                anexoNav.innerHTML = `
+                  <button class="btn btn-sm btn-outline-secondary" ${index === 0 ? 'disabled' : ''} onclick="renderAnexo(${index - 1})">Anterior</button>
+                  <button class="btn btn-sm btn-outline-secondary" ${index === anexos.length - 1 ? 'disabled' : ''} onclick="renderAnexo(${index + 1})">Próximo</button>
+                `;
+              };
+
+              // Adicionar eventos aos links de seleção
+              document.querySelectorAll('.anexo-select').forEach(link => {
+                link.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  const index = parseInt(this.dataset.index);
+                  renderAnexo(index);
+                });
+              });
+
+              // Renderizar o primeiro anexo, se houver
+              renderAnexo(0);
+            } else {
+              anexosList.innerHTML = '<li>Nenhum anexo disponível.</li>';
+            }
+          } catch (error) {
+            console.error('Erro ao buscar anexos:', error);
+            const anexosList = document.getElementById('anexos-list');
+            if (anexosList) {
+              anexosList.innerHTML = `<li>Erro ao carregar anexos: ${error.message}</li>`;
+            }
+          }
+        }
+      });
     });
-  }
+  });
 
-  function addAlternativa() {
-    const container = document.getElementById('alternativas-wrapper');
-    const input = document.createElement('input');
-    input.type = "text";
-    input.name = "alternativas[]";
-    input.className = "form-control mb-2";
-    input.placeholder = "Ex: VR_AO1";
-    container.appendChild(input);
-  }
+  // Depuração para cliques nos links
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('anexo-link') || e.target.parentElement.classList.contains('anexo-link')) {
+      const href = e.target.href || e.target.parentElement.href;
+      console.log('Link de anexo clicado:', href);
+    }
+  });
 
-  function addEquacao() {
-    const container = document.getElementById('equacoes-wrapper');
-    const div = document.createElement('div');
-    div.className = 'equacao-item mb-3 border p-3 rounded';
-    div.innerHTML = `
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Linguagem</label>
-          <select name="equacoes_linguagem[]" class="form-select" required>
-            <option value="">-- Selecione --</option>
-            {% for cod, nome in linguagens %}
-              <option value="{{ cod }}">{{ nome }}</option>
-            {% endfor %}
+
+// Função para alternar campos de normalidade
+function toggleNormalidadeCampos() {
+  const masculino = document.getElementById('sexo_masculino').checked;
+  const feminino = document.getElementById('sexo_feminino').checked;
+  const masculinoDiv = document.getElementById('normalidade_masculino');
+  const femininoDiv = document.getElementById('normalidade_feminino');
+  const unicoDiv = document.getElementById('normalidade_unico');
+  const inputsMasculino = masculinoDiv.querySelectorAll('input');
+  const inputsFeminino = femininoDiv.querySelectorAll('input');
+  const inputsUnico = unicoDiv.querySelectorAll('input');
+
+  if (masculino && feminino) {
+    masculinoDiv.style.display = 'block';
+    femininoDiv.style.display = 'block';
+    unicoDiv.style.display = 'none';
+    inputsMasculino.forEach(input => input.setAttribute('required', 'required'));
+    inputsFeminino.forEach(input => input.setAttribute('required', 'required'));
+    inputsUnico.forEach(input => input.removeAttribute('required'));
+  } else if (masculino || feminino) {
+    masculinoDiv.style.display = masculino ? 'none' : 'none';
+    femininoDiv.style.display = feminino ? 'none' : 'none';
+    unicoDiv.style.display = 'block';
+    inputsMasculino.forEach(input => input.removeAttribute('required'));
+    inputsFeminino.forEach(input => input.removeAttribute('required'));
+    inputsUnico.forEach(input => input.setAttribute('required', 'required'));
+  } else {
+    masculinoDiv.style.display = 'none';
+    femininoDiv.style.display = 'none';
+    unicoDiv.style.display = 'none';
+    inputsMasculino.forEach(input => input.removeAttribute('required'));
+    inputsFeminino.forEach(input => input.removeAttribute('required'));
+    inputsUnico.forEach(input => input.removeAttribute('required'));
+  }
+}
+
+// Função para inserir variável na fórmula
+function inserirVariavel() {
+  const select = document.getElementById('variavelSelect');
+  const formulaTextarea = document.querySelector('[name="formula"]');
+  const selectedValue = select.value;
+  
+  if (selectedValue) {
+    const cursorPos = formulaTextarea.selectionStart;
+    const textBefore = formulaTextarea.value.substring(0, cursorPos);
+    const textAfter = formulaTextarea.value.substring(formulaTextarea.selectionEnd);
+    formulaTextarea.value = textBefore + selectedValue + textAfter;
+    formulaTextarea.focus();
+    formulaTextarea.selectionStart = cursorPos + selectedValue.length;
+    formulaTextarea.selectionEnd = cursorPos + selectedValue.length;
+  }
+}
+
+// Função para confirmar o salvamento
+function confirmarSalvarVariavel() {
+  const sigla = document.querySelector('[name="sigla"]').value.trim().toUpperCase();
+  
+  if (!sigla.startsWith("VR_")) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Sigla inválida',
+      text: 'A sigla deve começar com "VR_"'
+    });
+    return;
+  }
+  
+  Swal.fire({
+    title: 'Salvar variável?',
+    text: 'Deseja realmente salvar essa variável?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sim, salvar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.querySelector('form').submit();
+    }
+  });
+}
+
+// Função para adicionar alternativa
+function addAlternativa() {
+  const container = document.getElementById('alternativas-wrapper');
+  const input = document.createElement('input');
+  input.type = "text";
+  input.name = "alternativas[]";
+  input.className = "form-control mb-2";
+  input.placeholder = "Ex: VR_AO1";
+  container.appendChild(input);
+}
+
+// Função para adicionar equação
+function addEquacao() {
+  const container = document.getElementById('equacoes-wrapper');
+  const div = document.createElement('div');
+  div.className = 'equacao-item mb-3 border p-3 rounded';
+  
+  // Criar o HTML base
+  let html = `
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Linguagem</label>
+        <select name="equacoes_linguagem[]" class="form-select" required>
+          <option value="">-- Selecione --</option>`;
+
+  // Adicionar opções de linguagem
+  {% for cod, nome in linguagens %}
+    html += `<option value="{{ cod }}">{{ nome }}</option>`;
+  {% endfor %}
+
+  html += `
+        </select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Referência (Título, Ano, Autores)</label>
+        <div class="input-group">
+          <select name="equacoes_referencia[]" class="form-select" onchange="updatePreviewButton(this)">
+            <option value="">-- Nenhuma --</option>`;
+
+  // Adicionar opções de referência
+  {% for cod, titulo, ano, autores in referencias %}
+    html += `<option value="{{ cod }}" data-titulo="{{ titulo }}" data-ano="{{ ano }}" data-autores="{{ autores }}">{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>`;
+  {% endfor %}
+
+  html += `
           </select>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Referência (Autor, Ano)</label>
-          <select name="equacoes_referencia[]" class="form-select">
-            <option value="">-- Nenhuma --</option>
-            {% for cod, autor, ano in referencias %}
-              <option value="{{ cod }}">{{ autor }} - {{ ano }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Equação</label>
-          <textarea name="equacoes_texto[]" class="form-control" required></textarea>
+          <button type="button" class="btn btn-outline-info btn-sm ms-2 preview-btn" data-bs-toggle="modal" data-bs-target="#referenciaModal" disabled>Pré-visualizar</button>
         </div>
       </div>
-      <button type="button" class="btn btn-outline-danger btn-sm remove-equacao">Remover</button>
-    `;
-    container.appendChild(div);
-    attachRemoveEvent();
-  }
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Equação</label>
+        <textarea name="equacoes_texto[]" class="form-control" required></textarea>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline-danger btn-sm remove-equacao">Remover</button>`;
 
-  function attachRemoveEvent() {
-    document.querySelectorAll('.remove-equacao').forEach(button => {
-      button.addEventListener('click', function() {
-        this.parentElement.remove();
-      });
-    });
-  }
+  div.innerHTML = html;
+  container.appendChild(div);
 
-  document.addEventListener('DOMContentLoaded', function() {
-    attachRemoveEvent();
+  // Adicionar evento de remoção ao novo botão
+  const removeButton = div.querySelector('.remove-equacao');
+  removeButton.addEventListener('click', function() {
+    div.remove();
   });
+}
+
+// Função para anexar eventos de remoção (mantida para compatibilidade)
+function attachRemoveEvent() {
+  document.querySelectorAll('.remove-equacao').forEach(button => {
+    button.addEventListener('click', function() {
+      this.parentElement.remove();
+    });
+  });
+}
+
 </script>
+
+
+
 {% endset %}

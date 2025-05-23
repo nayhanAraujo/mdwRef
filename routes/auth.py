@@ -24,15 +24,23 @@ def login():
         senha = request.form['senha']
         senha_hash = hashlib.sha256(senha.encode()).hexdigest()
         conn, cur = get_db()
+        current_app.logger.info(f"Tentando login com usuário: {identificacao}")
         cur.execute("""
-            SELECT NOME FROM USUARIO
+            SELECT CODUSUARIO, NOME FROM USUARIO
             WHERE IDENTIFICACAO = ? AND SENHA = ? AND STATUS = -1
         """, (identificacao, senha_hash))
         resultado = cur.fetchone()
         if resultado:
-            session['usuario'] = resultado[0]
+            # Salvar um dicionário com CODUSUARIO e NOME
+            session['usuario'] = {
+                'codusuario': resultado[0],
+                'nome': resultado[1]
+            }
+            current_app.logger.info(f"Sessão configurada para usuário: {session['usuario']}, sessão: {session}")
             return redirect(url_for('variaveis.home'))
+        current_app.logger.error(f"Falha no login: usuário {identificacao} ou senha inválidos")
         return render_template('login.html', erro='Usuário ou senha inválidos.')
+    current_app.logger.info("Renderizando página de login")
     return render_template('login.html')
 
 @auth_bp.route('/forgot_password', methods=['GET', 'POST'])

@@ -17,13 +17,13 @@ def conectar():
         if current_app and 'DB_CONFIG' in current_app.config:
             db_config = current_app.config['DB_CONFIG']
             host = db_config.get('host', '127.0.0.1')
-            port = db_config.get('port', '3052')
+            port = db_config.get('port', '3050' if os.environ.get('FLY_APP_NAME') else '3052')
             database_path = db_config['database']
             user = db_config.get('user', 'SYSDBA')
             password = db_config.get('password', 'masterkey')
         else:
             host = os.environ.get('FIREBIRD_HOST', '127.0.0.1')
-            port = os.environ.get('FIREBIRD_PORT', '3052')
+            port = os.environ.get('FIREBIRD_PORT', '3050' if os.environ.get('FLY_APP_NAME') else '3052')
             
             if os.environ.get('FLY_APP_NAME'):
                 database_path = os.environ.get('FIREBIRD_DB', '/app/data/REFERENCIAS.FDB')

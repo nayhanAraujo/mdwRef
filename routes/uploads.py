@@ -78,10 +78,10 @@ def importar_formula():
         return redirect(url_for('uploads.uploaddll'))
     codvar = var[0]
     cur.execute("""
-        INSERT INTO FORMULAS (NOME, DESCRICAO, FORMULA, CASADECIMAIS, DTHRULTMODIFICACAO, CODUSUARIO)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO FORMULAS (NOME, DESCRICAO, FORMULA, DTHRULTMODIFICACAO, CODUSUARIO)
+        VALUES (?, ?, ?, ?, ?)
         RETURNING CODFORMULA
-    """, (sigla, f"Fórmula para {sigla}", formula, 2, datetime.now(), 4))
+    """, (sigla, f"Fórmula para {sigla}", formula, datetime.now(), 4))
     codformula = cur.fetchone()[0]
     cur.execute("""
         INSERT INTO FORMULA_VARIAVEL (CODFORMULA, CODVARIAVEL, CODUSUARIO, DTHRULTMODIFICACAO)

@@ -7,7 +7,7 @@
     <i class="bi bi-file-bar-graph-fill"></i> Biblioteca
   </h3>
   <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
   </div>
 </div>
 <style>
@@ -123,6 +123,31 @@
         </div>
       </div>
     </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingModoTexto">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseModoTexto" aria-expanded="true" aria-controls="collapseModoTexto">
+          Modo Texto
+        </button>
+      </h2>
+      <div id="collapseModoTexto" class="accordion-collapse collapse show" aria-labelledby="headingModoTexto">
+        <div class="accordion-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <a href="{{ url_for('modelos.novo_modelo') }}" class="tile text-decoration-none">
+                <i class="bi bi-plus-circle"></i>
+                Novo Modelo
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('modelos.visualizar_modelos') }}" class="tile text-decoration-none">
+                <i class="bi bi-list"></i>
+                Modelos Cadastrados
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="accordion-item">
       <h2 class="accordion-header" id="headingGer">
@@ -157,6 +182,25 @@
                 Linguagens
               </a>
             </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('scripts.novo_script') }}" class="tile text-decoration-none">
+                <i class="bi bi-code-slash"></i>
+                Novo Script
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="{{ url_for('codigos_universais.visualizar_codigos_universais') }}" class="tile text-decoration-none">
+                <i class="bi bi-list"></i>
+                Códigos Universais
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a class="tile text-decoration-none"" href="{{ url_for('variaveis.vincular_codigo_universal') }}" >
+                <i class="bi bi-link-45deg me-1"></i> Vincular Códigos DICOM
+              </a>
+
+            </div>
+
           </div>
         </div>
       </div>

@@ -11,8 +11,12 @@ from routes.bibliotecas import biblioteca_pb
 from routes.unidades import unidades_bp
 from routes.especialidades import especialidades_bp
 from routes.linguagens import linguagens_bp
+from routes.scripts import scripts_bp
+from routes.secoes import secoes_bp
+from routes.modelos import modelos_bp
+from routes.codigos_universais import codigos_universais_bp  # Adicione esta linha
 from dotenv import load_dotenv  # Adicione este import
-
+from datetime import timedelta
 import os
 import logging
 
@@ -39,12 +43,25 @@ def create_app():
     # Configurações de sessão
     app.config['SESSION_TYPE'] = 'filesystem'
     app.config['SESSION_PERMANENT'] = False
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Expira em 30 minutos
     app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_FILE_DIR'] = os.path.join(app.instance_path, 'sessions') if is_local else '/app/sessions'
-    app.config['SESSION_FILE_THRESHOLD'] = 500
 
+    if is_local:
+        # Usar um caminho explícito no diretório raiz do projeto
+        app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sessions')
+    else:
+        app.config['SESSION_FILE_DIR'] = '/app/sessions'
+
+    app.config['SESSION_FILE_THRESHOLD'] = 500
+    app.config['SESSION_COOKIE_SECURE'] = not is_local  # Cookies só em HTTPS
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # Impede acesso via JavaScript
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção contra CSRF
     # Configuração do diretório de upload dinâmico
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'Uploads') if is_local else '/app/uploads'
+    # Configuração do diretório de upload dinâmico
+    if is_local:
+        app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/Uploads')
+    else:
+        app.config['UPLOAD_FOLDER'] = '/app/uploads'
 
     # Inicializar extensões
     Session(app)
@@ -68,7 +85,7 @@ def create_app():
     else:
         app.config['DB_CONFIG'] = {
             'host': os.environ.get('FIREBIRD_HOST', '127.0.0.1'),
-            'port': os.environ.get('FIREBIRD_PORT', '3052'),
+            'port': os.environ.get('FIREBIRD_PORT', '3050'),
             'database': os.environ.get('FIREBIRD_DB', '/app/data/REFERENCIAS.FDB'),
             'user': os.environ.get('FIREBIRD_USER', 'SYSDBA'),
             'password': os.environ.get('FIREBIRD_PASSWORD', 'masterkey')
@@ -81,7 +98,7 @@ def create_app():
         cur = conn.cursor()
         current_app.config['db_conn'] = conn
         current_app.config['db_cursor'] = cur
-
+        app.logger.info(f"Sessão atual: {session.get('usuario', 'Nenhuma sessão')}")
     @app.teardown_request
     def teardown_request(exception):
         conn = current_app.config.get('db_conn')
@@ -98,11 +115,14 @@ def create_app():
     @app.route('/')
     def index():
         if 'usuario' not in session:
+            app.logger.info("Nenhuma sessão encontrada, redirecionando para login")
             return redirect(url_for('auth.login'))
+        app.logger.info(f"Sessão encontrada: {session['usuario']}")
         return redirect(url_for('variaveis.home'))
 
     @app.route('/login')
     def login_redirect():
+        app.logger.info("Redirecionando para auth.login")
         return redirect(url_for('auth.login'))
 
     @app.route('/uploads/<filename>')
@@ -116,16 +136,23 @@ def create_app():
             return dict(links_menu=[])
         links = [
             ('Início', 'variaveis.home', 'house'),
+            ('Novo Script', 'scripts.novo_script', 'plus-circle'),  
+            ('Visualizar Scripts', 'scripts.visualizar_scripts', 'list'),
+           # ('Nova Seção', 'secoes.nova_secao', 'plus-circle'),  
+            #('Visualizar Seções', 'secoes.visualizar_secoes', 'list'),
+            ('Novo Modelo', 'modelos.novo_modelo', 'plus-circle'),  
+            ('Visualizar Modelos', 'modelos.visualizar_modelos', 'list'),
             ('Nova Variável', 'variaveis.nova_variavel', 'plus-circle'),
             ('Nova Fórmula', 'formulas.nova_formula', 'calculator'),
             ('Cadastrar Referência', 'referencias.nova_referencia', 'book'),
-            ('Cadastrar Usuário', 'users.novo_usuario', 'person-plus'),
-            ('Visualizar Usuários', 'users.usuarios', 'people-fill'),
+            #('Cadastrar Usuário', 'users.novo_usuario', 'person-plus'),
+            #('Visualizar Usuários', 'users.usuarios', 'people-fill'),
             ('Fórmulas Cadastradas', 'formulas.visualizar_formulas', 'calculator-fill'),
             ('Visualizar Variáveis', 'variaveis.visualizar_variaveis', 'card-list'),
-            ('Visualizar Unidades', 'unidades.visualizar_unidades', 'speedometer2'),
+            #('Visualizar Unidades', 'unidades.visualizar_unidades', 'speedometer2'),
             ('Visualizar Especialidades', 'especialidades.visualizar_especialidades', 'briefcase-fill'),
             ('Visualizar Linguagens', 'linguagens.visualizar_linguagens', 'translate'),
+            #('Códigos Universais', 'codigos_universais.visualizar_codigos_universais', 'list'),  # Adicione esta linha
             ('Biblioteca', 'bibliotecas.biblioteca', 'collection'),
         ]
         return dict(links_menu=links)
@@ -141,6 +168,10 @@ def create_app():
     app.register_blueprint(unidades_bp, url_prefix='/unidades')
     app.register_blueprint(especialidades_bp, url_prefix='/especialidades')
     app.register_blueprint(linguagens_bp, url_prefix='/linguagens')
+    app.register_blueprint(scripts_bp,url_prefix='/scripts')
+    app.register_blueprint(secoes_bp, url_prefix='/secoes') 
+    app.register_blueprint(modelos_bp, url_prefix='/modelos')
+    app.register_blueprint(codigos_universais_bp, url_prefix='/codigos_universais')  # Adicione esta linha
 
     return app
 

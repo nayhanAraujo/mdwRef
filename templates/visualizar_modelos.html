@@ -1,0 +1,222 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-list me-2"></i> Modelos Cadastrados
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <!-- Formulário de Filtros -->
+      <form method="GET" action="{{ url_for('modelos.visualizar_modelos') }}" class="mb-4">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Nome do Modelo</label>
+            <input type="text" name="nome" class="form-control" value="{{ filtro_nome }}" placeholder="Ex.: Modelo Cardíaco">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Mensagem de Erro -->
+      {% if get_flashed_messages() %}
+        <div class="alert alert-danger mb-3">
+          {% for category, message in get_flashed_messages(with_categories=true) %}
+            {{ message }}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Tabela de Modelos -->
+      <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle">
+          <thead class="table-primary">
+            <tr>
+              <th>Nome do Modelo</th>
+              <th>Seções</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if modelos_detalhes %}
+              {% for item in modelos_detalhes %}
+                <tr>
+                  <td>{{ item['modelo'][1] }}</td>
+                  <td>
+                    {% if item['secoes'] %}
+                      <ul class="list-unstyled mb-0">
+                        {% for secao in item['secoes'] %}
+                          <li>{{ secao[1] }}</li>
+                        {% endfor %}
+                      </ul>
+                    {% else %}
+                      Nenhuma seção cadastrada.
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <a href="{{ url_for('secoes.visualizar_secoes', codmodelo=item['modelo'][0]) }}" class="btn btn-primary btn-sm">
+                      <i class="bi bi-eye"></i> Visualizar
+                    </a>
+                    <a href="{{ url_for('secoes.nova_secao', codmodelo=item['modelo'][0]) }}" class="btn btn-success btn-sm">
+                      <i class="bi bi-plus-circle"></i> Nova Seção
+                    </a>
+                    <button type="button" class="btn btn-outline-warning btn-sm edit-modelo-btn" 
+                            data-codmodelo="{{ item['modelo'][0] }}" data-nome="{{ item['modelo'][1] }}">
+                      <i class="bi bi-pencil-square"></i> Editar
+                    </button>
+                    <form action="{{ url_for('modelos.excluir_modelo', codmodelo=item['modelo'][0]) }}" method="POST" class="d-inline excluir-modelo-form">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i> Excluir
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="3" class="text-center">Nenhum modelo encontrado.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginação -->
+      <nav aria-label="Paginação">
+        <ul class="pagination justify-content-center">
+          {% if pagina > 1 %}
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('modelos.visualizar_modelos', page=pagina-1, nome=filtro_nome) }}">Anterior</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Anterior</span>
+            </li>
+          {% endif %}
+          <li class="page-item disabled">
+            <span class="page-link">Página {{ pagina }} de {{ total_paginas }}</span>
+          </li>
+          {% if pagina < total_paginas %}
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('modelos.visualizar_modelos', page=pagina+1, nome=filtro_nome) }}">Próxima</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Próxima</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+
+      <!-- Botões de Ação -->
+      <div class="d-flex justify-content-between">
+        <a href="{{ url_for('modelos.novo_modelo') }}" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Novo Modelo
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.edit-modelo-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      console.log('Botão Editar Modelo clicado:', this.dataset); // Depuração
+      const codmodelo = this.dataset.codmodelo;
+      const nomeAtual = this.dataset.nome;
+
+      Swal.fire({
+        title: 'Editar Nome do Modelo',
+        html: `
+          <input type="text" id="nome-modelo" class="swal2-input" value="${nomeAtual}" placeholder="Digite o novo nome">
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Salvar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+          const novoNome = document.getElementById('nome-modelo').value.trim();
+          if (!novoNome) {
+            Swal.showValidationMessage('O nome do modelo é obrigatório');
+            return false;
+          }
+          return { codmodelo: codmodelo, nome: novoNome };
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch('/secoes/editar_nome_modelo', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(result.value)
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (data.success) {
+              Swal.fire({
+                title: 'Sucesso!',
+                text: 'Nome do modelo atualizado com sucesso.',
+                icon: 'success'
+              }).then(() => {
+                window.location.reload();
+              });
+            } else {
+              Swal.fire({
+                title: 'Erro!',
+                text: data.error || 'Erro ao atualizar nome do modelo',
+                icon: 'error'
+              });
+            }
+          })
+          .catch(error => {
+            console.error('Erro ao atualizar nome do modelo:', error);
+            Swal.fire({
+              title: 'Erro!',
+              text: 'Erro ao atualizar nome do modelo: ' + error.message,
+              icon: 'error'
+            });
+          });
+        }
+      });
+    });
+  });
+
+  document.querySelectorAll('.excluir-modelo-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      Swal.fire({
+        title: 'Confirmar Exclusão',
+        text: 'Tem certeza que deseja excluir este modelo e suas seções?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Excluir',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+
+  // Debugging: Log modelos_detalhes structure
+  console.log('Modelos detalhes:', {{ modelos_detalhes | tojson }});
+</script>
+{% endset %}

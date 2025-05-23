@@ -1,11 +1,154 @@
 {% extends 'layout.html' %}
+{% block title %}Confirmar Exclusão de Variável{% endblock %}
 {% set content %}
-  <h4>Exclusão de variável vinculada</h4>
-  <p>Essa variável está associada a {{ formulas|length }} fórmula(s).</p>
-  <p>Deseja realmente excluir a variável e todas as fórmulas relacionadas?</p>
+<!-- Incluir o Tailwind CSS via CDN -->
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
-  <form method="POST">
-    <button type="submit" class="btn btn-danger">Sim, excluir tudo</button>
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
-  </form>
+<div class="container mx-auto px-4 py-6">
+  <div class="flex justify-between items-center mb-6">
+    <h3 class="text-2xl font-bold text-blue-600 flex items-center">
+      <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      Confirmar Exclusão de Variável
+    </h3>
+    <div class="text-gray-500 text-sm">
+      Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
+  </div>
+
+  <div class="bg-white shadow-md rounded-lg p-6">
+    <!-- Aviso de Exclusão -->
+    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+      <p class="font-semibold">Atenção!</p>
+      <p>Você está prestes a excluir a variável <strong>{{ nome_variavel }}</strong> (Sigla: {{ sigla }}, Código: {{ codvariavel }}). Esta ação excluirá permanentemente todos os itens vinculados listados abaixo. <strong>Esta ação é irreversível!</strong></p>
+    </div>
+
+    <!-- Card para Fórmulas -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-800 flex items-center mb-2">
+        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m-3-3v6m-9 9h18"></path></svg>
+        Fórmulas Vinculadas ({{ formulas|length }})
+      </h4>
+      {% if formulas %}
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <ul class="list-disc pl-5 text-gray-600">
+            {% for formula in formulas %}
+              <li>Fórmula: {{ formula.formula }} (Código: {{ formula.codformula }})</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <p class="text-gray-500 italic">Nenhuma fórmula vinculada.</p>
+      {% endif %}
+    </div>
+
+    <!-- Card para Normalidades -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-800 flex items-center mb-2">
+        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Normalidades Vinculadas ({{ normalidades|length }})
+      </h4>
+      {% if normalidades %}
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <ul class="list-disc pl-5 text-gray-600">
+            {% for normalidade in normalidades %}
+              <li>Sexo: {{ normalidade.sexo }}, Min: {{ normalidade.valormin }}, Max: {{ normalidade.valormax }}{% if normalidade.idade_min %}, Idade Min: {{ normalidade.idade_min }}{% endif %}{% if normalidade.idade_max %}, Idade Max: {{ normalidade.idade_max }}{% endif %}{% if normalidade.codreferencia %}, Ref: {{ normalidade.codreferencia }}{% endif %}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <p class="text-gray-500 italic">Nenhuma normalidade vinculada.</p>
+      {% endif %}
+    </div>
+
+    <!-- Card para Scripts -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-800 flex items-center mb-2">
+        <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+        Scripts Vinculados ({{ scripts|length }})
+      </h4>
+      {% if scripts %}
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <ul class="list-disc pl-5 text-gray-600">
+            {% for script in scripts %}
+              <li>{{ script.nome }} (Código: {{ script.codscript }})</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <p class="text-gray-500 italic">Nenhum script vinculado.</p>
+      {% endif %}
+    </div>
+
+    <!-- Card para Seções -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-800 flex items-center mb-2">
+        <svg class="w-5 h-5 mr-2 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+        Seções Vinculadas ({{ secoes|length }})
+      </h4>
+      {% if secoes %}
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <ul class="list-disc pl-5 text-gray-600">
+            {% for secao in secoes %}
+              <li>{{ secao.nome }} (Código: {{ secao.codsecao }})</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <p class="text-gray-500 italic">Nenhuma seção vinculada.</p>
+      {% endif %}
+    </div>
+
+    <!-- Card para Códigos DICOM -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-800 flex items-center mb-2">
+        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+        Códigos DICOM Vinculados ({{ codigos_dicom|length }})
+      </h4>
+      {% if codigos_dicom %}
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <ul class="list-disc pl-5 text-gray-600">
+            {% for codigo in codigos_dicom %}
+              <li>{{ codigo.codigo }} - {{ codigo.descricaoptbr }} (Código: {{ codigo.cod_universal }})</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <p class="text-gray-500 italic">Nenhum código DICOM vinculado.</p>
+      {% endif %}
+    </div>
+
+    <!-- Card para Alternativas -->
+    <div class="mb-6">
+      <h4 class="text-lg font-semibold text-gray-800 flex items-center mb-2">
+        <svg class="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        Alternativas Vinculadas ({{ alternativas|length }})
+      </h4>
+      {% if alternativas %}
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <ul class="list-disc pl-5 text-gray-600">
+            {% for alternativa in alternativas %}
+              <li>{{ alternativa }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <p class="text-gray-500 italic">Nenhuma alternativa vinculada.</p>
+      {% endif %}
+    </div>
+
+    <!-- Formulário de Confirmação -->
+    <form method="POST" action="{{ url_for('variaveis.confirmar_exclusao_variavel') }}">
+      <div class="flex justify-end space-x-3 mt-6">
+        <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center">
+          <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          Cancelar
+        </a>
+        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center">
+          <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          Confirmar Exclusão
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endset %}

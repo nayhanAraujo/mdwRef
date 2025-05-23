@@ -1,0 +1,186 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-paperclip me-2"></i> Vincular Anexo à Variável
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+  </div>
+</div>
+
+<style>
+  .form-control-file {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+  }
+</style>
+
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label">Variável: {{ nome_variavel }}</label>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tipo de Anexo *</label>
+          <select name="tipo_anexo" id="tipo_anexo" class="form-select" required>
+            <option value="PDF">PDF</option>
+            <option value="URL">URL</option>
+            <option value="IMAGEM">Imagem</option>
+          </select>
+        </div>
+        <div class="mb-3" id="campo_arquivo" style="display: block;">
+          <label class="form-label">Arquivo *</label>
+          <input type="file" name="arquivo" id="arquivo" class="form-control-file" accept=".pdf,image/*">
+        </div>
+        <div class="mb-3" id="campo_url" style="display: none;">
+          <label class="form-label">URL *</label>
+          <input type="text" name="link" id="link" class="form-control" placeholder="Ex.: https://exemplo.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nome do Anexo</label>
+          <input type="text" name="nome" class="form-control" placeholder="Ex.: Estudo Simpson">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Descrição</label>
+          <textarea name="descricao" class="form-control" placeholder="Descrição do anexo (ex.: Trecho do estudo)"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Fórmula Associada *</label>
+          <select name="codformula" class="form-select" required>
+            <option value="">-- Selecione --</option>
+            {% for formula in formulas %}
+              <option value="{{ formula[0] }}">{{ formula[1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Referência</label>
+          <div class="input-group">
+            <select name="codreferencia" class="form-select" onchange="updatePreviewButton(this)">
+              <option value="">-- Nenhuma --</option>
+              {% for cod, titulo, ano, autores in referencias %}
+                <option value="{{ cod }}" data-titulo="{{ titulo }}" data-ano="{{ ano }}" data-autores="{{ autores }}">{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-outline-info btn-sm ms-2 preview-btn" data-bs-toggle="modal" data-bs-target="#referenciaModal" disabled>Pré-visualizar</button>
+          </div>
+        </div>
+        
+        <!-- Modal de Pré-visualização -->
+        <div class="modal fade" id="referenciaModal" tabindex="-1" aria-labelledby="referenciaModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="referenciaModalLabel">Detalhes da Referência</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p><strong>Título:</strong> <span id="modal-titulo"></span></p>
+                <p><strong>Ano:</strong> <span id="modal-ano"></span></p>
+                <p><strong>Autores:</strong> <span id="modal-autores"></span></p>
+                <div id="modal-anexos">
+                  <strong>Anexos:</strong>
+                  <ul id="modal-anexos-list"></ul>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- JavaScript (adicionar ao final do template) -->
+        <script>
+          function updatePreviewButton(select) {
+            const button = select.nextElementSibling;
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption.value) {
+              button.disabled = false;
+              button.dataset.titulo = selectedOption.dataset.titulo;
+              button.dataset.ano = selectedOption.dataset.ano;
+              button.dataset.autores = selectedOption.dataset.autores || 'Nenhum autor';
+              button.dataset.anexos = JSON.stringify(getAnexos(selectedOption.value));
+            } else {
+              button.disabled = true;
+              delete button.dataset.titulo;
+              delete button.dataset.ano;
+              delete button.dataset.autores;
+              delete button.dataset.anexos;
+            }
+          }
+        
+          function getAnexos(codReferencia) {
+  return fetch(`/referencias/get_anexos/${codReferencia}`)
+    .then(response => response.json())
+    .catch(error => {
+      console.error('Erro ao buscar anexos:', error);
+      return [];
+    });
+}
+        
+document.querySelectorAll('.preview-btn').forEach(button => {
+  button.addEventListener('click', async function() {
+    document.getElementById('modal-titulo').textContent = this.dataset.titulo;
+    document.getElementById('modal-ano').textContent = this.dataset.ano;
+    document.getElementById('modal-autores').textContent = this.dataset.autores;
+    const anexosList = document.getElementById('modal-anexos-list');
+    anexosList.innerHTML = '';
+    const anexos = await getAnexos(this.dataset.codReferencia);
+    if (anexos.length > 0) {
+      anexos.forEach(anexo => {
+        const li = document.createElement('li');
+        li.innerHTML = `${anexo.descricao || anexo.tipo} (${anexo.tipo}) - <a href="${anexo.caminho}" target="_blank">Visualizar</a>`;
+        anexosList.appendChild(li);
+      });
+    } else {
+      anexosList.innerHTML = '<li>Nenhum anexo disponível.</li>';
+    }
+  });
+});
+
+        </script>
+        <div class="text-end">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save"></i> Salvar
+          </button>
+          <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Alternar entre campo de arquivo e URL
+  document.getElementById('tipo_anexo').addEventListener('change', function() {
+    const tipo = this.value;
+    const campoArquivo = document.getElementById('campo_arquivo');
+    const campoUrl = document.getElementById('campo_url');
+    const inputArquivo = document.getElementById('arquivo');
+    const inputUrl = document.getElementById('link');
+
+    if (tipo === 'URL') {
+      campoArquivo.style.display = 'none';
+      campoUrl.style.display = 'block';
+      inputArquivo.removeAttribute('required');
+      inputUrl.setAttribute('required', 'required');
+    } else {
+      campoArquivo.style.display = 'block';
+      campoUrl.style.display = 'none';
+      inputArquivo.setAttribute('required', 'required');
+      inputUrl.removeAttribute('required');
+    }
+  });
+
+  // Definir estado inicial
+  document.getElementById('tipo_anexo').dispatchEvent(new Event('change'));
+</script>
+{% endset %}

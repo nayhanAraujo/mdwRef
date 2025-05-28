@@ -6,30 +6,64 @@
     <i class="bi bi-plus-circle me-2"></i> Cadastrar Novo Script
   </h3>
   <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario'] ['nome']}}</strong>
+    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
   </div>
 </div>
 
 <div class="container">
   <div class="card shadow-sm mb-4">
     <div class="card-body">
-      <form method="POST">
+      <form method="POST" enctype="multipart/form-data">
         <h5 class="text-primary">Informações do Script</h5>
         <div class="mb-3">
           <label class="form-label">Nome do Script *</label>
           <input type="text" class="form-control" id="nome" name="nome" required>
         </div>
         <div class="mb-3">
-          <label class="form-label">Descrição</label>
-          <textarea class="form-control" id="descricao" name="descricao" rows="5"></textarea>
+          <label class="form-label">Pacote</label>
+          <select name="codpacote" id="codpacote" class="form-select">
+            <option value="">Nenhum</option>
+            {% for pacote in pacotes %}
+              <option value="{{ pacote[0] }}">{{ pacote[1] }}{% if pacote[2] %} - {{ pacote[2] }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Sistema</label>
+          <select name="sistema" id="sistema" class="form-select" onchange="toggleCamposSistema()">
+            <option value="">Nenhum</option>
+            <option value="Laudos UX">Laudos UX</option>
+            <option value="Laudos Flex">Laudos Flex</option>
+          </select>
+        </div>
+        <div class="mb-3" id="campo-arquivo-json" style="display: none;">
+          <label class="form-label">Arquivo JSON (Laudos UX) *</label>
+          <input type="file" class="form-control" id="arquivo_json" name="arquivo_json" accept=".json">
         </div>
         <div class="mb-3">
           <label class="form-label">Linguagem</label>
-          <input type="text" class="form-control" id="linguagem" name="linguagem" placeholder="Ex.: C#, Python">
+          <input type="text" class="form-control" id="linguagem" name="linguagem" placeholder="Ex.: C#, HTML" oninput="toggleCampoCaminhoProjeto()">
+        </div>
+        <div class="mb-3" id="campo-caminho-projeto" style="display: none;">
+          <label class="form-label">Caminho do Projeto (C#)</label>
+          <input type="text" class="form-control" id="caminho_projeto" name="caminho_projeto" placeholder="Ex.: /caminho/do/projeto">
         </div>
         <div class="mb-3">
-          <label class="form-label">Caminho do Projeto</label>
-          <input type="text" class="form-control" id="caminho_projeto" name="caminho_projeto" placeholder="Ex.: /caminho/do/projeto">
+          <label class="form-label">Descrição</label>
+          <textarea class="form-control" id="descricao" name="descricao" rows="5" maxlength="255" placeholder="Descreva a funcionalidade ou propósito do script"></textarea>
+          <small class="form-text text-muted">Máximo de 255 caracteres.</small>
+        </div>
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" id="aprovado" name="aprovado" onchange="toggleAprovadoPor()">
+          <label class="form-check-label" for="aprovado">Aprovado</label>
+        </div>
+        <div class="mb-3" id="campo-aprovado-por" style="display: none;">
+          <label class="form-label">Aprovado Por *</label>
+          <input type="text" class="form-control" id="aprovado_por" name="aprovado_por" placeholder="Ex.: Dr. João Silva ou Clínica São Paulo">
+        </div>
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" id="ativo" name="ativo" checked>
+          <label class="form-check-label" for="ativo">Ativo</label>
         </div>
         <div class="text-end">
           <button type="button" class="btn btn-success" onclick="confirmarSalvarScript()">
@@ -45,19 +79,95 @@
 </div>
 
 <script>
-  function confirmarSalvarScript() {
-    Swal.fire({
-      title: 'Salvar script?',
-      text: 'Deseja realmente salvar esse script?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sim, salvar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        document.querySelector('form').submit();
-      }
-    });
+function toggleCamposSistema() {
+  const sistema = document.getElementById('sistema').value;
+  const campoArquivoJson = document.getElementById('campo-arquivo-json');
+  if (sistema === 'Laudos UX') {
+    campoArquivoJson.style.display = 'block';
+    document.getElementById('arquivo_json').setAttribute('required', 'required');
+  } else {
+    campoArquivoJson.style.display = 'none';
+    document.getElementById('arquivo_json').removeAttribute('required');
   }
+}
+
+function toggleCampoCaminhoProjeto() {
+  const linguagem = document.getElementById('linguagem').value.trim().toUpperCase();
+  const campoCaminhoProjeto = document.getElementById('campo-caminho-projeto');
+  if (linguagem === 'C#') {
+    campoCaminhoProjeto.style.display = 'block';
+  } else {
+    campoCaminhoProjeto.style.display = 'none';
+  }
+}
+
+function toggleAprovadoPor() {
+  const aprovado = document.getElementById('aprovado').checked;
+  const campoAprovadoPor = document.getElementById('campo-aprovado-por');
+  if (aprovado) {
+    campoAprovadoPor.style.display = 'block';
+    document.getElementById('aprovado_por').setAttribute('required', 'required');
+  } else {
+    campoAprovadoPor.style.display = 'none';
+    document.getElementById('aprovado_por').removeAttribute('required');
+  }
+}
+
+function confirmarSalvarScript() {
+  const nome = document.getElementById('nome').value.trim();
+  const sistema = document.getElementById('sistema').value;
+  const arquivoJson = document.getElementById('arquivo_json').files[0];
+  const aprovado = document.getElementById('aprovado').checked;
+  const aprovadoPor = document.getElementById('aprovado_por').value.trim();
+
+  if (!nome) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Nome inválido',
+      text: 'O nome do script é obrigatório.'
+    });
+    return;
+  }
+
+  if (sistema === 'Laudos UX' && !arquivoJson) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Arquivo JSON obrigatório',
+      text: 'Você deve selecionar um arquivo JSON para o sistema Laudos UX.'
+    });
+    return;
+  }
+
+  if (sistema === 'Laudos UX' && arquivoJson && !arquivoJson.name.endsWith('.json')) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Formato inválido',
+      text: 'O arquivo deve ser no formato JSON.'
+    });
+    return;
+  }
+
+  if (aprovado && !aprovadoPor) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Aprovador inválido',
+      text: 'O nome do aprovador é obrigatório quando o script é marcado como aprovado.'
+    });
+    return;
+  }
+
+  Swal.fire({
+    title: 'Salvar script?',
+    text: 'Deseja realmente salvar esse script?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sim, salvar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.querySelector('form').submit();
+    }
+  });
+}
 </script>
 {% endset %}

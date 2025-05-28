@@ -13,69 +13,306 @@
 <div class="container">
   <div class="card shadow-sm mb-4">
     <div class="card-body">
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Descrição</th>
-            <th>Linguagem</th>
-            <th>Caminho do Projeto</th>
-            <th>Variáveis Vinculadas</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in scripts_detalhes %}
-            <tr>
-              <td>{{ item.script[1] }}</td>
-              <td>{{ item.script[2] }}</td>
-              <td>{{ item.script[3] or '' }}</td>
-              <td>{{ item.script[4] or '' }}</td>
-              <td>
-                {% if item.variaveis %}
-                  <ul>
-                    {% for variavel in item.variaveis %}
-                      <li>{{ variavel[0] }} ({{ variavel[1] }})</li>
+      <!-- Busca Rápida -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="input-group">
+            <input type="text" id="quick-search" class="form-control" placeholder="Buscar por nome..." value="{{ request.args.get('nome', '') }}" oninput="filterScripts()">
+            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-6 text-end">
+          <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#filterModal">
+            <i class="bi bi-funnel"></i> Filtros Avançados
+          </button>
+          <a href="{{ url_for('scripts.novo_script') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Novo Script
+          </a>
+        </div>
+      </div>
+
+      <!-- Modal de Filtros -->
+      <div class="modal fade" id="filterModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Filtros Avançados</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <form id="filterForm" method="GET" action="{{ url_for('scripts.visualizar_scripts') }}">
+                <div class="mb-3">
+                  <label for="pacote" class="form-label">Pacote</label>
+                  <select name="pacote" id="pacote" class="form-select">
+                    <option value="">Todos</option>
+                    {% for pacote in pacotes %}
+                      <option value="{{ pacote[0] }}" {% if request.args.get('pacote') == pacote[0]|string %}selected{% endif %}>{{ pacote[1] }}{% if pacote[2] %} - {{ pacote[2] }}{% endif %}</option>
                     {% endfor %}
-                  </ul>
-                {% else %}
-                  Nenhuma variável vinculada.
-                {% endif %}
-              </td>
-              <td>
-                <a href="{{ url_for('scripts.vincular_variaveis', codscriptlaudo=item.script[0]) }}" class="btn btn-primary btn-sm">
-                  <i class="bi bi-link"></i> Vincular Variáveis
-                </a>
-              </td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="6">Nenhum script encontrado.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="sistema" class="form-label">Sistema</label>
+                  <select name="sistema" id="sistema" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="Laudos UX" {% if request.args.get('sistema') == 'Laudos UX' %}selected{% endif %}>Laudos UX</option>
+                    <option value="Laudos Flex" {% if request.args.get('sistema') == 'Laudos Flex' %}selected{% endif %}>Laudos Flex</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="aprovado" class="form-label">Aprovado</label>
+                  <select name="aprovado" id="aprovado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="1" {% if request.args.get('aprovado') == '1' %}selected{% endif %}>Aprovado</option>
+                    <option value="0" {% if request.args.get('aprovado') == '0' %}selected{% endif %}>Não Aprovado</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="ativo" class="form-label">Ativo</label>
+                  <select name="ativo" id="ativo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="1" {% if request.args.get('ativo') == '1' %}selected{% endif %}>Ativo</option>
+                    <option value="0" {% if request.args.get('ativo') == '0' %}selected{% endif %}>Inativo</option>
+                  </select>
+                </div>
+                <div class="text-end">
+                  <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
+                  <a href="{{ url_for('scripts.visualizar_scripts') }}" class="btn btn-outline-secondary">Limpar</a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade de Scripts -->
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="script-list">
+        {% for item in scripts_detalhes %}
+          <div class="col">
+            <div class="card h-100 shadow-sm">
+              {% if item.imagens %}
+                <img src="{{ item.imagens[0].caminho }}" class="card-img-top" alt="{{ item.imagens[0].nome }}" style="height: 100px; object-fit: cover;">
+              {% endif %}
+              <div class="card-body">
+                <h5 class="card-title fw-bold">{{ item.script[1] }}</h5>
+                <div class="mb-2">
+                  {% if item.pacote_nome %}
+                    <span class="badge bg-primary me-1">{{ item.pacote_nome }}</span>
+                  {% endif %}
+                  {% if item.script[5] %}
+                    <span class="badge bg-info">{{ item.script[5] }}</span>
+                  {% endif %}
+                </div>
+                <p class="card-text text-muted small">
+                  <strong>Linguagem:</strong> {{ item.script[3] or '-' }}<br>
+                  <strong>Aprovado:</strong> 
+                  {% if item.script[6] %}
+                    <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Sim</span>
+                  {% else %}
+                    <span class="badge bg-danger"><i class="bi bi-x-circle-fill"></i> Não</span>
+                  {% endif %}
+                  <br>
+                  <strong>Data de Verificação:</strong> {{ item.script[7]|datetimeformat('%d/%m/%Y %H:%M') if item.script[7] else '-' }}<br>
+                  <strong>Aprovado Por:</strong> {{ item.script[10] or '-' }}<br>
+                  <strong>Ativo:</strong> 
+                  {% if item.script[8] %}
+                    <span class="badge bg-success"><i class="bi bi-toggle-on"></i> Ativo</span>
+                  {% else %}
+                    <span class="badge bg-secondary"><i class="bi bi-toggle-off"></i> Inativo</span>
+                  {% endif %}
+                </p>
+              </div>
+              <div class="card-footer bg-transparent border-top-0">
+                <div class="d-flex justify-content-between">
+                  <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailsModal-{{ item.script[0] }}">
+                    <i class="bi bi-info-circle"></i> Ver Detalhes
+                  </button>
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="bi bi-three-dots"></i> Ações
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" href="{{ url_for('scripts.vincular_variaveis', codscriptlaudo=item.script[0]) }}"><i class="bi bi-link"></i> Vincular Variáveis</a></li>
+                      <li><a class="dropdown-item" href="{{ url_for('scripts.editar_script', codscriptlaudo=item.script[0]) }}"><i class="bi bi-pencil"></i> Editar</a></li>
+                      {% if item.script[5] == 'Laudos UX' and item.tem_arquivo_json %}
+                        <li><a class="dropdown-item" href="{{ url_for('scripts.exportar_json', codscriptlaudo=item.script[0]) }}"><i class="bi bi-download"></i> Exportar JSON</a></li>
+                      {% endif %}
+                      <li><a class="dropdown-item" href="#" onclick="toggleAprovacao({{ item.script[0] }}, {{ item.script[6] }}); return false;">
+                        <i class="bi bi-{% if item.script[6] %}x-circle{% else %}check-circle{% endif %}"></i> {{ 'Desaprovar' if item.script[6] else 'Aprovar' }}
+                      </a></li>
+                      <li><a class="dropdown-item" href="#" onclick="toggleAtivo({{ item.script[0] }}, {{ item.script[8] }}); return false;">
+                        <i class="bi bi-toggle-{% if item.script[8] %}off{% else %}on{% endif %}"></i> {{ 'Desativar' if item.script[8] else 'Ativar' }}
+                      </a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal de Detalhes -->
+          <div class="modal fade" id="detailsModal-{{ item.script[0] }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Detalhes do Script: {{ item.script[1] }}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <p><strong>Nome:</strong> {{ item.script[1] }}</p>
+                  <p><strong>Pacote:</strong> {{ item.pacote_nome or '-' }}</p>
+                  <p><strong>Sistema:</strong> {{ item.script[5] or '-' }}</p>
+                  <p><strong>Linguagem:</strong> {{ item.script[3] or '-' }}</p>
+                  <p><strong>Descrição:</strong> {{ item.script[2] or '-' }}</p>
+                  <p><strong>Aprovado:</strong> {% if item.script[6] %}Sim{% else %}Não{% endif %}</p>
+                  <p><strong>Data de Verificação:</strong> {{ item.script[7]|datetimeformat('%d/%m/%Y %H:%M') if item.script[7] else '-' }}</p>
+                  <p><strong>Aprovado Por:</strong> {{ item.script[10] or '-' }}</p>
+                  <p><strong>Ativo:</strong> {% if item.script[8] %}Ativo{% else %}Inativo{% endif %}</p>
+                  <h6 class="mt-3">Imagens da Interface:</h6>
+                  {% if item.imagens %}
+                    <div id="carousel-{{ item.script[0] }}" class="carousel slide mb-3" data-bs-ride="carousel">
+                      <div class="carousel-inner">
+                        {% for imagem in item.imagens %}
+                          <div class="carousel-item {% if loop.first %}active{% endif %}">
+                            <img src="{{ imagem.caminho }}" class="d-block w-100" alt="{{ imagem.nome }}" style="max-height: 400px; object-fit: contain;">
+                          </div>
+                        {% endfor %}
+                      </div>
+                      <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ item.script[0] }}" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                      </button>
+                      <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ item.script[0] }}" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                      </button>
+                    </div>
+                  {% else %}
+                    <p class="text-muted">Nenhuma imagem disponível.</p>
+                  {% endif %}
+                  <h6 class="mt-3">Impressões (PDF):</h6>
+                  {% if item.pdfs %}
+                    <ul class="list-group mb-3">
+                      {% for pdf in item.pdfs %}
+                        <li class="list-group-item">
+                          <a href="{{ pdf.caminho }}" target="_blank" class="text-decoration-none">{{ pdf.nome }}</a>
+                          <a href="{{ pdf.caminho }}" download class="btn btn-sm btn-outline-secondary ms-2">
+                            <i class="bi bi-download"></i> Baixar
+                          </a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p class="text-muted">Nenhum PDF disponível.</p>
+                  {% endif %}
+                  <h6 class="mt-3">Variáveis Vinculadas:</h6>
+                  {% if item.variaveis %}
+                    <ul class="list-group">
+                      {% for variavel in item.variaveis %}
+                        <li class="list-group-item">{{ variavel[0] }} ({{ variavel[1] }})</li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p class="text-muted">Nenhuma variável vinculada.</p>
+                  {% endif %}
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="col">
+            <div class="alert alert-info text-center">
+              Nenhum script encontrado.
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
       <!-- Paginação -->
-      <nav>
-        <ul class="pagination">
+      <nav class="mt-4">
+        <ul class="pagination justify-content-center">
           {% if pagina > 1 %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('scripts.visualizar_scripts', page=pagina-1) }}">Anterior</a></li>
+            <li class="page-item"><a class="page-link" href="{{ url_for('scripts.visualizar_scripts', page=pagina-1, nome=request.args.get('nome', ''), sistema=request.args.get('sistema', ''), pacote=request.args.get('pacote', ''), aprovado=request.args.get('aprovado', ''), ativo=request.args.get('ativo', '')) }}"><i class="bi bi-chevron-left"></i> Anterior</a></li>
           {% endif %}
           <li class="page-item disabled"><span class="page-link">Página {{ pagina }} de {{ total_paginas }}</span></li>
           {% if pagina < total_paginas %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('scripts.visualizar_scripts', page=pagina+1) }}">Próxima</a></li>
+            <li class="page-item"><a class="page-link" href="{{ url_for('scripts.visualizar_scripts', page=pagina+1, nome=request.args.get('nome', ''), sistema=request.args.get('sistema', ''), pacote=request.args.get('pacote', ''), aprovado=request.args.get('aprovado', ''), ativo=request.args.get('ativo', '')) }}">Próxima <i class="bi bi-chevron-right"></i></a></li>
           {% endif %}
         </ul>
       </nav>
-      <div class="text-end">
-        <a href="{{ url_for('scripts.novo_script') }}" class="btn btn-success">
-          <i class="bi bi-plus-circle"></i> Novo Script
-        </a>
-        <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
-        </a>
-      </div>
     </div>
   </div>
 </div>
+
+<script>
+function filterScripts() {
+  const searchTerm = document.getElementById('quick-search').value.toLowerCase();
+  const cards = document.querySelectorAll('#script-list .col');
+  cards.forEach(card => {
+    const name = card.querySelector('.card-title').textContent.toLowerCase();
+    card.style.display = name.includes(searchTerm) ? '' : 'none';
+  });
+}
+
+function clearSearch() {
+  document.getElementById('quick-search').value = '';
+  filterScripts();
+}
+
+function toggleAprovacao(codscriptlaudo, aprovado) {
+  if (!aprovado) {
+    Swal.fire({
+      title: 'Aprovar script?',
+      text: 'Digite o nome da pessoa ou entidade que está aprovando:',
+      input: 'text',
+      inputPlaceholder: 'Ex.: Dr. João Silva ou Clínica São Paulo',
+      showCancelButton: true,
+      confirmButtonText: 'Aprovar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: (aprovadoPor) => {
+        if (!aprovadoPor) {
+          Swal.showValidationMessage('O nome do aprovador é obrigatório.');
+        }
+        return aprovadoPor;
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `/scripts/toggle_aprovacao/${codscriptlaudo}?aprovado_por=${encodeURIComponent(result.value)}`;
+      }
+    });
+  } else {
+    Swal.fire({
+      title: 'Desaprovar script?',
+      text: 'O script será marcado como não aprovado e o aprovador será removido.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `/scripts/toggle_aprovacao/${codscriptlaudo}`;
+      }
+    });
+  }
+}
+
+function toggleAtivo(codscriptlaudo, ativo) {
+  Swal.fire({
+    title: ativo ? 'Desativar script?' : 'Ativar script?',
+    text: ativo ? 'O script será marcado como inativo.' : 'O script será marcado como ativo.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sim',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      window.location.href = `/scripts/toggle_ativo/${codscriptlaudo}`;
+    }
+  });
+}
+</script>
 {% endset %}

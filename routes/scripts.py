@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session,send_file
 from datetime import datetime
-import io,re
+import io,re,os,uuid
 
 scripts_bp = Blueprint('scripts', __name__)
 
@@ -24,6 +24,13 @@ def datetimeformat(value, format='%d/%m/%Y %H:%M'):
             return ''
     return value.strftime(format)
 
+def save_file(file, folder, prefix):
+    if not file:
+        return None, None
+    filename = f"{prefix}_{uuid.uuid4().hex}{os.path.splitext(file.filename)[1]}"
+    filepath = os.path.join(current_app.root_path, folder, filename)
+    file.save(filepath)
+    return f"/{folder}/{filename}", file.filename
 
 @scripts_bp.route('/novo_script', methods=['GET', 'POST'])
 def novo_script():
@@ -47,6 +54,8 @@ def novo_script():
         aprovado_por = request.form['aprovado_por'].strip() or None if aprovado else None
         ativo = 1 if 'ativo' in request.form else 0
         arquivo_json = request.files.get('arquivo_json')
+        imagens = request.files.getlist('imagens[]')
+        pdfs = request.files.getlist('pdfs[]')
 
         if not nome:
             flash("O nome do script é obrigatório.", "error")
@@ -86,6 +95,27 @@ def novo_script():
             """, (nome, codpacote, descricao, linguagem, caminho_projeto, sistema, aprovado,
                   datetime.now() if aprovado else None, aprovado_por, ativo, arquivo_json_blob))
             codscriptlaudo = cur.fetchone()[0]
+
+            # Salvar imagens
+            for imagem in imagens:
+                if imagem and imagem.filename:
+                    caminho, nome_arquivo = save_file(imagem, 'static/uploads/interfaces', f"interface_{codscriptlaudo}")
+                    if caminho:
+                        cur.execute("""
+                            INSERT INTO SCRIPT_ARQUIVOS (CODSCRIPTLAUDO, TIPO, CAMINHO, NOME_ARQUIVO, CODUSUARIO, DTHRULTMODIFICACAO)
+                            VALUES (?, 'IMAGEM', ?, ?, ?, CURRENT_TIMESTAMP)
+                        """, (codscriptlaudo, caminho, nome_arquivo, codusuario))
+
+            # Salvar PDFs
+            for pdf in pdfs:
+                if pdf and pdf.filename:
+                    caminho, nome_arquivo = save_file(pdf, 'static/uploads/impressoes', f"impressao_{codscriptlaudo}")
+                    if caminho:
+                        cur.execute("""
+                            INSERT INTO SCRIPT_ARQUIVOS (CODSCRIPTLAUDO, TIPO, CAMINHO, NOME_ARQUIVO, CODUSUARIO, DTHRULTMODIFICACAO)
+                            VALUES (?, 'PDF', ?, ?, ?, CURRENT_TIMESTAMP)
+                        """, (codscriptlaudo, caminho, nome_arquivo, codusuario))
+
             conn.commit()
             current_app.logger.info(f"Script CODSCRIPTLAUDO={codscriptlaudo} cadastrado com sucesso.")
             flash("Script cadastrado com sucesso!", "success")
@@ -121,6 +151,8 @@ def editar_script(codscriptlaudo):
         aprovado_por = request.form['aprovado_por'].strip() or None if aprovado else None
         ativo = 1 if 'ativo' in request.form else 0
         arquivo_json = request.files.get('arquivo_json')
+        imagens = request.files.getlist('imagens[]')
+        pdfs = request.files.getlist('pdfs[]')
 
         if not nome:
             flash("O nome do script é obrigatório.", "error")
@@ -161,6 +193,26 @@ def editar_script(codscriptlaudo):
                 flash("Script não encontrado.", "error")
                 return redirect(url_for('scripts.visualizar_scripts'))
 
+            # Salvar novas imagens
+            for imagem in imagens:
+                if imagem and imagem.filename:
+                    caminho, nome_arquivo = save_file(imagem, 'static/uploads/interfaces', f"interface_{codscriptlaudo}")
+                    if caminho:
+                        cur.execute("""
+                            INSERT INTO SCRIPT_ARQUIVOS (CODSCRIPTLAUDO, TIPO, CAMINHO, NOME_ARQUIVO, CODUSUARIO, DTHRULTMODIFICACAO)
+                            VALUES (?, 'IMAGEM', ?, ?, ?, CURRENT_TIMESTAMP)
+                        """, (codscriptlaudo, caminho, nome_arquivo, codusuario))
+
+            # Salvar novos PDFs
+            for pdf in pdfs:
+                if pdf and pdf.filename:
+                    caminho, nome_arquivo = save_file(pdf, 'static/uploads/impressoes', f"impressao_{codscriptlaudo}")
+                    if caminho:
+                        cur.execute("""
+                            INSERT INTO SCRIPT_ARQUIVOS (CODSCRIPTLAUDO, TIPO, CAMINHO, NOME_ARQUIVO, CODUSUARIO, DTHRULTMODIFICACAO)
+                            VALUES (?, 'PDF', ?, ?, ?, CURRENT_TIMESTAMP)
+                        """, (codscriptlaudo, caminho, nome_arquivo, codusuario))
+
             conn.commit()
             current_app.logger.info(f"Script CODSCRIPTLAUDO={codscriptlaudo} atualizado com sucesso.")
             flash("Script atualizado com sucesso!", "success")
@@ -184,6 +236,17 @@ def editar_script(codscriptlaudo):
             flash("Script não encontrado.", "error")
             return redirect(url_for('scripts.visualizar_scripts'))
 
+        # Buscar arquivos
+        cur.execute("""
+            SELECT CODARQUIVO, TIPO, CAMINHO, NOME_ARQUIVO
+            FROM SCRIPT_ARQUIVOS
+            WHERE CODSCRIPTLAUDO = ?
+            ORDER BY NOME_ARQUIVO
+        """, (codscriptlaudo,))
+        arquivos = cur.fetchall()
+        imagens = [{'codarquivo': row[0], 'caminho': row[2], 'nome': row[3]} for row in arquivos if row[1] == 'IMAGEM']
+        pdfs = [{'codarquivo': row[0], 'caminho': row[2], 'nome': row[3]} for row in arquivos if row[1] == 'PDF']
+
         script_data = {
             'nome': script[0],
             'descricao': script[1] or '',
@@ -195,7 +258,9 @@ def editar_script(codscriptlaudo):
             'data_verificacao': script[7],
             'ativo': bool(script[8]),
             'tem_arquivo_json': bool(script[9]),
-            'aprovado_por': script[10]
+            'aprovado_por': script[10],
+            'imagens': imagens,
+            'pdfs': pdfs
         }
 
         return render_template('editar_script.html',
@@ -588,3 +653,39 @@ def vincular_variaveis(codscriptlaudo):
                            nome_script=nome_script,
                            variaveis=variaveis_detalhes,
                            variaveis_associadas=variaveis_associadas)
+
+@scripts_bp.route('/excluir_arquivo/<int:codarquivo>')
+def excluir_arquivo(codarquivo):
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    conn, cur = get_db()
+    try:
+        cur.execute("""
+            SELECT CODSCRIPTLAUDO, TIPO, CAMINHO
+            FROM SCRIPT_ARQUIVOS
+            WHERE CODARQUIVO = ?
+        """, (codarquivo,))
+        arquivo = cur.fetchone()
+        if not arquivo:
+            flash("Arquivo não encontrado.", "error")
+            return redirect(url_for('scripts.visualizar_scripts'))
+
+        codscriptlaudo, tipo, caminho = arquivo
+        cur.execute("DELETE FROM SCRIPT_ARQUIVOS WHERE CODARQUIVO = ?", (codarquivo,))
+        if cur.rowcount > 0:
+            # Remover arquivo do sistema de arquivos
+            filepath = os.path.join(current_app.root_path, caminho.lstrip('/'))
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            conn.commit()
+            current_app.logger.info(f"Arquivo CODARQUIVO={codarquivo} excluído com sucesso.")
+            flash("Arquivo excluído com sucesso!", "success")
+        else:
+            flash("Erro ao excluir arquivo.", "error")
+        return redirect(url_for('scripts.editar_script', codscriptlaudo=codscriptlaudo))
+    except Exception as e:
+        conn.rollback()
+        current_app.logger.error(f"Erro ao excluir arquivo CODARQUIVO={codarquivo}: {str(e)}")
+        flash(f"Erro ao excluir arquivo: {str(e)}", "error")
+        return redirect(url_for('scripts.visualizar_scripts'))

@@ -53,6 +53,16 @@
           <textarea class="form-control" id="descricao" name="descricao" rows="5" maxlength="255" placeholder="Descreva a funcionalidade ou propósito do script"></textarea>
           <small class="form-text text-muted">Máximo de 255 caracteres.</small>
         </div>
+        <div class="mb-3">
+          <label class="form-label">Imagens da Interface (PNG, JPG)</label>
+          <input type="file" class="form-control" id="imagens" name="imagens[]" accept=".png,.jpg,.jpeg" multiple>
+          <small class="form-text text-muted">Selecione uma ou mais imagens (máximo 5MB cada).</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Impressões (PDF)</label>
+          <input type="file" class="form-control" id="pdfs" name="pdfs[]" accept=".pdf" multiple>
+          <small class="form-text text-muted">Selecione um ou mais PDFs (máximo 5MB cada).</small>
+        </div>
         <div class="mb-3 form-check">
           <input type="checkbox" class="form-check-input" id="aprovado" name="aprovado" onchange="toggleAprovadoPor()">
           <label class="form-check-label" for="aprovado">Aprovado</label>
@@ -119,6 +129,8 @@ function confirmarSalvarScript() {
   const arquivoJson = document.getElementById('arquivo_json').files[0];
   const aprovado = document.getElementById('aprovado').checked;
   const aprovadoPor = document.getElementById('aprovado_por').value.trim();
+  const imagens = document.getElementById('imagens').files;
+  const pdfs = document.getElementById('pdfs').files;
 
   if (!nome) {
     Swal.fire({
@@ -142,7 +154,7 @@ function confirmarSalvarScript() {
     Swal.fire({
       icon: 'warning',
       title: 'Formato inválido',
-      text: 'O arquivo deve ser no formato JSON.'
+      text: 'O arquivo JSON deve ter a extensão .json.'
     });
     return;
   }
@@ -154,6 +166,44 @@ function confirmarSalvarScript() {
       text: 'O nome do aprovador é obrigatório quando o script é marcado como aprovado.'
     });
     return;
+  }
+
+  for (let img of imagens) {
+    if (!['image/png', 'image/jpeg'].includes(img.type)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formato inválido',
+        text: 'As imagens devem ser PNG ou JPG.'
+      });
+      return;
+    }
+    if (img.size > 5 * 1024 * 1024) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Arquivo muito grande',
+        text: 'As imagens não podem exceder 5MB.'
+      });
+      return;
+    }
+  }
+
+  for (let pdf of pdfs) {
+    if (pdf.type !== 'application/pdf') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formato inválido',
+        text: 'Os arquivos de impressão devem ser PDF.'
+      });
+      return;
+    }
+    if (pdf.size > 5 * 1024 * 1024) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Arquivo muito grande',
+        text: 'Os PDFs não podem exceder 5MB.'
+      });
+      return;
+    }
   }
 
   Swal.fire({

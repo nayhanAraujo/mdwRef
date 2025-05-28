@@ -56,6 +56,9 @@ def create_app():
     app.config['SESSION_COOKIE_SECURE'] = not is_local  # Cookies só em HTTPS
     app.config['SESSION_COOKIE_HTTPONLY'] = True  # Impede acesso via JavaScript
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção contra CSRF
+    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB
+    app.config['UPLOAD_FOLDER_INTERFACES'] = 'static/uploads/interfaces'
+    app.config['UPLOAD_FOLDER_IMPRESSOES'] = 'static/uploads/impressoes'
     # Configuração do diretório de upload dinâmico
     # Configuração do diretório de upload dinâmico
     if is_local:

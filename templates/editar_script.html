@@ -56,6 +56,42 @@
           <textarea name="descricao" id="descricao" class="form-control" rows="5" maxlength="255" placeholder="Descreva a funcionalidade ou propósito do script">{{ script.descricao }}</textarea>
           <small class="form-text text-muted">Máximo de 255 caracteres.</small>
         </div>
+        <div class="mb-3">
+          <label class="form-label">Imagens da Interface (PNG, JPG)</label>
+          <input type="file" class="form-control" id="imagens" name="imagens[]" accept=".png,.jpg,.jpeg" multiple>
+          <small class="form-text text-muted">Selecione uma ou mais imagens (máximo 5MB cada).</small>
+          {% if script.imagens %}
+            <h6 class="mt-3">Imagens Existentes</h6>
+            <ul class="list-group">
+              {% for imagem in script.imagens %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{{ imagem.nome }}</span>
+                  <button type="button" class="btn btn-danger btn-sm" onclick="confirmarExcluirArquivo({{ imagem.codarquivo }})">
+                    <i class="bi bi-trash"></i> Excluir
+                  </button>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Impressões (PDF)</label>
+          <input type="file" class="form-control" id="pdfs" name="pdfs[]" accept=".pdf" multiple>
+          <small class="form-text text-muted">Selecione um ou mais PDFs (máximo 5MB cada).</small>
+          {% if script.pdfs %}
+            <h6 class="mt-3">PDFs Existentes</h6>
+            <ul class="list-group">
+              {% for pdf in script.pdfs %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{{ pdf.nome }}</span>
+                  <button type="button" class="btn btn-danger btn-sm" onclick="confirmarExcluirArquivo({{ pdf.codarquivo }})">
+                    <i class="bi bi-trash"></i> Excluir
+                  </button>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
         <div class="mb-3 form-check">
           <input type="checkbox" class="form-check-input" id="aprovado" name="aprovado" {% if script.aprovado %}checked{% endif %} onchange="toggleAprovadoPor()">
           <label class="form-check-label" for="aprovado">Aprovado</label>
@@ -120,6 +156,8 @@ function confirmarSalvarScript() {
   const arquivoJson = document.getElementById('arquivo_json').files[0];
   const aprovado = document.getElementById('aprovado').checked;
   const aprovadoPor = document.getElementById('aprovado_por').value.trim();
+  const imagens = document.getElementById('imagens').files;
+  const pdfs = document.getElementById('pdfs').files;
 
   if (!nome) {
     Swal.fire({
@@ -134,7 +172,7 @@ function confirmarSalvarScript() {
     Swal.fire({
       icon: 'warning',
       title: 'Formato inválido',
-      text: 'O arquivo deve ser no formato JSON.'
+      text: 'O arquivo JSON deve ter a extensão .json.'
     });
     return;
   }
@@ -148,6 +186,44 @@ function confirmarSalvarScript() {
     return;
   }
 
+  for (let img of imagens) {
+    if (!['image/png', 'image/jpeg'].includes(img.type)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formato inválido',
+        text: 'As imagens devem ser PNG ou JPG.'
+      });
+      return;
+    }
+    if (img.size > 5 * 1024 * 1024) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Arquivo muito grande',
+        text: 'As imagens não podem exceder 5MB.'
+      });
+      return;
+    }
+  }
+
+  for (let pdf of pdfs) {
+    if (pdf.type !== 'application/pdf') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formato inválido',
+        text: 'Os arquivos de impressão devem ser PDF.'
+      });
+      return;
+    }
+    if (pdf.size > 5 * 1024 * 1024) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Arquivo muito grande',
+        text: 'Os PDFs não podem exceder 5MB.'
+      });
+      return;
+    }
+  }
+
   Swal.fire({
     title: 'Salvar alterações?',
     text: 'Deseja realmente salvar as alterações deste script?',
@@ -158,6 +234,21 @@ function confirmarSalvarScript() {
   }).then((result) => {
     if (result.isConfirmed) {
       document.querySelector('form').submit();
+    }
+  });
+}
+
+function confirmarExcluirArquivo(codarquivo) {
+  Swal.fire({
+    title: 'Excluir arquivo?',
+    text: 'Esta ação não pode ser desfeita.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sim, excluir',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      window.location.href = `/scripts/excluir_arquivo/${codarquivo}`;
     }
   });
 }

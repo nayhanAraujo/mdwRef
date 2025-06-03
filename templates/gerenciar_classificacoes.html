@@ -1,0 +1,392 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gerenciar Classificações{% endblock %}
+
+{% set content %}
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h2 class="page-title mb-0">
+      <i class="bi bi-tags-fill me-2 icon-gradient"></i> Gerenciar Grupos e Classificações
+    </h2>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
+  </div>
+  <hr class="mt-2 mb-0 page-header-divider">
+</div>
+
+<div class="container-fluid">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0 d-flex justify-content-between align-items-center">
+            Listagem de Grupos
+            <button class="btn btn-primary" onclick="novoGrupo()">
+              <i class="bi bi-plus-circle me-1"></i> Novo Grupo
+            </button>
+        </h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 30%;">Grupo</th>
+              <th>Classificações</th>
+              <th style="width: 20%;" class="text-center">Ações do Grupo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for grupo in grupos %}
+              <tr>
+                <td class="align-middle fw-medium">{{ grupo.nome }}</td>
+                <td class="align-middle">
+                  {% if grupo.classificacoes %}
+                    <button class="btn btn-sm btn-outline-primary mb-2 w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#classificacoesGrupo{{ grupo.codgrupo }}" aria-expanded="false" aria-controls="classificacoesGrupo{{ grupo.codgrupo }}">
+                      <span><i class="bi bi-chevron-down me-2"></i>Ver/Ocultar Classificações</span>
+                      <span class="badge bg-secondary rounded-pill">{{ grupo.classificacoes|length }}</span>
+                    </button>
+                    <div class="collapse" id="classificacoesGrupo{{ grupo.codgrupo }}">
+                      <ul class="list-group list-group-flush mb-2">
+                        {% for classificacao in grupo.classificacoes %}
+                          <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-tag me-2"></i>{{ classificacao.nome }}</span>
+                            <div class="btn-group btn-group-sm">
+                              <button class="btn btn-outline-secondary" onclick="editarClassificacao({{ classificacao.codclassificacao }}, {{ classificacao.nome | tojson | safe }}, {{ grupo.codgrupo }})" title="Editar Classificação">
+                                <i class="bi bi-pencil"></i>
+                              </button>
+                              <button class="btn btn-outline-danger" onclick="confirmarExcluirClassificacao({{ classificacao.codclassificacao }})" title="Excluir Classificação">
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                      <button class="btn btn-outline-success btn-sm" onclick="novaClassificacao({{ grupo.codgrupo }})">
+                        <i class="bi bi-plus-circle"></i> Adicionar Classificação a este Grupo
+                      </button>
+                    </div>
+                  {% else %}
+                    <p class="text-muted mb-1 fst-italic small">Nenhuma classificação cadastrada.</p>
+                    <button class="btn btn-outline-success btn-sm" onclick="novaClassificacao({{ grupo.codgrupo }})">
+                      <i class="bi bi-plus-circle"></i> Adicionar Classificação
+                    </button>
+                  {% endif %}
+                </td>
+                <td class="align-middle text-center">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" onclick="editarGrupo({{ grupo.codgrupo }}, {{ grupo.nome | tojson | safe }})" title="Editar Grupo">
+                      <i class="bi bi-pencil-square"></i> Editar Nome
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="confirmarExcluirGrupo({{ grupo.codgrupo }})" title="Excluir Grupo">
+                      <i class="bi bi-trash-fill"></i> Excluir Grupo
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="3" class="text-center text-muted fst-italic">Nenhum grupo encontrado. Clique em "Novo Grupo" para começar.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Passa os dados dos grupos para o JavaScript de forma segura
+const todosOsGrupos = {{ grupos | tojson | safe if grupos else '[]' }};
+
+// Função auxiliar para escapar HTML em strings JavaScript (para segurança ao construir HTML no JS)
+function escapeJSString(unsafe) {
+    if (unsafe === null || typeof unsafe === 'undefined') return '';
+    return String(unsafe)
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+// JavaScript para alternar o ícone do botão de colapso
+document.addEventListener('DOMContentLoaded', function () {
+    const collapseTriggerList = document.querySelectorAll('[data-bs-toggle="collapse"]');
+    collapseTriggerList.forEach(function (collapseTriggerEl) {
+        const targetId = collapseTriggerEl.dataset.bsTarget || collapseTriggerEl.getAttribute('href');
+        if (targetId) {
+            const targetCollapseEl = document.querySelector(targetId);
+            if (targetCollapseEl) {
+                targetCollapseEl.addEventListener('show.bs.collapse', function () {
+                    const icon = collapseTriggerEl.querySelector('i.bi');
+                    if (icon) {
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-up');
+                    }
+                });
+                targetCollapseEl.addEventListener('hide.bs.collapse', function () {
+                    const icon = collapseTriggerEl.querySelector('i.bi');
+                    if (icon) {
+                        icon.classList.remove('bi-chevron-up');
+                        icon.classList.add('bi-chevron-down');
+                    }
+                });
+            }
+        }
+    });
+});
+
+
+function novoGrupo() {
+  Swal.fire({
+    title: 'Criar Novo Grupo',
+    html: `
+      <label for="nomeGrupoSwal" class="form-label mt-2" style="text-align: left; display: block;">Nome do Grupo</label>
+      <input type="text" id="nomeGrupoSwal" class="form-control" placeholder="Digite o nome do grupo" required>
+    `,
+    showCancelButton: true,
+    confirmButtonText: '<i class="bi bi-check-lg"></i> Salvar',
+    cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+    confirmButtonColor: '#198754',
+    cancelButtonColor: '#6c757d',
+    focusConfirm: false,
+    customClass: { popup: 'swal2-zindex-high' },
+    preConfirm: () => {
+      const nome = document.getElementById('nomeGrupoSwal').value.trim();
+      if (!nome) {
+        Swal.showValidationMessage('O nome do grupo é obrigatório.');
+        return false;
+      }
+      return { nome };
+    }
+  }).then((result) => {
+    if (result.isConfirmed && result.value) {
+      fetch('/variaveis/novo_grupo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ nome: result.value.nome })
+      }).then(response => response.json()).then(data => {
+        if (data.success) {
+          Swal.fire({icon: 'success', title: 'Sucesso!', text: data.message, timer: 2000, showConfirmButton: false, customClass: { popup: 'swal2-zindex-high' } }).then(() => location.reload());
+        } else {
+          Swal.fire({icon: 'error', title: 'Erro!', text: data.message, customClass: { popup: 'swal2-zindex-high' }});
+        }
+      }).catch(error => {
+        Swal.fire({icon: 'error', title: 'Erro de Rede!', text: 'Não foi possível salvar o grupo: ' + error, customClass: { popup: 'swal2-zindex-high' }});
+      });
+    }
+  });
+}
+
+function editarGrupo(codgrupo, nomeAtual) {
+  Swal.fire({
+    title: 'Editar Nome do Grupo',
+    html: `
+      <label for="nomeGrupoSwal" class="form-label mt-2" style="text-align: left; display: block;">Nome do Grupo</label>
+      <input type="text" id="nomeGrupoSwal" class="form-control" value="${escapeJSString(nomeAtual)}" placeholder="Digite o nome do grupo" required>
+    `,
+    showCancelButton: true,
+    confirmButtonText: '<i class="bi bi-check-lg"></i> Salvar Alterações',
+    cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+    confirmButtonColor: '#198754',
+    cancelButtonColor: '#6c757d',
+    focusConfirm: false,
+    customClass: { popup: 'swal2-zindex-high' },
+    preConfirm: () => {
+      const nome = document.getElementById('nomeGrupoSwal').value.trim();
+      if (!nome) {
+        Swal.showValidationMessage('O nome do grupo é obrigatório.');
+        return false;
+      }
+      return { nome };
+    }
+  }).then((result) => {
+    if (result.isConfirmed && result.value) {
+      fetch(`/variaveis/editar_grupo/${codgrupo}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ nome: result.value.nome })
+      }).then(response => response.json()).then(data => {
+        if (data.success) {
+          Swal.fire({icon: 'success', title: 'Sucesso!', text: data.message, timer: 2000, showConfirmButton: false, customClass: { popup: 'swal2-zindex-high' } }).then(() => location.reload());
+        } else {
+          Swal.fire({icon: 'error', title: 'Erro!', text: data.message, customClass: { popup: 'swal2-zindex-high' }});
+        }
+      }).catch(error => {
+        Swal.fire({icon: 'error', title: 'Erro de Rede!', text: 'Não foi possível atualizar o grupo: ' + error, customClass: { popup: 'swal2-zindex-high' }});
+      });
+    }
+  });
+}
+
+function confirmarExcluirGrupo(codgrupo) {
+  Swal.fire({
+    title: 'Excluir Grupo?',
+    html: "Esta ação excluirá o grupo e <strong>todas as suas classificações associadas</strong>.<br>Esta ação não pode ser desfeita.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: '<i class="bi bi-trash-fill"></i> Sim, Excluir',
+    cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    customClass: { popup: 'swal2-zindex-high' }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      fetch(`/variaveis/excluir_grupo/${codgrupo}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            Swal.fire({icon: 'success', title: 'Excluído!', text: data.message, timer: 2000, showConfirmButton: false, customClass: { popup: 'swal2-zindex-high' } }).then(() => location.reload());
+          } else {
+            Swal.fire({icon: 'error', title: 'Erro!', text: data.message, customClass: { popup: 'swal2-zindex-high' }});
+          }
+        }).catch(error => {
+          Swal.fire({icon: 'error', title: 'Erro de Rede!', text: 'Não foi possível excluir o grupo: ' + error, customClass: { popup: 'swal2-zindex-high' }});
+        });
+    }
+  });
+}
+
+function novaClassificacao(codgrupo) {
+  let grupoNome = 'Grupo Desconhecido';
+  if(todosOsGrupos && Array.isArray(todosOsGrupos)) {
+      const grupoEncontrado = todosOsGrupos.find(g => g.codgrupo == codgrupo);
+      if(grupoEncontrado) grupoNome = grupoEncontrado.nome;
+  }
+
+  Swal.fire({
+    title: 'Nova Classificação',
+    html: `
+      <p class="mb-2 text-muted small">Adicionando classificação ao grupo: <strong>${escapeJSString(grupoNome)}</strong></p>
+      <label for="nomeClassificacaoSwal" class="form-label mt-2" style="text-align: left; display: block;">Nome da Classificação</label>
+      <input type="text" id="nomeClassificacaoSwal" class="form-control" placeholder="Digite o nome da classificação" required>
+    `,
+    showCancelButton: true,
+    confirmButtonText: '<i class="bi bi-check-lg"></i> Salvar',
+    cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+    confirmButtonColor: '#198754',
+    cancelButtonColor: '#6c757d',
+    focusConfirm: false,
+    customClass: { popup: 'swal2-zindex-high' },
+    preConfirm: () => {
+      const nome = document.getElementById('nomeClassificacaoSwal').value.trim();
+      if (!nome) {
+        Swal.showValidationMessage('O nome da classificação é obrigatório.');
+        return false;
+      }
+      return { nome, codgrupo };
+    }
+  }).then((result) => {
+    if (result.isConfirmed && result.value) {
+      fetch('/variaveis/nova_classificacao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ nome: result.value.nome, codgrupo: result.value.codgrupo })
+      }).then(response => response.json()).then(data => {
+        if (data.success) {
+          Swal.fire({icon: 'success', title: 'Sucesso!', text: data.message, timer: 2000, showConfirmButton: false, customClass: { popup: 'swal2-zindex-high' } }).then(() => location.reload());
+        } else {
+          Swal.fire({icon: 'error', title: 'Erro!', text: data.message, customClass: { popup: 'swal2-zindex-high' }});
+        }
+      }).catch(error => {
+        Swal.fire({icon: 'error', title: 'Erro de Rede!', text: 'Não foi possível salvar a classificação: ' + error, customClass: { popup: 'swal2-zindex-high' }});
+      });
+    }
+  });
+}
+
+function editarClassificacao(codclassificacao, nomeAtual, codgrupoAtual) {
+  let optionsHtml = '';
+  if(todosOsGrupos && Array.isArray(todosOsGrupos)) {
+      optionsHtml = todosOsGrupos.map(g => {
+        return `<option value="${g.codgrupo}" ${g.codgrupo == codgrupoAtual ? 'selected' : ''}>${escapeJSString(g.nome)}</option>`;
+      }).join('');
+  } else {
+      optionsHtml = `<option value="">Erro ao carregar grupos</option>`;
+  }
+
+  Swal.fire({
+    title: 'Editar Classificação',
+    html: `
+      <label for="nomeClassificacaoSwal" class="form-label mt-2" style="text-align: left; display: block;">Nome da Classificação</label>
+      <input type="text" id="nomeClassificacaoSwal" class="form-control" value="${escapeJSString(nomeAtual)}" placeholder="Nome da classificação" required>
+      
+      <label for="grupoClassificacaoSwal" class="form-label mt-3" style="text-align: left; display: block;">Grupo</label>
+      <select id="grupoClassificacaoSwal" class="form-select" required>
+        ${optionsHtml}
+      </select>
+    `,
+    showCancelButton: true,
+    confirmButtonText: '<i class="bi bi-check-lg"></i> Salvar Alterações',
+    cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+    confirmButtonColor: '#198754',
+    cancelButtonColor: '#6c757d',
+    focusConfirm: false,
+    customClass: { popup: 'swal2-zindex-high' },
+    preConfirm: () => {
+      const nome = document.getElementById('nomeClassificacaoSwal').value.trim();
+      const codgrupo = document.getElementById('grupoClassificacaoSwal').value;
+      if (!nome) {
+        Swal.showValidationMessage('O nome da classificação é obrigatório.');
+        return false;
+      }
+      if (!codgrupo) {
+        Swal.showValidationMessage('A seleção do grupo é obrigatória.');
+        return false;
+      }
+      return { nome, codgrupo };
+    }
+  }).then((result) => {
+    if (result.isConfirmed && result.value) {
+      fetch(`/variaveis/editar_classificacao/${codclassificacao}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ nome: result.value.nome, codgrupo: result.value.codgrupo })
+      }).then(response => response.json()).then(data => {
+        if (data.success) {
+          Swal.fire({icon: 'success', title: 'Sucesso!', text: data.message, timer: 2000, showConfirmButton: false, customClass: { popup: 'swal2-zindex-high' } }).then(() => location.reload());
+        } else {
+          Swal.fire({icon: 'error', title: 'Erro!', text: data.message, customClass: { popup: 'swal2-zindex-high' }});
+        }
+      }).catch(error => {
+        Swal.fire({icon: 'error', title: 'Erro de Rede!', text: 'Não foi possível atualizar a classificação: ' + error, customClass: { popup: 'swal2-zindex-high' }});
+      });
+    }
+  });
+}
+
+function confirmarExcluirClassificacao(codclassificacao) {
+  Swal.fire({
+    title: 'Excluir Classificação?',
+    text: "Esta ação não pode ser desfeita.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: '<i class="bi bi-trash-fill"></i> Sim, Excluir',
+    cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    customClass: { popup: 'swal2-zindex-high' }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      fetch(`/variaveis/excluir_classificacao/${codclassificacao}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            Swal.fire({icon: 'success', title: 'Excluída!', text: data.message, timer: 2000, showConfirmButton: false, customClass: { popup: 'swal2-zindex-high' } }).then(() => location.reload());
+          } else {
+            Swal.fire({icon: 'error', title: 'Erro!', text: data.message, customClass: { popup: 'swal2-zindex-high' }});
+          }
+        }).catch(error => {
+          Swal.fire({icon: 'error', title: 'Erro de Rede!', text: 'Não foi possível excluir a classificação: ' + error, customClass: { popup: 'swal2-zindex-high' }});
+        });
+    }
+  });
+}
+
+const styleSwalZIndex = document.createElement('style');
+styleSwalZIndex.textContent = '.swal2-zindex-high { z-index: 1060 !important; }'; 
+document.head.appendChild(styleSwalZIndex);
+
+</script>
+{% endset %}

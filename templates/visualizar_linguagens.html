@@ -1,69 +1,163 @@
 {% extends 'layout.html' %}
 
+{% block title %}Linguagens Cadastradas{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-list-ul me-2"></i> Linguagens Cadastradas
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-code-slash me-2 icon-gradient"></i> Linguagens Cadastradas
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
 <div class="card shadow-sm">
+  <div class="card-header bg-light py-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary">Listagem de Linguagens</h5>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovaLinguagem">
+          <i class="bi bi-plus-circle-fill me-1"></i> Nova Linguagem
+        </button>
+    </div>
+  </div>
   <div class="card-body">
-    <a href="{{ url_for('linguagens.nova_linguagem') }}" class="btn btn-primary mb-3">
-      <i class="bi bi-plus-circle"></i> Nova Linguagem
-    </a>
-    <table class="table table-hover table-bordered align-middle">
-      <thead class="table-primary text-center">
-        <tr>
-          <th>#</th>
-          <th>Nome</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for cod, nome in linguagens %}
-        <tr class="text-center">
-          <td>{{ cod }}</td>
-          <td class="text-start">{{ nome }}</td>
-          <td>
-            <a href="{{ url_for('linguagens.editar_linguagem', CODLINGUAGEM=cod) }}" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-pencil-square"></i> Editar
-            </a>
-            <form action="{{ url_for('linguagens.excluir_linguagem', CODLINGUAGEM=cod) }}" method="post" class="d-inline excluir-linguagem-form">
-              <button type="submit" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash"></i> Excluir
-              </button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered align-middle">
+        <thead class="table-light">
+          <tr class="text-center">
+            <th style="width: 10%;">#</th>
+            <th class="text-start">Nome</th>
+            <th style="width: 20%;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cod, nome in linguagens %}
+          <tr class="text-center">
+            <td>{{ cod }}</td>
+            <td class="text-start">{{ nome }}</td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Ações para Linguagem {{ nome }}">
+                <a href="{{ url_for('linguagens.editar_linguagem', CODLINGUAGEM=cod) }}" class="btn btn-outline-secondary" title="Editar Linguagem">
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+                <form action="{{ url_for('linguagens.excluir_linguagem', CODLINGUAGEM=cod) }}" method="POST" class="d-inline excluir-linguagem-form">
+                  <button type="submit" class="btn btn-outline-danger" title="Excluir Linguagem">
+                    <i class="bi bi-trash-fill"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-muted fst-italic">
+              Nenhuma linguagem cadastrada. Clique em "Nova Linguagem" para adicionar.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalNovaLinguagem" tabindex="-1" aria-labelledby="modalNovaLinguagemLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNovaLinguagemLabel"><i class="bi bi-plus-circle-fill me-2"></i>Cadastrar Nova Linguagem</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      {# O formulário agora submete para a rota existente de nova_linguagem #}
+      <form method="POST" action="{{ url_for('linguagens.nova_linguagem') }}" id="formNovaLinguagem" class="needs-validation" novalidate>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="nomeLinguagemModal" class="form-label">Nome da Linguagem <span class="text-danger">*</span></label>
+            <input type="text" name="nome" id="nomeLinguagemModal" class="form-control" placeholder="Ex: Python, C#, JavaScript" required>
+            <div class="invalid-feedback">
+                Por favor, insira o nome da linguagem.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save-fill me-1"></i> Salvar Linguagem
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  // SweetAlert2 para confirmação de exclusão
   document.querySelectorAll('.excluir-linguagem-form').forEach(form => {
     form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      Swal.fire({
+      e.preventDefault(); // Previne o envio direto do formulário
+      
+      const swalWithBootstrapButtons = Swal.mixin({
+        customClass: {
+          confirmButton: 'btn btn-danger mx-1',
+          cancelButton: 'btn btn-secondary mx-1'
+        },
+        buttonsStyling: false,
+        popup: 'swal2-zindex-high' // Usa a classe para z-index alto
+      });
+
+      swalWithBootstrapButtons.fire({
         title: 'Confirmar Exclusão',
-        text: 'Deseja excluir esta linguagem?',
+        text: 'Deseja realmente excluir esta linguagem? Esta ação não poderá ser desfeita.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Excluir',
-        cancelButtonText: 'Cancelar'
+        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir!',
+        cancelButtonText: '<i class="bi bi-x-lg me-1"></i> Cancelar',
+        reverseButtons: true // Coloca o botão de confirmar à direita
       }).then((result) => {
         if (result.isConfirmed) {
-          form.submit();
+          form.submit(); // Prossegue com o envio do formulário
         }
       });
     });
   });
+
+  // Validação do formulário do modal "Nova Linguagem" (Bootstrap)
+  const formNovaLinguagem = document.getElementById('formNovaLinguagem');
+  if (formNovaLinguagem) {
+    formNovaLinguagem.addEventListener('submit', function(event) {
+      if (!formNovaLinguagem.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      formNovaLinguagem.classList.add('was-validated');
+    }, false);
+  }
+
+  // Limpar o campo do modal ao fechar (opcional, mas boa UX)
+  const modalNovaLinguagem = document.getElementById('modalNovaLinguagem');
+  if (modalNovaLinguagem) {
+    modalNovaLinguagem.addEventListener('hidden.bs.modal', function () {
+      if (formNovaLinguagem) {
+        formNovaLinguagem.reset();
+        formNovaLinguagem.classList.remove('was-validated');
+      }
+    });
+  }
+});
+
+// Estilo para garantir que o modal do Swal fique na frente de modais Bootstrap
+// Se já estiver no layout.html ou custom.css global, pode ser omitido daqui.
+const styleSwalZIndex = document.createElement('style');
+styleSwalZIndex.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwalZIndex);
 </script>
 {% endset %}

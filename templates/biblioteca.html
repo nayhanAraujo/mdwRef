@@ -3,208 +3,326 @@
 {% set content %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-file-bar-graph-fill"></i> Biblioteca
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+  <div>
+    <h3 class="fw-bold text-primary mb-0">
+      <i class="bi bi-collection-fill me-2"></i>Biblioteca de Recursos
+    </h3>
+    <p class="text-muted mb-0">Central de ferramentas e configurações do sistema</p>
+  </div>
+  <div class="text-end">
+    <div class="text-muted small">Bem-vindo, <strong class="text-dark">{{ session['usuario']['nome'] }}</strong></div>
+    <div class="badge bg-light text-dark small">
+      <i class="bi bi-clock-history me-1"></i>
+      <span id="currentDateTime"></span>
+    </div>
   </div>
 </div>
+
 <style>
-.tile {
-  background-color: #343a40;
-  color: white;
-  padding: 40px;
-  border-radius: 10px;
-  text-align: center;
-  font-weight: bold;
-  font-size: 1.1rem;
-  transition: transform 0.2s ease, background-color 0.2s ease;
-  height: 140px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.tile i {
-  font-size: 2rem;
-  margin-bottom: 10px;
-}
-
-.tile:hover {
-  transform: scale(1.05);
-  background-color: #0d6efd;
-  color: white;
-}
+  .module-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    padding: 25px;
+    height: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .module-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    border-color: #0d6efd;
+  }
+  
+  .module-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #0d6efd;
+    transition: all 0.3s ease;
+    opacity: 0;
+  }
+  
+  .module-card:hover::before {
+    opacity: 1;
+  }
+  
+  .module-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 1.75rem;
+    color: white;
+  }
+  
+  .module-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .module-desc {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    flex-grow: 1;
+  }
+  
+  .module-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .module-action {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    background: #f8f9fa;
+    color: #0d6efd;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid #e0e0e0;
+  }
+  
+  .module-action:hover {
+    background: #0d6efd;
+    color: white;
+  }
+  
+  .section-title {
+    font-weight: 600;
+    color: #495057;
+    margin: 30px 0 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .quick-access {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .quick-access-title {
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .quick-access-title i {
+    margin-right: 10px;
+    color: #0d6efd;
+  }
 </style>
 
-<div class="container py-4">
-  <h4 class="mb-4">Biblioteca de Recursos</h4>
+<div class="container-fluid px-4">
+  <!-- Seção de Acesso Rápido -->
+  <div class="quick-access">
+    <h5 class="quick-access-title"><i class="bi bi-lightning-charge-fill"></i>Acesso Rápido</h5>
+    <div class="row g-3">
+      <div class="col-md-2 col-6">
+        <a href="{{ url_for('variaveis.nova_variavel') }}" class="module-action d-block text-center">
+          <i class="bi bi-plus-circle me-1"></i>Nova Variável
+        </a>
+      </div>
+      <div class="col-md-2 col-6">
+        <a href="{{ url_for('formulas.nova_formula') }}" class="module-action d-block text-center">
+          <i class="bi bi-plus-square me-1"></i>Nova Fórmula
+        </a>
+      </div>
+      <div class="col-md-2 col-6">
+        <a href="{{ url_for('referencias.nova_referencia') }}" class="module-action d-block text-center">
+          <i class="bi bi-journal-plus me-1"></i>Nova Referência
+        </a>
+      </div>
+      <div class="col-md-2 col-6">
+        <a href="{{ url_for('modelos.novo_modelo') }}" class="module-action d-block text-center">
+          <i class="bi bi-file-earmark-plus me-1"></i>Novo Modelo
+        </a>
+      </div>
+      <div class="col-md-2 col-6">
+        <a href="{{ url_for('uploads.uploaddll') }}" class="module-action d-block text-center">
+          <i class="bi bi-upload me-1"></i>Importar JSON
+        </a>
+      </div>
+      <div class="col-md-2 col-6">
+        <a href="{{ url_for('scripts.novo_script') }}" class="module-action d-block text-center">
+          <i class="bi bi-code-slash me-1"></i>Novo Script
+        </a>
+      </div>
+      <div class="col-md-2 col-6">
+        <a href="{{ url_for('pacotes.novo_pacote') }}" class="module-action d-block text-center">
+          <i class="bi bi-box-fill me-1"></i>Novo Pacote
+        </a>
+      </div>
+    </div>
+  </div>
 
-  <div class="accordion" id="bibliotecaAccordion">
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="headingVar">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVar" aria-expanded="true" aria-controls="collapseVar">
-          Variáveis e Fórmulas
-        </button>
-      </h2>
-      <div id="collapseVar" class="accordion-collapse collapse show" aria-labelledby="headingVar">
-        <div class="accordion-body">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <a href="{{ url_for('variaveis.nova_variavel') }}" class="tile text-decoration-none">
-                <i class="bi bi-plus-circle"></i>
-                Nova Variável
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="tile text-decoration-none">
-                <i class="bi bi-card-list"></i>
-                Variáveis Cadastradas
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('formulas.nova_formula') }}" class="tile text-decoration-none">
-                <i class="bi bi-plus-square"></i>
-                Nova Fórmula
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('formulas.visualizar_formulas') }}" class="tile text-decoration-none">
-                <i class="bi bi-kanban"></i>
-                Fórmulas Cadastradas
-              </a>
-            </div>
-          </div>
+  <!-- Seção de Módulos -->
+  <h5 class="section-title"><i class="bi bi-puzzle-fill me-2"></i>Módulos do Sistema</h5>
+  
+  <div class="row g-4">
+    <!-- Variáveis e Fórmulas -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-primary">
+          <i class="bi bi-file-bar-graph-fill"></i>
+        </div>
+        <h5 class="module-title">Variáveis e Fórmulas</h5>
+        <p class="module-desc">Gerencie todas as variáveis e fórmulas utilizadas nos cálculos do sistema.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('variaveis.nova_variavel') }}" class="module-action">Nova Variável</a>
+          <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="module-action">Listar Variáveis</a>
+          <a href="{{ url_for('formulas.nova_formula') }}" class="module-action">Nova Fórmula</a>
+          <a href="{{ url_for('formulas.visualizar_formulas') }}" class="module-action">Listar Fórmulas</a>
         </div>
       </div>
     </div>
-
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="headingRef">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRef" aria-expanded="true" aria-controls="collapseRef">
-          Referências e Importações
-        </button>
-      </h2>
-      <div id="collapseRef" class="accordion-collapse collapse show" aria-labelledby="headingRef">
-        <div class="accordion-body">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <a href="{{ url_for('referencias.nova_referencia') }}" class="tile text-decoration-none">
-                <i class="bi bi-journal-plus"></i>
-                Nova Referência
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('referencias.visualizar_referencias') }}" class="tile text-decoration-none">
-                <i class="bi bi-journal-text"></i>
-                Referências Cadastradas
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('referencias.visualizar_referencias') }}" class="tile text-decoration-none">
-                <i class="bi bi-paperclip"></i>
-                Anexos
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('uploads.uploaddll') }}" class="tile text-decoration-none">
-                <i class="bi bi-file-earmark-arrow-up"></i>
-                Importar Variáveis (.json)
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('variaveis.importar_variaveis') }}" class="tile text-decoration-none">
-                <i class="bi bi-file-earmark-code"></i>
-                Importar Variáveis (.cs)
-              </a>
-            </div>
-          </div>
+    
+    <!-- Referências -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-success">
+          <i class="bi bi-journal-bookmark-fill"></i>
+        </div>
+        <h5 class="module-title">Referências</h5>
+        <p class="module-desc">Armazene e gerencie referências bibliográficas e documentos de apoio.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('referencias.nova_referencia') }}" class="module-action">Nova Referência</a>
+          <a href="{{ url_for('referencias.visualizar_referencias') }}" class="module-action">Listar Referências</a>
+          <a href="{{ url_for('referencias.visualizar_referencias') }}" class="module-action">Anexos</a>
         </div>
       </div>
     </div>
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="headingModoTexto">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseModoTexto" aria-expanded="true" aria-controls="collapseModoTexto">
-          Modo Texto
-        </button>
-      </h2>
-      <div id="collapseModoTexto" class="accordion-collapse collapse show" aria-labelledby="headingModoTexto">
-        <div class="accordion-body">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <a href="{{ url_for('modelos.novo_modelo') }}" class="tile text-decoration-none">
-                <i class="bi bi-plus-circle"></i>
-                Novo Modelo
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('modelos.visualizar_modelos') }}" class="tile text-decoration-none">
-                <i class="bi bi-list"></i>
-                Modelos Cadastrados
-              </a>
-            </div>
-          </div>
+    
+    <!-- Modo Texto -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-info">
+          <i class="bi bi-text-paragraph"></i>
+        </div>
+        <h5 class="module-title">Modo Texto</h5>
+        <p class="module-desc">Crie e gerencie modelos de texto para relatórios e documentações.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('modelos.novo_modelo') }}" class="module-action">Novo Modelo</a>
+          <a href="{{ url_for('modelos.visualizar_modelos') }}" class="module-action">Modelos Cadastrados</a>
         </div>
       </div>
     </div>
-
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="headingGer">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGer" aria-expanded="true" aria-controls="collapseGer">
-          Gerenciamento
-        </button>
-      </h2>
-      <div id="collapseGer" class="accordion-collapse collapse show" aria-labelledby="headingGer">
-        <div class="accordion-body">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <a href="{{ url_for('users.usuarios') }}" class="tile text-decoration-none">
-                <i class="bi bi-people"></i>
-                Usuários
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('unidades.visualizar_unidades') }}" class="tile text-decoration-none">
-                <i class="bi bi-rulers"></i>
-                Unidades de Medida
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('especialidades.visualizar_especialidades') }}" class="tile text-decoration-none">
-                <i class="bi bi-briefcase"></i>
-                Especialidades
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('linguagens.visualizar_linguagens') }}" class="tile text-decoration-none">
-                <i class="bi bi-code-slash"></i>
-                Linguagens
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('scripts.novo_script') }}" class="tile text-decoration-none">
-                <i class="bi bi-code-slash"></i>
-                Novo Script
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a href="{{ url_for('codigos_universais.visualizar_codigos_universais') }}" class="tile text-decoration-none">
-                <i class="bi bi-list"></i>
-                Códigos Universais
-              </a>
-            </div>
-            <div class="col-md-3">
-              <a class="tile text-decoration-none"" href="{{ url_for('variaveis.vincular_codigo_universal') }}" >
-                <i class="bi bi-link-45deg me-1"></i> Vincular Códigos DICOM
-              </a>
-
-            </div>
-
-          </div>
+    
+    <!-- Importações -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-warning">
+          <i class="bi bi-download"></i>
+        </div>
+        <h5 class="module-title">Importações</h5>
+        <p class="module-desc">Importe variáveis e dados de diferentes formatos para o sistema.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('uploads.uploaddll') }}" class="module-action">Importar JSON</a>
+          <a href="{{ url_for('variaveis.importar_variaveis') }}" class="module-action">Importar .CS</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Configurações -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-danger">
+          <i class="bi bi-gear-fill"></i>
+        </div>
+        <h5 class="module-title">Configurações</h5>
+        <p class="module-desc">Configure unidades, especialidades e outros parâmetros do sistema.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('unidades.visualizar_unidades') }}" class="module-action">Unidades</a>
+          <a href="{{ url_for('especialidades.visualizar_especialidades') }}" class="module-action">Especialidades</a>
+          <a href="{{ url_for('linguagens.visualizar_linguagens') }}" class="module-action">Linguagens</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Administração -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-dark">
+          <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <h5 class="module-title">Administração</h5>
+        <p class="module-desc">Gerencie usuários e configurações avançadas do sistema.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('users.usuarios') }}" class="module-action">Usuários</a>
+          <a href="{{ url_for('users.novo_usuario') }}" class="module-action">Novo Usuário</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Pacotes e Scripts -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-secondary">
+          <i class="bi bi-box-fill"></i>
+        </div>
+        <h5 class="module-title">Pacotes e Scripts</h5>
+        <p class="module-desc">Organize pacotes de scripts e gerencie scripts de laudo.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('pacotes.novo_pacote') }}" class="module-action">Novo Pacote</a>
+          <a href="{{ url_for('pacotes.visualizar_pacotes') }}" class="module-action">Listar Pacotes</a>
+          <a href="{{ url_for('scripts.novo_script') }}" class="module-action">Novo Script</a>
+          <a href="{{ url_for('scripts.visualizar_scripts') }}" class="module-action">Listar Scripts</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- DICOM -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-dark">
+          <i class="bi bi-diagram-3-fill"></i>
+        </div>
+        <h5 class="module-title">DICOM</h5>
+        <p class="module-desc">Gerencie códigos universais e vincule dados DICOM ao sistema.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('codigos_universais.visualizar_codigos_universais') }}" class="module-action">Códigos</a>
+          <a href="{{ url_for('variaveis.vincular_codigo_universal') }}" class="module-action">Vincular DICOM</a>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  // Atualiza a data e hora em tempo real
+  function updateDateTime() {
+    const now = new Date();
+    const options = { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false
+    };
+    document.getElementById('currentDateTime').textContent = now.toLocaleDateString('pt-BR', options);
+  }
+  
+  // Atualiza imediatamente e depois a cada minuto
+  updateDateTime();
+  setInterval(updateDateTime, 60000);
+</script>
+
 {% endset %}

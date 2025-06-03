@@ -1,0 +1,68 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-box-fill me-2"></i>Editar Pacote
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario']['nome']|e }}</strong>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="POST" id="pacoteForm">
+        <h5 class="text-primary">Informações do Pacote</h5>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Nome do Pacote *</label>
+            <input type="text" name="nome" class="form-control" value="{{ pacote.nome }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Descrição</label>
+            <textarea name="descricao" class="form-control">{{ pacote.descricao }}</textarea>
+          </div>
+        </div>
+
+        <div class="text-end">
+          <button type="button" class="btn btn-success" onclick="confirmarSalvarPacote()">
+            <i class="bi bi-save"></i> Salvar
+          </button>
+          <a href="{{ url_for('pacotes.visualizar_pacotes') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  [...tooltipTriggerList].forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+});
+
+function confirmarSalvarPacote() {
+  const nome = document.querySelector('[name="nome"]').value.trim();
+  if (!nome) {
+    Swal.fire({ icon: 'warning', title: 'Nome obrigatório', text: 'Informe o nome do pacote.' });
+    return;
+  }
+  Swal.fire({
+    title: 'Salvar alterações?',
+    text: 'Deseja salvar as alterações deste pacote?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sim, salvar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById('pacoteForm').submit();
+    }
+  });
+}
+</script>
+{% endset %}

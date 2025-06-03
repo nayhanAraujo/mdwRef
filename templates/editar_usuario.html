@@ -1,39 +1,231 @@
 {% extends 'layout.html' %}
 
+{% block title %}Editar Usuário{% endblock %}
+
+
 {% set content %}
-<h3 class="mb-4">Editar Usuário</h3>
-<form method="POST" class="row g-3">
-  <div class="col-md-6">
-    <label for="nome" class="form-label">Nome</label>
-    <input type="text" class="form-control" id="nome" name="nome" value="{{ usuario[0] }}" required>
-  </div>
 
-  <div class="col-md-6">
-    <label for="identificacao" class="form-label">Login (identificação)</label>
-    <input type="text" class="form-control" id="identificacao" name="identificacao" value="{{ usuario[1] }}" required>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        {# Ícone alterado para representar edição de usuário #}
+        <i class="bi bi-person-gear me-2 icon-gradient"></i>Editar Usuário
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
+</div>
+<div class="card shadow-sm">
 
-  <div class="col-md-6">
-    <label for="perfil" class="form-label">Perfil</label>
-    <select class="form-select" id="perfil" name="perfil" required>
-      <option value="admin" {% if usuario[2] == 'admin' %}selected{% endif %}>Administrador</option>
-      <option value="comum" {% if usuario[2] == 'comum' %}selected{% endif %}>Comum</option>
-    </select>
-  </div>
 
-  <div class="col-md-6">
-    <label for="bloqueado" class="form-label">Status</label>
-    <select class="form-select" id="status" name="status" required>
-      <option value="-1" {% if usuario[3] == -1 %}selected{% endif %}>Ativo</option>
-      <option value="0" {% if usuario[3] == 0 %}selected{% endif %}>Bloqueado</option>
-    </select>
-  </div>
+  <div class="card-body">
+    {# Assumindo que 'usuario' é passado como um dicionário pela rota Python #}
+    {# Ex: usuario = {'NOME': 'Nome do Usuario', 'IDENTIFICACAO': 'login', 'PERFIL': 'admin', 'STATUS': -1} #}
+    <form method="POST" class="row g-3 needs-validation" id="editarUsuarioForm" novalidate>
+      <div class="col-md-6">
+        <label for="nome" class="form-label">Nome Completo</label>
+        <input type="text" class="form-control" id="nome" name="nome" value="{{ usuario.NOME if usuario else '' }}" placeholder="Digite o nome completo" required>
+        <div class="invalid-feedback">
+          Por favor, insira o nome completo.
+        </div>
+      </div>
 
-  <div class="col-12 d-flex justify-content-end">
-    <button type="submit" class="btn btn-primary me-2">Salvar alterações</button>
-    <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-secondary">
-      <i class="bi bi-arrow-left me-1"></i> Voltar
-    </a>
+      <div class="col-md-6">
+        <label for="identificacao" class="form-label">Login (Identificação)</label>
+        <input type="text" class="form-control" id="identificacao" name="identificacao" value="{{ usuario.IDENTIFICACAO if usuario else '' }}" placeholder="Ex: joao" required pattern="[^\s]+"
+               aria-describedby="identificacaoHelpBlock">
+        <div id="identificacaoHelpBlock" class="form-text">
+          O login deve ser uma única palavra, sem espaços (ex: o primeiro nome).
+        </div>
+        <div class="invalid-feedback" id="identificacaoInvalidFeedback">
+          Login inválido. Não deve conter espaços e precisa ser uma única palavra.
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="perfil" class="form-label">Perfil</label>
+        <select class="form-select" id="perfil" name="perfil" required>
+          <option value="" disabled {% if not usuario or not usuario.PERFIL %}selected{% endif %}>Selecione o perfil...</option>
+          <option value="admin" {% if usuario and usuario.PERFIL == 'admin' %}selected{% endif %}>Administrador</option>
+          <option value="comum" {% if usuario and usuario.PERFIL == 'comum' %}selected{% endif %}>Comum</option>
+        </select>
+        <div class="invalid-feedback">
+          Por favor, selecione um perfil.
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="status" class="form-label">Status</label>
+        <select class="form-select" id="status" name="status" required>
+          {# O valor -1 significa Ativo, 0 significa Inativo/Bloqueado #}
+          <option value="-1" {% if usuario and usuario.STATUS == -1 %}selected{% endif %}>Ativo</option>
+          <option value="0" {% if usuario and usuario.STATUS == 0 %}selected{% endif %}>Inativo</option>
+        </select>
+        <div class="invalid-feedback">
+            Por favor, selecione um status.
+        </div>
+      </div>
+      
+      {# Campos de senha são opcionais na edição de usuário. Se for mudar senha, geralmente é um fluxo separado ou requer senha atual #}
+      {# Se quiser adicionar mudança de senha aqui, precisaria de "Nova Senha" e "Confirmar Nova Senha" #}
+      {# <div class="col-12">
+        <p class="text-muted small">Deixe os campos de senha em branco para não alterá-la.</p>
+      </div>
+      <div class="col-md-6">
+        <label for="nova_senha" class="form-label">Nova Senha (Opcional)</label>
+        <div class="input-group">
+          <input type="password" class="form-control" id="nova_senha" name="nova_senha" placeholder="Digite a nova senha" minlength="6">
+           <button class="btn btn-outline-secondary" type="button" id="toggleNovaSenha" title="Mostrar/Ocultar Senha"><i class="bi bi-eye-slash"></i></button>
+        </div>
+         <div class="invalid-feedback">A senha deve ter no mínimo 6 caracteres.</div>
+      </div>
+      <div class="col-md-6">
+        <label for="confirmar_nova_senha" class="form-label">Confirmar Nova Senha</label>
+         <div class="input-group">
+            <input type="password" class="form-control" id="confirmar_nova_senha" name="confirmar_nova_senha" placeholder="Confirme a nova senha">
+            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmarNovaSenha" title="Mostrar/Ocultar Senha"><i class="bi bi-eye-slash"></i></button>
+        </div>
+        <div class="invalid-feedback" id="confirmarNovaSenhaInvalidFeedback">As senhas não coincidem.</div>
+      </div> #}
+
+
+      <div class="col-12 mt-4 pt-3 border-top">
+        <button type="submit" class="btn btn-success me-2">
+          <i class="bi bi-floppy-fill me-1"></i> Salvar Alterações
+        </button>
+        <a href="{{ url_for('users.usuarios') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left-circle me-1"></i> Voltar para Lista
+        </a>
+      </div>
+    </form>
   </div>
-</form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('editarUsuarioForm');
+  const identificacaoInput = document.getElementById('identificacao');
+  
+  // Validação do campo Identificação em tempo real (impede espaços)
+  if (identificacaoInput) {
+    identificacaoInput.addEventListener('input', function(event) {
+      const value = event.target.value;
+      const newValue = value.replace(/\s+/g, ''); // Remove todos os espaços
+      if (value !== newValue) {
+        event.target.value = newValue;
+      }
+
+      if (newValue.includes(' ') || newValue.split(' ').length > 1 || newValue === '') {
+        identificacaoInput.classList.add('is-invalid');
+        identificacaoInput.classList.remove('is-valid');
+      } else if (newValue.length > 0) {
+        identificacaoInput.classList.remove('is-invalid');
+        identificacaoInput.classList.add('is-valid');
+      } else {
+        identificacaoInput.classList.remove('is-valid', 'is-invalid');
+      }
+    });
+  }
+
+  form.addEventListener('submit', function(event) {
+    event.preventDefault(); // Previne o envio padrão
+
+    let isValidCustom = true;
+    if (identificacaoInput) {
+        const identificacaoValue = identificacaoInput.value.trim();
+        if (identificacaoValue.includes(' ') || identificacaoValue.split(' ').length > 1) {
+            identificacaoInput.classList.add('is-invalid');
+            isValidCustom = false;
+        } else if (identificacaoValue) {
+            identificacaoInput.classList.remove('is-invalid');
+            identificacaoInput.classList.add('is-valid');
+        }
+    }
+    
+    // Adicionar aqui validação para campos de nova senha, se implementados
+    // const novaSenhaInput = document.getElementById('nova_senha');
+    // const confirmarNovaSenhaInput = document.getElementById('confirmar_nova_senha');
+    // if (novaSenhaInput && novaSenhaInput.value) { // Só valida se uma nova senha foi digitada
+    //   if (novaSenhaInput.value.length < 6) {
+    //       novaSenhaInput.classList.add('is-invalid'); isValidCustom = false;
+    //   } else {
+    //       novaSenhaInput.classList.remove('is-invalid'); novaSenhaInput.classList.add('is-valid');
+    //   }
+    //   if (novaSenhaInput.value !== confirmarNovaSenhaInput.value) {
+    //       confirmarNovaSenhaInput.classList.add('is-invalid'); isValidCustom = false;
+    //       document.getElementById('confirmarNovaSenhaInvalidFeedback').textContent = 'As novas senhas não coincidem.';
+    //   } else if (confirmarNovaSenhaInput.value) {
+    //        confirmarNovaSenhaInput.classList.remove('is-invalid'); confirmarNovaSenhaInput.classList.add('is-valid');
+    //   }
+    // }
+
+
+    form.classList.add('was-validated');
+
+    if (!form.checkValidity() || !isValidCustom) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Por favor, corrija os erros no formulário.',
+        customClass: { popup: 'swal2-zindex-high' }
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Confirmar Alterações',
+      text: 'Tem certeza que deseja salvar as alterações neste usuário?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#198754', // Verde Bootstrap
+      cancelButtonColor: '#6c757d',  // Cinza Bootstrap
+      confirmButtonText: 'Sim, salvar',
+      cancelButtonText: 'Cancelar',
+      customClass: { popup: 'swal2-zindex-high' }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.submit(); // Envia o formulário
+      }
+    });
+  });
+  
+  // // Lógica para mostrar/ocultar nova senha (se os campos de senha forem adicionados)
+  // const toggleNovaSenhaBtn = document.getElementById('toggleNovaSenha');
+  // if (toggleNovaSenhaBtn) {
+  //   toggleNovaSenhaBtn.addEventListener('click', function() {
+  //     togglePasswordVisibility('nova_senha', 'toggleNovaSenha');
+  //   });
+  // }
+  // const toggleConfirmarNovaSenhaBtn = document.getElementById('toggleConfirmarNovaSenha');
+  // if (toggleConfirmarNovaSenhaBtn) {
+  //   toggleConfirmarNovaSenhaBtn.addEventListener('click', function() {
+  //     togglePasswordVisibility('confirmar_nova_senha', 'toggleConfirmarNovaSenha');
+  //   });
+  // }
+});
+
+// // Função para alternar visibilidade da senha (reutilizar se campos de senha forem adicionados)
+// function togglePasswordVisibility(inputId, toggleButtonId) {
+//   const passwordInput = document.getElementById(inputId);
+//   const toggleButton = document.getElementById(toggleButtonId);
+//   const icon = toggleButton.querySelector('i');
+//   if (passwordInput.type === 'password') {
+//     passwordInput.type = 'text';
+//     icon.classList.remove('bi-eye-slash'); icon.classList.add('bi-eye');
+//   } else {
+//     passwordInput.type = 'password';
+//     icon.classList.remove('bi-eye'); icon.classList.add('bi-eye-slash');
+//   }
+// }
+
+
+// Estilo para garantir que o modal do Swal fique na frente de modais Bootstrap
+const styleSwalZIndex = document.createElement('style');
+styleSwalZIndex.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwalZIndex);
+</script>
 {% endset %}

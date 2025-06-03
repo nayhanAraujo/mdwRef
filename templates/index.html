@@ -1,89 +1,371 @@
 {% extends 'layout.html' %}
 
+{% block title %}Dashboards do Sistema{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-file-bar-graph-fill"></i> Dashboards
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+<div class="page-header mb-5">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-speedometer2 me-2 icon-gradient"></i> Painel de Dashboards
+      </h2>
+    </div>
+    <div class="d-flex align-items-center">
+      <div class="text-muted small me-3">
+        <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+      </div>
+      <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-moon-fill"></i>
+      </button>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
-<div class="row text-white mb-4">
-  <div class="col-md-3">
-    <div class="card bg-primary shadow-sm">
+
+{# Linha de Cards de Resumo (KPIs) com Cores Neutras #}
+<div class="row g-4 mb-5">
+  <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="card h-100 kpi-card animate-fade-in">
       <div class="card-body">
-        <h6 class="card-title">Total de Variáveis</h6>
-        <h3 class="card-text">{{ com_formula + sem_formula }}</h3>
+        <div class="d-flex align-items-start">
+          <i class="bi bi-boxes kpi-icon me-2 text-primary"></i> {# Cor no ícone #}
+          <div>
+            <h6 class="kpi-title mb-0">Total Variáveis</h6>
+            <p class="kpi-value mb-0">{{ total_variaveis }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card bg-success shadow-sm">
+  <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="card h-100 kpi-card animate-fade-in">
       <div class="card-body">
-        <h6 class="card-title">Com Fórmula</h6>
-        <h3 class="card-text">{{ com_formula }}</h3>
+        <div class="d-flex align-items-start">
+          <i class="bi bi-check2-circle kpi-icon me-2 text-success"></i> {# Cor no ícone #}
+          <div>
+            <h6 class="kpi-title mb-0">Com Fórmula</h6>
+            <p class="kpi-value mb-0">{{ com_formula }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card bg-warning shadow-sm">
+  <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="card h-100 kpi-card animate-fade-in">
       <div class="card-body">
-        <h6 class="card-title">Com Normalidade</h6>
-        <h3 class="card-text">{{ com_normalidade }}</h3>
+        <div class="d-flex align-items-start">
+          <i class="bi bi-rulers kpi-icon me-2 text-info"></i> {# Cor no ícone #}
+          <div>
+            <h6 class="kpi-title mb-0">Com Normalidade</h6>
+            <p class="kpi-value mb-0">{{ com_normalidade }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card bg-secondary shadow-sm">
+  <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="card h-100 kpi-card animate-fade-in">
       <div class="card-body">
-        <h6 class="card-title">Sem Fórmula</h6>
-        <h3 class="card-text">{{ sem_formula }}</h3>
+        <div class="d-flex align-items-start">
+          <i class="bi bi-file-earmark-text-fill kpi-icon me-2 text-secondary"></i> {# Cor no ícone #}
+          <div>
+            <h6 class="kpi-title mb-0">Total Scripts</h6>
+            <p class="kpi-value mb-0">{{ total_scripts }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="card h-100 kpi-card animate-fade-in">
+      <div class="card-body">
+        <div class="d-flex align-items-start">
+          <i class="bi bi-journal-bookmark-fill kpi-icon me-2 text-warning"></i> {# Cor no ícone #}
+          <div>
+            <h6 class="kpi-title mb-0">Total Referências</h6>
+            <p class="kpi-value mb-0">{{ total_referencias }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="card h-100 kpi-card animate-fade-in">
+      <div class="card-body">
+        <div class="d-flex align-items-start">
+          <i class="bi bi-people-fill kpi-icon me-2 text-danger"></i> {# Cor no ícone #}
+          <div>
+            <h6 class="kpi-title mb-0">Total Usuários</h6>
+            <p class="kpi-value mb-0">{{ total_usuarios }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+   <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="card h-100 kpi-card animate-fade-in">
+      <div class="card-body">
+        <div class="d-flex align-items-start">
+          <i class="bi bi-x-octagon-fill kpi-icon me-2 text-dark"></i> {# Cor no ícone #}
+          <div>
+            <h6 class="kpi-title mb-0">Sem Fórmula</h6>
+            <p class="kpi-value mb-0">{{ sem_formula }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
+
+{# Linha dos Gráficos (permanece igual à versão anterior) #}
 <div class="row g-4">
-  <div class="col-xl-6 col-lg-12">
-    <div class="card p-3 h-100">
-      <h6>Variáveis por Unidade</h6>
-      <canvas id="grafico1" style="max-height: 300px;"></canvas>
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Variáveis por Unidade de Medida</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoVarsPorUnidade" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
     </div>
   </div>
 
-  <div class="col-xl-6 col-lg-12">
-    <div class="card p-3 h-100">
-      <h6>Variáveis com Fórmula</h6>
-      <canvas id="grafico2" style="max-height: 300px;"></canvas>
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-pie-chart-fill me-2 text-success"></i>Proporção: Variáveis Com vs. Sem Fórmula</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoVarsComFormula" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
     </div>
   </div>
 
-  <div class="col-xl-6 col-lg-12">
-    <div class="card p-3 h-100">
-      <h6>Casas Decimais</h6>
-      <canvas id="grafico3" style="max-height: 300px;"></canvas>
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-graph-up me-2 text-warning"></i>Distribuição de Casas Decimais (Variáveis)</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoCasasDecimais" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
     </div>
   </div>
 
-  <div class="col-xl-6 col-lg-12">
-    <div class="card p-3 h-100">
-      <h6>Normalidade</h6>
-      <canvas id="grafico4" style="max-height: 300px;"></canvas>
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-pie-chart-fill me-2 text-info"></i>Proporção: Variáveis Com vs. Sem Normalidade</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoVarsComNormalidade" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-file-earmark-check-fill me-2 text-primary"></i>Scripts por Status de Aprovação</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoScriptsAprovado" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-power me-2 text-success"></i>Scripts por Status de Atividade</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoScriptsAtivo" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-display-fill me-2 text-info"></i>Scripts por Sistema</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoScriptsSistema" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-calendar-event-fill me-2 text-warning"></i>Referências por Ano</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoReferenciasAno" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm h-100 chart-card animate-fade-in">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-person-badge-fill me-2 text-danger"></i>Usuários por Perfil</h6>
+      </div>
+      <div class="card-body d-flex justify-content-center align-items-center p-3">
+        <canvas id="graficoUsuariosPerfil" style="max-height: 300px; max-width: 100%;"></canvas>
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+  /* Estilos do Tema Claro/Escuro e Page Header (mantidos da sua versão) */
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  :root {
+    --bg-color: #f8f9fa;
+    --text-color: #212529; /* Ajustado para texto mais escuro no modo claro */
+    --card-bg: rgba(255, 255, 255, 0.85); /* Um pouco menos transparente */
+    --header-bg: #f1f3f5;
+    --kpi-title-color: #6c757d; /* Cor para títulos dos KPIs no modo claro */
+    --kpi-value-color: #212529; /* Cor para valores dos KPIs no modo claro */
+  }
+  body.dark-mode {
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --card-bg: rgba(30, 30, 30, 0.85); /* Fundo do card escuro um pouco menos transparente */
+    --header-bg: #2c2c2c; /* Cabeçalho do card de gráfico mais escuro */
+    --kpi-title-color: #adb5bd; /* Cor para títulos dos KPIs no modo escuro */
+    --kpi-value-color: #f8f9fa; /* Cor para valores dos KPIs no modo escuro */
+  }
+  body { background-color: var(--bg-color); color: var(--text-color); }
+
+  .page-header .page-title {
+    font-weight: 700; font-size: 2rem;
+    background: linear-gradient(45deg, var(--bs-primary), var(--bs-info)); /* Usa vars do Bootstrap se disponíveis */
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .page-header-divider { border-top: 2px solid rgba(0, 0, 0, 0.1); }
+  .dark-mode .page-header-divider { border-top-color: rgba(255, 255, 255, 0.1); }
+
+  /* KPI Cards Atualizados */
+  .kpi-card {
+    border-radius: 0.75rem; /* Um pouco menos arredondado que 1rem para um visual mais "card" */
+    border: 1px solid transparent; /* Começa com borda transparente */
+    background: var(--card-bg);
+    backdrop-filter: blur(8px); /* Blur um pouco mais sutil */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Sombra mais sutil */
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .kpi-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    /* A cor da borda no hover pode ser a cor do ícone - implementado no JS se desejar, ou uma cor neutra */
+    /* border-color: rgba(var(--bs-primary-rgb), 0.5); */
+  }
+  .kpi-card .card-body { padding: 1rem !important; } /* Padding consistente */
+  .kpi-card .kpi-icon {
+    font-size: 1.75rem; /* Tamanho do ícone */
+    margin-right: 0.75rem !important;
+    opacity: 1; /* Ícones totalmente opacos */
+    line-height: 1; /* Para melhor alinhamento vertical */
+  }
+  .kpi-card .kpi-title {
+    font-size: 0.7rem; /* Título bem pequeno e sutil */
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--kpi-title-color); /* Usa variável de tema */
+    margin-bottom: 0.15rem !important;
+  }
+  .kpi-card .kpi-value {
+    font-size: 1.6rem; /* Valor destacado */
+    font-weight: 700;   /* Mais bold */
+    color: var(--kpi-value-color); /* Usa variável de tema */
+    line-height: 1.2;
+  }
+  /* O CSS específico para .card.text-bg-warning foi removido pois não usamos mais text-bg-* aqui */
+
+  /* Chart Cards (Estilos mantidos da sua versão, com pequenos ajustes) */
+  .chart-card { border-radius: 1rem; border: none; background-color: var(--card-bg); transition: box-shadow 0.3s ease; }
+  .chart-card:hover { box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); }
+  .chart-card .card-header { background-color: var(--header-bg); border-bottom: 1px solid var(--bs-border-color-translucent); border-radius: 1rem 1rem 0 0; padding: 0.9rem 1.25rem;}
+  .dark-mode .chart-card .card-header { border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .chart-card .card-header i { font-size: 1.1rem; vertical-align: text-bottom; }
+  .chart-card .card-body { min-height: 360px; padding: 1.25rem; }
+  
+  .animate-fade-in { opacity: 0; animation: fadeIn 0.6s ease-out forwards; animation-delay: calc(var(--animation-order, 0) * 100ms); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  #theme-toggle { border-radius: 50%; padding: 0.5rem; line-height: 1; }
+</style>
 
 <script>
-  initDashboards({
-    labels1: {{ labels1 | tojson | safe }},
-    dados1: {{ dados1 | tojson | safe }},
-    labels2: {{ labels2 | tojson | safe }},
-    dados2: {{ dados2 | tojson | safe }},
-    com_formula: {{ com_formula }},
-    sem_formula: {{ sem_formula }},
-    com_normalidade: {{ com_normalidade }},
-    sem_normalidade: {{ sem_normalidade }}
+  // Theme Toggle
+  const toggleButton = document.getElementById('theme-toggle');
+  const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+  function applyTheme(theme) {
+    if (theme === "dark") {
+      document.body.classList.add('dark-mode');
+      toggleButton.querySelector('i').classList.remove('bi-moon-fill');
+      toggleButton.querySelector('i').classList.add('bi-sun-fill');
+    } else {
+      document.body.classList.remove('dark-mode');
+      toggleButton.querySelector('i').classList.remove('bi-sun-fill');
+      toggleButton.querySelector('i').classList.add('bi-moon-fill');
+    }
+  }
+
+  // Aplica o tema salvo ou o preferido pelo sistema
+  const currentTheme = localStorage.getItem("theme") ? localStorage.getItem("theme") : (prefersDarkScheme.matches ? "dark" : "light");
+  applyTheme(currentTheme);
+
+  toggleButton.addEventListener('click', () => {
+    let theme = document.body.classList.contains('dark-mode') ? "light" : "dark";
+    applyTheme(theme);
+    localStorage.setItem("theme", theme);
+  });
+
+  // Adiciona delay na animação dos cards
+  document.querySelectorAll('.animate-fade-in').forEach((el, index) => {
+    el.style.setProperty('--animation-order', index);
+  });
+
+
+  // Chart Initialization
+  document.addEventListener('DOMContentLoaded', function() {
+    // Garante que ChartDataLabels está disponível antes de registrar
+    if (typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+    } else {
+        console.warn('ChartDataLabels plugin não encontrado. Os rótulos de dados podem não funcionar.');
+    }
+
+    initDashboards({
+      labelsVarsPorUnidade: {{ labels_vars_por_unidade | tojson | safe }},
+      dadosVarsPorUnidade: {{ dados_vars_por_unidade | tojson | safe }},   
+      comFormula: {{ com_formula }},                       
+      semFormula: {{ sem_formula }},                       
+      labelsCasasDecimais: {{ labels_casas_decimais | tojson | safe }}, 
+      dadosCasasDecimais: {{ dados_casas_decimais | tojson | safe }},   
+      comNormalidade: {{ com_normalidade }},                 
+      semNormalidade: {{ sem_normalidade }},                 
+      labelsScriptsAprovado: {{ labels_scripts_aprovado | tojson | safe }},
+      dadosScriptsAprovado: {{ dados_scripts_aprovado | tojson | safe }},
+      labelsScriptsAtivo: {{ labels_scripts_ativo | tojson | safe }},
+      dadosScriptsAtivo: {{ dados_scripts_ativo | tojson | safe }},
+      labelsScriptsSistema: {{ labels_scripts_sistema | tojson | safe }},
+      dadosScriptsSistema: {{ dados_scripts_sistema | tojson | safe }},
+      labelsRefAno: {{ labels_ref_ano | tojson | safe }},
+      dadosRefAno: {{ dados_ref_ano | tojson | safe }},
+      labelsUserPerfil: {{ labels_user_perfil | tojson | safe }},
+      dadosUserPerfil: {{ dados_user_perfil | tojson | safe }}
+    });
   });
 </script>
 {% endset %}

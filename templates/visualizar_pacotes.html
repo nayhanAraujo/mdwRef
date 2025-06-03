@@ -1,0 +1,82 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-box-fill me-2"></i>Pacotes
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario']['nome']|e }}</strong>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between mb-3">
+        <h5 class="text-primary">Lista de Pacotes</h5>
+        <a href="{{ url_for('pacotes.novo_pacote') }}" class="btn btn-outline-primary">
+          <i class="bi bi-plus-circle"></i> Novo Pacote
+        </a>
+      </div>
+
+      {% if pacotes %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Última Modificação</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pacote in pacotes %}
+                <tr>
+                  <td>{{ pacote.nome }}</td>
+                  <td>{{ pacote.descricao|default('-') }}</td>
+                  <td>{{ pacote.dthrultmodificacao.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                  <td>
+                    <a href="{{ url_for('pacotes.editar_pacote', codpacote=pacote.codpacote) }}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Editar pacote">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmarExcluirPacote({{ pacote.codpacote }})" data-bs-toggle="tooltip" title="Excluir pacote">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted">Nenhum pacote cadastrado.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  [...tooltipTriggerList].forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+});
+
+function confirmarExcluirPacote(codpacote) {
+  Swal.fire({
+    title: 'Excluir pacote?',
+    text: 'Esta ação não pode ser desfeita e pode afetar scripts vinculados.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sim, excluir',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const url = '{{ url_for("pacotes.excluir_pacote", codpacote=0) }}'.replace('/0', '/' + codpacote);
+      window.location.href = url;
+    }
+  });
+}
+</script>
+{% endset %}

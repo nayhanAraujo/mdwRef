@@ -1,6 +1,13 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session,send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session,send_file,jsonify
 from datetime import datetime
 import io,re,os,uuid
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
+from email.mime.application import MIMEApplication
+from email import encoders
 
 scripts_bp = Blueprint('scripts', __name__)
 
@@ -31,6 +38,150 @@ def save_file(file, folder, prefix):
     filepath = os.path.join(current_app.root_path, folder, filename)
     file.save(filepath)
     return f"/{folder}/{filename}", file.filename
+
+@scripts_bp.route('/send_images_email', methods=['POST'])
+def send_images_email():
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado.'}), 401
+
+    data = request.get_json()
+    codscriptlaudo = data.get('codscriptlaudo')
+    recipient_email = data.get('email')
+    sistema = data.get('sistema')
+
+    if not codscriptlaudo or not recipient_email or not sistema:
+        return jsonify({'success': False, 'message': 'Parâmetros inválidos.'}), 400
+
+    conn, cur = get_db()
+    try:
+        # Fetch script name and sistema
+        cur.execute("SELECT NOME, SISTEMA FROM SCRIPTLAUDO WHERE CODSCRIPTLAUDO = ?", (codscriptlaudo,))
+        script = cur.fetchone()
+        if not script:
+            return jsonify({'success': False, 'message': 'Script não encontrado.'}), 404
+        script_name, db_sistema = script
+
+        # Validate sistema matches database
+        if db_sistema != sistema:
+            return jsonify({'success': False, 'message': 'Sistema inválido para este script.'}), 400
+
+        # Append sistema to script name
+        script_name = f"{script_name} - {sistema}"
+
+        # Fetch images
+        cur.execute("""
+            SELECT CAMINHO, NOME_ARQUIVO
+            FROM SCRIPT_ARQUIVOS
+            WHERE CODSCRIPTLAUDO = ? AND TIPO = 'IMAGEM'
+        """, (codscriptlaudo,))
+        images = cur.fetchall()
+        if not images:
+            return jsonify({'success': False, 'message': 'Nenhuma imagem encontrada para este script.'}), 404
+
+        # Setup email
+        msg = MIMEMultipart('related')
+        msg['From'] = current_app.config['SMTP_SENDER']
+        msg['To'] = recipient_email
+        msg['Subject'] = f'Imagens do Script: {script_name}'
+
+        # Alternative part for plain text and HTML
+        msg_alternative = MIMEMultipart('alternative')
+        msg.attach(msg_alternative)
+
+        # Plain text fallback
+        plain_text = f"""Olá,
+
+Em anexo, seguem as imagens vinculadas ao script "{script_name}".
+
+Atenciosamente,
+Equipe Laudos
+"""
+        msg_alternative.attach(MIMEText(plain_text, 'plain'))
+
+        # HTML email with logo and marketing text
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; color: #333; line-height: 1.6; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ text-align: center; margin-bottom: 20px; }}
+        .logo {{ max-width: 150px; }}
+        .content {{ background-color: #f9f9f9; padding: 20px; border-radius: 5px; }}
+        .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #777; }}
+        .cta {{ background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="cid:logo" alt="Laudos Logo" class="logo">
+        </div>
+        <div class="content">
+            <h2>Olá,</h2>
+            <p>Estamos felizes em compartilhar com você as imagens do script <strong>{script_name}</strong>, desenvolvido para otimizar e agilizar seus laudos médicos com precisão e eficiência.</p>
+            <p>Em anexo, você encontrará capturas de tela que demonstram a interface e os recursos do script. Acreditamos que essas ferramentas podem transformar sua prática clínica, economizando tempo e melhorando a qualidade dos diagnósticos.</p>
+            <p><strong>Por que escolher nossos Sistemas de prontuário eletrônico</strong></p>
+            <ul>
+                <li>Soluções personalizadas para suas necessidades.</li>
+                <li>Interface intuitiva e fácil de usar.</li>
+                <li>Suporte técnico dedicado para médicos e clínicas.</li>
+            </ul>
+            <p style="text-align: center;">
+                <a href="https://www.medware.com.br/whatsapp-medware/" class="cta">Entre em Contato para uma Demonstração do modelo</a>
+            </p>
+        </div>
+        <div class="footer">
+            <p>Medware - Soluções em sistemas médicos<br>
+            <a href="https://laudosux.medware.com.br/">Conheça o Laudos UX</a> | vendas@medware.com.br<br>
+            Este é um email automático, por favor, não responda diretamente.</p>
+        </div>
+    </div>
+</body>
+</html>"""
+        msg_alternative.attach(MIMEText(html_content, 'html'))
+
+        # Attach logo as inline image
+        logo_path = os.path.join(current_app.root_path, 'static/img/logo.png')
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                logo = MIMEImage(f.read(), name='logo.png')
+                logo.add_header('Content-ID', '<logo>')
+                logo.add_header('Content-Disposition', 'inline', filename='logo.png')
+                msg.attach(logo)
+        else:
+            current_app.logger.warning("Logo file not found at static/img/logo.png")
+
+        # Attach images
+        for image in images:
+            caminho, nome_arquivo = image
+            filepath = os.path.join(current_app.root_path, caminho.lstrip('/'))
+            if os.path.exists(filepath):
+                with open(filepath, 'rb') as f:
+                    part = MIMEBase('application', 'octet-stream')
+                    part.set_payload(f.read())
+                encoders.encode_base64(part)
+                part.add_header(
+                    'Content-Disposition',
+                    f'attachment; filename="{nome_arquivo}"'
+                )
+                msg.attach(part)
+            else:
+                current_app.logger.warning(f"Image file not found: {filepath}")
+
+        # Send email
+        with smtplib.SMTP(current_app.config['SMTP_SERVER'], current_app.config['SMTP_PORT']) as server:
+            server.starttls()
+            server.login(current_app.config['SMTP_USERNAME'], current_app.config['SMTP_PASSWORD'])
+            server.send_message(msg)
+
+        current_app.logger.info(f"Imagens do script CODSCRIPTLAUDO={codscriptlaudo} enviadas para {recipient_email}.")
+        return jsonify({'success': True})
+
+    except Exception as e:
+        current_app.logger.error(f"Erro ao enviar email para CODSCRIPTLAUDO={codscriptlaudo}: {str(e)}")
+        return jsonify({'success': False, 'message': f'Erro ao enviar email: {str(e)}'}), 500
 
 @scripts_bp.route('/novo_script', methods=['GET', 'POST'])
 def novo_script():
@@ -689,3 +840,6 @@ def excluir_arquivo(codarquivo):
         current_app.logger.error(f"Erro ao excluir arquivo CODARQUIVO={codarquivo}: {str(e)}")
         flash(f"Erro ao excluir arquivo: {str(e)}", "error")
         return redirect(url_for('scripts.visualizar_scripts'))
+    
+
+

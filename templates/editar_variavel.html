@@ -16,7 +16,7 @@
       <form method="POST">
         <h5 class="text-primary">Informações da Variável</h5>
         <div class="form-check form-switch mb-3">
-          <input class="form-check-input" type="checkbox" id="possuivariavel" name="possui_formula" {% if variavel[7] %}checked{% endif %}>
+          <input class="form-check-input" type="checkbox" id="possuivariavel" name="possui_variavel" {% if variavel[7] %}checked{% endif %}>
           <label class="form-check-label" for="possuivariavel">Inserir variáveis</label>
         </div>
         <div id="areaVariavel" style="display: {% if variavel[7] %}block{% else %}none{% endif %};">
@@ -97,6 +97,7 @@
             <small class="form-text text-muted">Segure Ctrl (ou Cmd no Mac) para selecionar múltiplos códigos DICOM.</small>
           </div>
         </div>
+
         <hr>
 
         <div class="form-check form-switch mb-3">
@@ -145,8 +146,8 @@
                   <div class="col-md-4 mb-3">
                     <label class="form-label">Referência (Título, Ano, Autores)</label>
                     <div class="input-group">
-                      <select name="equacoes_referencia[]" class="form-select" onchange="updatePreviewButton(this)">
-                        <option value="">-- Nenhuma --</option>
+                      <select name="equacoes_referencia[]" class="form-select" required>
+                        <option value="" disabled selected>Selecione uma referência</option>
                         {% for cod, titulo, ano, autores in referencias %}
                           <option value="{{ cod }}" data-titulo="{{ titulo }}" data-ano="{{ ano }}" data-autores="{{ autores }}" {% if cod == equacao.codreferencia %}selected{% endif %}>{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
                         {% endfor %}
@@ -178,7 +179,7 @@
                     <label class="form-label">Referência (Título, Ano, Autores)</label>
                     <div class="input-group">
                       <select name="equacoes_referencia[]" class="form-select" onchange="updatePreviewButton(this)">
-                        <option value="">-- Nenhuma --</option>
+                        <option value="" disabled selected>Selecione uma referência</option>
                         {% for cod, titulo, ano, autores in referencias %}
                           <option value="{{ cod }}" data-titulo="{{ titulo }}" data-ano="{{ ano }}" data-autores="{{ autores }}">{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
                         {% endfor %}
@@ -205,75 +206,141 @@
           <label class="form-check-label" for="possuiNormalidade">Possui Normalidade ou Referência?</label>
         </div>
         <div id="areaNormalidade" style="display: {% if normalidades %}block{% else %}none{% endif %};">
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <label class="form-label">Sexo *</label>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="sexo_masculino" name="sexo[]" value="M" {% if normalidades.masculino %}checked{% endif %} onchange="toggleNormalidadeCampos()">
-                <label class="form-check-label" for="sexo_masculino">Masculino</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="sexo_feminino" name="sexo[]" value="F" {% if normalidades.feminino %}checked{% endif %} onchange="toggleNormalidadeCampos()">
-                <label class="form-check-label" for="sexo_feminino">Feminino</label>
-              </div>
-            </div>
-
-            <div class="col-md-8">
-              <div id="normalidade_masculino" style="display: {% if normalidades.masculino and not normalidades.feminino %}block{% else %}none{% endif %};">
-                <h6 class="text-primary">Normalidade - Masculino</h6>
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Valor Mínimo (M) *</label>
-                    <input type="number" step="any" name="valormin_m" class="form-control" value="{{ normalidades.masculino.valormin if normalidades.masculino else '' }}">
+          <h5 class="text-primary">Normalidades</h5>
+          <div id="normalidades-wrapper">
+            {% if normalidades %}
+              {% for normalidade in normalidades %}
+                <div class="normalidade-item mb-3 border p-3 rounded">
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="normalidade-campos">
+                        <h6 class="text-primary">Normalidade</h6>
+                        <div class="sexo-masculino">
+                          <h6>Masculino</h6>
+                          <div class="row">
+                            <div class="col-md-6 mb-3">
+                              <label class="form-label">Valor Mínimo</label>
+                              <input type="number" step="any" name="normalidades[{{ loop.index0 }}][valormin_m]" class="form-control" value="{{ normalidade.valormin_m or normalidade.valormin or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                              <label class="form-label">Valor Máximo</label>
+                              <input type="number" step="any" name="normalidades[{{ loop.index0 }}][valormax_m]" class="form-control" value="{{ normalidade.valormax_m or normalidade.valormax or '' }}">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="sexo-feminino">
+                          <h6>Feminino</h6>
+                          <div class="row">
+                            <div class="col-md-6 mb-3">
+                              <label class="form-label">Valor Mínimo</label>
+                              <input type="number" step="any" name="normalidades[{{ loop.index0 }}][valormin_f]" class="form-control" value="{{ normalidade.valormin_f or normalidade.valormin or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                              <label class="form-label">Valor Máximo</label>
+                              <input type="number" step="any" name="normalidades[{{ loop.index0 }}][valormax_f]" class="form-control" value="{{ normalidade.valormax_f or normalidade.valormax or '' }}">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Referência</label>
+                          <div class="input-group">
+                            <select name="normalidades[{{ loop.index0 }}][referencia]" class="form-select">
+                              <option value="" disabled {% if not normalidade.referencia %}selected{% endif %}>Selecione uma referência</option>
+                              {% for cod, titulo, ano, autores in referencias %}
+                                <option value="{{ cod }}" {% if cod == normalidade.referencia %}selected{% endif %}>{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
+                              {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-info btn-sm ms-2 preview-btn" data-bs-toggle="modal" data-bs-target="#referenciaModal" {% if not normalidade.referencia %}disabled{% endif %}>Pré-visualizar</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Valor Máximo (M) *</label>
-                    <input type="number" step="any" name="valormax_m" class="form-control" value="{{ normalidades.masculino.valormax if normalidades.masculino else '' }}">
+                  <button type="button" class="btn btn-outline-danger btn-sm remove-normalidade">Remover</button>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="normalidade-item mb-3 border p-3 rounded">
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="normalidade-campos">
+                      <h6 class="text-primary">Normalidade</h6>
+                      <div class="sexo-masculino">
+                        <h6>Masculino</h6>
+                        <div class="row">
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Valor Mínimo</label>
+                            <input type="number" step="any" name="normalidades[0][valormin_m]" class="form-control">
+                          </div>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Valor Máximo</label>
+                            <input type="number" step="any" name="normalidades[0][valormax_m]" class="form-control">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="sexo-feminino">
+                        <h6>Feminino</h6>
+                        <div class="row">
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Valor Mínimo</label>
+                            <input type="number" step="any" name="normalidades[0][valormin_f]" class="form-control">
+                          </div>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Valor Máximo</label>
+                            <input type="number" step="any" name="normalidades[0][valormax_f]" class="form-control">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Referência</label>
+                        <div class="input-group">
+                          <select name="normalidades[0][referencia]" class="form-select">
+                            <option value="" disabled selected>Selecione uma referência</option>
+                            {% for cod, titulo, ano, autores in referencias %}
+                              <option value="{{ cod }}">{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
+                            {% endfor %}
+                          </select>
+                          <button type="button" class="btn btn-outline-info btn-sm ms-2 preview-btn" data-bs-toggle="modal" data-bs-target="#referenciaModal" disabled>Pré-visualizar</button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-normalidade">Remover</button>
               </div>
-
-              <div id="normalidade_feminino" style="display: {% if normalidades.feminino and not normalidades.masculino %}block{% else %}none{% endif %};">
-                <h6 class="text-primary">Normalidade - Feminino</h6>
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Valor Mínimo (F) *</label>
-                    <input type="number" step="any" name="valormin_f" class="form-control" value="{{ normalidades.feminino.valormin if normalidades.feminino else '' }}">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Valor Máximo (F) *</label>
-                    <input type="number" step="any" name="valormax_f" class="form-control" value="{{ normalidades.feminino.valormax if normalidades.feminino else '' }}">
-                  </div>
-                </div>
-              </div>
-
-              <div id="normalidade_unico" style="display: {% if normalidades.masculino and normalidades.feminino or not (normalidades.masculino or normalidades.feminino) %}block{% else %}none{% endif %};">
-                <h6 class="text-primary">Normalidade</h6>
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Valor Mínimo *</label>
-                    <input type="number" step="any" name="valormin" class="form-control" value="{{ normalidades.unico.valormin if normalidades.unico else '' }}">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Valor Máximo *</label>
-                    <input type="number" step="any" name="valormax" class="form-control" value="{{ normalidades.unico.valormax if normalidades.unico else '' }}">
-                  </div>
-                </div>
-              </div>
-            </div>
+            {% endif %}
           </div>
+          <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="addNormalidade()">Adicionar outra normalidade</button>
+        </div>
 
-          <div class="mb-3">
-            <label class="form-label">Referência</label>
-            <div class="input-group">
-              <select name="referencia" class="form-select" onchange="updatePreviewButton(this)">
-                <option value="">-- Nenhuma --</option>
-                {% for cod, titulo, ano, autores in referencias %}
-                  <option value="{{ cod }}" data-titulo="{{ titulo }}" data-ano="{{ ano }}" data-autores="{{ autores }}" {% if cod == normalidades.referencia %}selected{% endif %}>{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
-                {% endfor %}
-              </select>
-              <button type="button" class="btn btn-outline-info btn-sm ms-2 preview-btn" data-bs-toggle="modal" data-bs-target="#referenciaModal" {% if not normalidades.referencia %}disabled{% endif %}>Pré-visualizar</button>
-            </div>
+        <div class="mb-3">
+          <label class="form-label">Grupo de Classificações</label>
+          <select name="codgrupo" class="form-select" id="grupoSelect" onchange="carregarClassificacoes(this.value)">
+            <option value="">-- Selecione um grupo --</option>
+            {% for grupo in grupos %}
+              <option value="{{ grupo[0] }}" {% if grupo[0] == grupo_selecionado %}selected{% endif %}>{{ grupo[1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3" id="classificacoes-wrapper">
+          <label class="form-label">Classificações e Valores</label>
+          <div id="classificacoes-valores">
+            {% if classificacoes_vinculadas %}
+              {% for classificacao in classificacoes_vinculadas %}
+                <div class="row mb-2">
+                  <div class="col-md-4">
+                    <input type="hidden" name="classificacoes[{{ loop.index0 }}][codclassificacao]" value="{{ classificacao.codclassificacao }}">
+                    <label class="form-label">{{ classificacao.nome }}</label>
+                  </div>
+                  <div class="col-md-4">
+                    <input type="number" step="any" name="classificacoes[{{ loop.index0 }}][valormin]" class="form-control" value="{{ classificacao.valormin or '' }}" placeholder="Valor Mínimo">
+                  </div>
+                  <div class="col-md-4">
+                    <input type="number" step="any" name="classificacoes[{{ loop.index0 }}][valormax]" class="form-control" value="{{ classificacao.valormax or '' }}" placeholder="Valor Máximo">
+                  </div>
+                </div>
+              {% endfor %}
+            {% endif %}
           </div>
         </div>
 
@@ -323,7 +390,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   document.getElementById('possuiNormalidade').addEventListener('change', function() {
     document.getElementById('areaNormalidade').style.display = this.checked ? 'block' : 'none';
-    toggleNormalidadeCampos();
   });
   
   document.getElementById('possuivariavel').addEventListener('change', function() {
@@ -331,20 +397,21 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Inicialização
-  toggleNormalidadeCampos();
   attachRemoveEvent();
+  attachNormalidadeEvents();
 
   // Delegação de eventos para botões dinâmicos
   document.body.addEventListener('click', function(e) {
-    // Botões de pré-visualização
     if (e.target.classList.contains('preview-btn')) {
       e.preventDefault();
       showModal(e.target);
     }
-    
-    // Botões de remover equação
     if (e.target.classList.contains('remove-equacao')) {
       e.target.closest('.equacao-item').remove();
+    }
+    if (e.target.classList.contains('remove-normalidade')) {
+      e.target.closest('.normalidade-item').remove();
+      updateNormalidadeIndexes();
     }
   });
 });
@@ -359,7 +426,6 @@ function showModal(button) {
   modalAno.textContent = button.dataset.ano || '-';
   modalAutores.textContent = button.dataset.autores || 'Nenhum autor';
 
-  // Chamar função para carregar anexos
   fetchAnexos(codReferencia);
 }
 
@@ -369,11 +435,8 @@ async function fetchAnexos(codReferencia) {
 
   try {
     const response = await fetch(`/referencias/get_anexos/${codReferencia}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
     const anexos = await response.json();
-    console.log('Resposta da rota /get_anexos:', anexos);
 
     anexosList.innerHTML = '';
     if (anexos.error) {
@@ -415,38 +478,97 @@ function updatePreviewButton(select) {
   }
 }
 
-function toggleNormalidadeCampos() {
-  const masculino = document.getElementById('sexo_masculino').checked;
-  const feminino = document.getElementById('sexo_feminino').checked;
-  const masculinoDiv = document.getElementById('normalidade_masculino');
-  const femininoDiv = document.getElementById('normalidade_feminino');
-  const unicoDiv = document.getElementById('normalidade_unico');
-  const inputsMasculino = masculinoDiv.querySelectorAll('input');
-  const inputsFeminino = femininoDiv.querySelectorAll('input');
-  const inputsUnico = unicoDiv.querySelectorAll('input');
+function toggleNormalidade() {
+  const possuiNormalidade = document.getElementById('possuiNormalidade').checked;
+  const areaNormalidade = document.getElementById('areaNormalidade');
+  areaNormalidade.style.display = possuiNormalidade ? 'block' : 'none';
+  const inputs = areaNormalidade.querySelectorAll('input, select');
+  inputs.forEach(input => {
+    if (possuiNormalidade) {
+      input.setAttribute('required', 'required');
+    } else {
+      input.removeAttribute('required');
+    }
+  });
+}
 
-  if (masculino && feminino) {
-    masculinoDiv.style.display = 'block';
-    femininoDiv.style.display = 'block';
-    unicoDiv.style.display = 'none';
-    inputsMasculino.forEach(input => input.setAttribute('required', 'required'));
-    inputsFeminino.forEach(input => input.setAttribute('required', 'required'));
-    inputsUnico.forEach(input => input.removeAttribute('required'));
-  } else if (masculino || feminino) {
-    masculinoDiv.style.display = masculino ? 'block' : 'none';
-    femininoDiv.style.display = feminino ? 'block' : 'none';
-    unicoDiv.style.display = 'none';
-    inputsMasculino.forEach(input => input.setAttribute('required', masculino ? 'required' : ''));
-    inputsFeminino.forEach(input => input.setAttribute('required', feminino ? 'required' : ''));
-    inputsUnico.forEach(input => input.removeAttribute('required'));
-  } else {
-    masculinoDiv.style.display = 'none';
-    femininoDiv.style.display = 'none';
-    unicoDiv.style.display = 'block';
-    inputsMasculino.forEach(input => input.removeAttribute('required'));
-    inputsFeminino.forEach(input => input.removeAttribute('required'));
-    inputsUnico.forEach(input => input.setAttribute('required', 'required'));
-  }
+function addNormalidade() {
+  const container = document.getElementById('normalidades-wrapper');
+  const index = container.querySelectorAll('.normalidade-item').length;
+  const div = document.createElement('div');
+  div.className = 'normalidade-item mb-3 border p-3 rounded';
+  div.innerHTML = `
+    <div class="row">
+      <div class="col-md-12">
+        <div class="normalidade-campos">
+          <h6 class="text-primary">Normalidade</h6>
+          <div class="sexo-masculino">
+            <h6>Masculino</h6>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Valor Mínimo</label>
+                <input type="number" step="any" name="normalidades[${index}][valormin_m]" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Valor Máximo</label>
+                <input type="number" step="any" name="normalidades[${index}][valormax_m]" class="form-control">
+              </div>
+            </div>
+          </div>
+          <div class="sexo-feminino">
+            <h6>Feminino</h6>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Valor Mínimo</label>
+                <input type="number" step="any" name="normalidades[${index}][valormin_f]" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Valor Máximo</label>
+                <input type="number" step="any" name="normalidades[${index}][valormax_f]" class="form-control">
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Referência</label>
+            <div class="input-group">
+              <select name="normalidades[${index}][referencia]" class="form-select">
+                <option value="" disabled selected>Selecione uma referência</option>
+                {% for cod, titulo, ano, autores in referencias %}
+                  <option value="{{ cod }}">{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="btn btn-outline-info btn-sm ms-2 preview-btn" data-bs-toggle="modal" data-bs-target="#referenciaModal" disabled>Pré-visualizar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline-danger btn-sm remove-normalidade">Remover</button>
+  `;
+  container.appendChild(div);
+  attachNormalidadeEvents();
+}
+
+function updateNormalidadeIndexes() {
+  const items = document.querySelectorAll('.normalidade-item');
+  items.forEach((item, index) => {
+    const inputs = item.querySelectorAll('input, select');
+    inputs.forEach(input => {
+      const name = input.name;
+      if (name) {
+        input.name = name.replace(/normalidades\[\d+\]/, `normalidades[${index}]`);
+      }
+    });
+  });
+}
+
+function attachNormalidadeEvents() {
+  document.querySelectorAll('.normalidade-item').forEach(item => {
+    const sexoInputs = item.querySelectorAll('input[name$="[sexo][]"]');
+    sexoInputs.forEach(input => {
+      input.addEventListener('change', () => toggleNormalidadeCampos(input));
+    });
+  });
 }
 
 function inserirVariavel() {
@@ -474,6 +596,35 @@ function confirmarSalvarVariavel() {
     });
     return;
   }
+
+  // Validar referências para equações
+  const equacoes = document.querySelectorAll('.equacao-item');
+  for (let i = 0; i < equacoes.length; i++) {
+    const refSelect = equacoes[i].querySelector('select[name="equacoes_referencia[]"]');
+    if (!refSelect.value) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Referência obrigatória',
+        text: 'Selecione uma referência para cada equação.'
+      });
+      return;
+    }
+  }
+
+  // Validar referências para normalidades
+  const normalidades = document.querySelectorAll('.normalidade-item');
+  for (let i = 0; i < normalidades.length; i++) {
+    const refSelect = normalidades[i].querySelector(`select[name="normalidades[${i}][referencia]"]`);
+    if (!refSelect.value) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Referência obrigatória',
+        text: 'Selecione uma referência para cada normalidade.'
+      });
+      return;
+    }
+  }
+
   Swal.fire({
     title: 'Salvar alterações?',
     text: 'Deseja realmente salvar as alterações desta variável?',
@@ -514,10 +665,10 @@ function addEquacao() {
         </select>
       </div>
       <div class="col-md-4 mb-3">
-        <label class="form-label">Referência (Título, Ano, Autores)</label>
+        <label class="form-label">Referência (Título, Ano, Autores) *</label>
         <div class="input-group">
-          <select name="equacoes_referencia[]" class="form-select" onchange="updatePreviewButton(this)">
-            <option value="">-- Nenhuma --</option>
+          <select name="equacoes_referencia[]" class="form-select" required>
+            <option value="" disabled selected>Selecione uma referência</option>
             {% for cod, titulo, ano, autores in referencias %}
               <option value="{{ cod }}" data-titulo="{{ titulo }}" data-ano="{{ ano }}" data-autores="{{ autores }}">{{ titulo }} ({{ ano }}) {% if autores %}- {{ autores }}{% endif %}</option>
             {% endfor %}
@@ -538,19 +689,74 @@ function addEquacao() {
 
 function attachRemoveEvent() {
   document.querySelectorAll('.remove-equacao').forEach(button => {
-    button.removeEventListener('click', removeEquacaoHandler);
-    button.addEventListener('click', removeEquacaoHandler);
+    button.onclick = () => {
+      button.closest('.equacao-item').remove();
+    };
+  });
+  document.querySelectorAll('.remove-normalidade').forEach(button => {
+    button.onclick = () => {
+      if (document.querySelectorAll('.normalidade-item').length > 1) {
+        button.closest('.normalidade-item').remove();
+        updateNormalidadeIndexes();
+      }
+    };
   });
 }
 
-function removeEquacaoHandler() {
-  this.parentElement.remove();
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('possuiNormalidade').addEventListener('change', toggleNormalidade);
+  attachNormalidadeEvents();
+});
+
+function carregarClassificacoes(codgrupo) {
+  const wrapper = document.getElementById('classificacoes-valores');
+  wrapper.innerHTML = '<p>Carregando...</p>';
+  
+  if (!codgrupo) {
+    wrapper.innerHTML = '<p>Selecione um grupo para carregar as classificações.</p>';
+    return;
+  }
+
+  fetch(`/variaveis/get_classificacoes_grupo/${codgrupo}`)
+    .then(response => response.json())
+    .then(data => {
+      wrapper.innerHTML = '';
+      if (data.error) {
+        wrapper.innerHTML = `<p class="text-danger">${data.error}</p>`;
+        return;
+      }
+      if (data.length === 0) {
+        wrapper.innerHTML = '<p>Nenhuma classificação encontrada para este grupo.</p>';
+        return;
+      }
+      data.forEach((classificacao, index) => {
+        const div = document.createElement('div');
+        div.className = 'row mb-2';
+        div.innerHTML = `
+          <div class="col-md-4">
+            <input type="hidden" name="classificacoes[${index}][codclassificacao]" value="${classificacao.codclassificacao}">
+            <label class="form-label">${classificacao.nome}</label>
+          </div>
+          <div class="col-md-4">
+            <input type="number" step="any" name="classificacoes[${index}][valormin]" class="form-control" placeholder="Valor Mínimo">
+          </div>
+          <div class="col-md-4">
+            <input type="number" step="any" name="classificacoes[${index}][valormax]" class="form-control" placeholder="Valor Máximo">
+          </div>
+        `;
+        wrapper.appendChild(div);
+      });
+    })
+    .catch(error => {
+      wrapper.innerHTML = `<p class="text-danger">Erro ao carregar classificações: ${error}</p>`;
+    });
 }
 
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('anexo-link') || e.target.parentElement.classList.contains('anexo-link')) {
-    const href = e.target.href || e.target.parentElement.href;
-    console.log('Link de anexo clicado:', href);
+// Carregar classificações iniciais, se houver grupo selecionado
+document.addEventListener('DOMContentLoaded', () => {
+  const grupoSelect = document.getElementById('grupoSelect');
+  if (grupoSelect.value) {
+    carregarClassificacoes(grupoSelect.value);
   }
 });
 </script>

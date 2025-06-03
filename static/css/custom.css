@@ -179,3 +179,10 @@
 .text-teal-700 {
   color: #0f766e; /* Cor teal-700 do Tailwind */
 }
+
+@media (max-width: 768px) {
+  .col-md-3 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}

@@ -11,76 +11,91 @@
 </div>
 
 <div class="container">
+
+  <!-- Filtro de Pesquisa -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
-      <!-- Filtro de Pesquisa -->
-      <div class="mb-4">
-        <form method="GET" action="{{ url_for('codigos_universais.visualizar_codigos_universais') }}">
-          <div class="input-group">
-            <input type="text" name="filtro" class="form-control"
-                   placeholder="Pesquisar por tipo, código ou descrição..."
-                   value="{{ filtro }}">
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-search"></i>
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>Cód. Universal</th>
-            <th>Tipo Código</th>
-            <th>Código</th>
-            <th>Descrição</th>
-            <th>Unidade</th>
-            <th>Descrição PT-BR</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for codigo in codigos %}
-            <tr>
-              <td>{{ codigo[0] }}</td>
-              <td>{{ codigo[1] }}</td>
-              <td>{{ codigo[2] }}</td>
-              <td>{{ codigo[3] or '' }}</td>
-              <td>{{ codigo[4] or '' }}</td>
-              <td>{{ codigo[5] or '' }}</td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="6">Nenhum código encontrado.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      <!-- Paginação -->
-      <nav>
-        <ul class="pagination">
-          {% if pagina > 1 %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('codigos_universais.visualizar_codigos_universais', page=pagina-1, filtro=filtro) }}">Anterior</a>
-            </li>
-          {% endif %}
-          <li class="page-item disabled">
-            <span class="page-link">Página {{ pagina }} de {{ total_paginas }}</span>
-          </li>
-          {% if pagina < total_paginas %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('codigos_universais.visualizar_codigos_universais', page=pagina+1, filtro=filtro) }}">Próxima</a>
-            </li>
-          {% endif %}
-        </ul>
-      </nav>
-
-      <div class="text-end">
-        <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
-        </a>
-      </div>
+      <form method="GET" action="{{ url_for('codigos_universais.visualizar_codigos_universais') }}">
+        <div class="input-group input-group-lg">
+          <input type="text" name="filtro" class="form-control"
+                 placeholder="Pesquisar por tipo, código ou descrição..."
+                 value="{{ filtro }}">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-search me-1"></i>Pesquisar
+          </button>
+        </div>
+      </form>
     </div>
   </div>
+
+  <!-- Tabela -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Cód. Universal</th>
+              <th>Tipo Código</th>
+              <th style="width: 20%;">Código</th>
+              <th>Descrição</th>
+              <th>Unidade</th>
+              <th style="width: 35%;">Descrição PT-BR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if codigos %}
+              {% for codigo in codigos %}
+                <tr>
+                  <td><code>{{ codigo[0] }}</code></td>
+                  <td><span class="badge bg-secondary">{{ codigo[1] or '-' }}</span></td>
+                  <td style="white-space: nowrap;"><strong>{{ codigo[2] }}</strong></td>
+                  <td>{{ codigo[3] or '-' }}</td>
+                  <td>{{ codigo[4] or '-' }}</td>
+                  <td>{{ codigo[5] or '-' }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" class="text-center text-muted">Nenhum código encontrado.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Paginação -->
+  <nav aria-label="Paginação de códigos universais" class="mt-4 d-flex justify-content-center">
+    <ul class="pagination pagination-md">
+      {% if pagina > 1 %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('codigos_universais.visualizar_codigos_universais', page=pagina-1, filtro=filtro) }}" tabindex="-1">
+            <i class="bi bi-chevron-left me-1"></i>Anterior
+          </a>
+        </li>
+      {% endif %}
+      <li class="page-item disabled">
+        <span class="page-link">Página {{ pagina }} de {{ total_paginas }}</span>
+      </li>
+      {% if pagina < total_paginas %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('codigos_universais.visualizar_codigos_universais', page=pagina+1, filtro=filtro) }}">
+            Próxima<i class="bi bi-chevron-right ms-1"></i>
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <!-- Botão Voltar -->
+  <div class="text-end mt-4">
+    <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar para Biblioteca
+    </a>
+  </div>
 </div>
-{% endset %}
+{% endset %}  

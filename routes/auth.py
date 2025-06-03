@@ -4,7 +4,6 @@ from datetime import datetime
 from werkzeug.security import check_password_hash
 from flask import current_app
 
-
 auth_bp = Blueprint('auth', __name__)
 
 def get_db():
@@ -13,9 +12,6 @@ def get_db():
     if conn is None or cur is None:
         raise Exception("Conexão com o banco de dados não foi inicializada.")
     return conn, cur
-
-# from app import conn, cur  #local
- #   return conn, cur
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -26,18 +22,19 @@ def login():
         conn, cur = get_db()
         current_app.logger.info(f"Tentando login com usuário: {identificacao}")
         cur.execute("""
-            SELECT CODUSUARIO, NOME FROM USUARIO
+            SELECT CODUSUARIO, NOME, PERFIL FROM USUARIO
             WHERE IDENTIFICACAO = ? AND SENHA = ? AND STATUS = -1
         """, (identificacao, senha_hash))
         resultado = cur.fetchone()
         if resultado:
-            # Salvar um dicionário com CODUSUARIO e NOME
+            # Salvar um dicionário com CODUSUARIO, NOME e PERFIL
             session['usuario'] = {
                 'codusuario': resultado[0],
-                'nome': resultado[1]
+                'nome': resultado[1],
+                'role': resultado[2] 
             }
             current_app.logger.info(f"Sessão configurada para usuário: {session['usuario']}, sessão: {session}")
-            return redirect(url_for('variaveis.home'))
+            return redirect(url_for('bibliotecas.biblioteca'))
         current_app.logger.error(f"Falha no login: usuário {identificacao} ou senha inválidos")
         return render_template('login.html', erro='Usuário ou senha inválidos.')
     current_app.logger.info("Renderizando página de login")

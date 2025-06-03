@@ -1,43 +1,256 @@
 {% extends 'layout.html' %}
 
 {% set content %}
-<h3 class="mb-4">Cadastrar Usuário</h3>
-<form method="POST" class="row g-3">
-  <div class="col-md-6">
-    <label for="nome" class="form-label">Nome</label>
-    <input type="text" class="form-control" id="nome" name="nome" required>
-  </div>
 
-  <div class="col-md-6">
-    <label for="identificacao" class="form-label">Login (identificação)</label>
-    <input type="text" class="form-control" id="identificacao" name="identificacao" required>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-person-plus-fill me-2 icon-gradient"></i>Cadastrar Novo Usuário
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
+</div>
+<div class="card shadow-sm">
 
-  <div class="col-md-6">
-    <label for="senha" class="form-label">Senha</label>
-    <input type="password" class="form-control" id="senha" name="senha" required>
+  <div class="card-body">
+    {# Adicionado needs-validation e novalidate para controle customizado de validação Bootstrap #}
+    <form method="POST" class="row g-3 needs-validation" id="novoUsuarioForm" novalidate>
+      <div class="col-md-6">
+        <label for="nome" class="form-label">Nome Completo</label>
+        <input type="text" class="form-control" id="nome" name="nome" placeholder="Digite o nome completo" required>
+        <div class="invalid-feedback">
+          Por favor, insira o nome completo.
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="identificacao" class="form-label">Login (Identificação)</label>
+        <input type="text" class="form-control" id="identificacao" name="identificacao" placeholder="Ex: joao" required pattern="[^\s]+" 
+               aria-describedby="identificacaoHelpBlock">
+        <div id="identificacaoHelpBlock" class="form-text">
+          O login deve ser uma única palavra, sem espaços (ex: o primeiro nome).
+        </div>
+        <div class="invalid-feedback" id="identificacaoInvalidFeedback">
+          Login inválido. Não deve conter espaços e precisa ser uma única palavra.
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="senha" class="form-label">Senha</label>
+        <div class="input-group">
+          <input type="password" class="form-control" id="senha" name="senha" placeholder="Digite a senha" required minlength="6">
+          <button class="btn btn-outline-secondary" type="button" id="toggleSenha" title="Mostrar/Ocultar Senha">
+            <i class="bi bi-eye-slash"></i>
+          </button>
+        </div>
+        <div class="invalid-feedback">
+          A senha é obrigatória e deve ter no mínimo 6 caracteres.
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="confirmarSenha" class="form-label">Confirmar Senha</label>
+        <div class="input-group">
+            <input type="password" class="form-control" id="confirmarSenha" name="confirmar_senha" placeholder="Confirme a senha" required minlength="6">
+            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmarSenha" title="Mostrar/Ocultar Senha">
+                <i class="bi bi-eye-slash"></i>
+            </button>
+        </div>
+        <div class="invalid-feedback" id="confirmarSenhaInvalidFeedback">
+          As senhas não coincidem ou são inválidas.
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="perfil" class="form-label">Perfil</label>
+        <select class="form-select" id="perfil" name="perfil" required>
+          <option value="" disabled selected>Selecione o perfil...</option>
+          <option value="admin">Administrador</option>
+          <option value="comum">Comum</option>
+        </select>
+        <div class="invalid-feedback">
+          Por favor, selecione um perfil.
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="status" class="form-label">Status</label>
+        <select class="form-select" id="status" name="status" required>
+          <option value="-1">Ativo</option>
+          <option value="0">Inativo</option>
+        </select>
+      </div>
+
+      <div class="col-12 mt-4 pt-3 border-top">
+        <button type="submit" class="btn btn-success me-2"> {# Alterado tipo para submit, JS cuidará da confirmação #}
+          <i class="bi bi-floppy-fill me-1"></i> Salvar
+        </button>
+        <a href="{{ url_for('users.usuarios') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-circle me-1"></i> Cancelar
+        </a>
+      </div>
+    </form>
   </div>
+</div>
 
-  <div class="col-md-6">
-    <label for="perfil" class="form-label">Perfil</label>
-    <select class="form-select" id="perfil" name="perfil" required>
-      <option value="">Selecione...</option>
-      <option value="admin">Administrador</option>
-      <option value="comum">Comum</option>
-    </select>
-  </div>
+<script>
+// Função para alternar visibilidade da senha
+function togglePasswordVisibility(inputId, toggleButtonId) {
+  const passwordInput = document.getElementById(inputId);
+  const toggleButton = document.getElementById(toggleButtonId);
+  const icon = toggleButton.querySelector('i');
 
-  <div class="col-md-6">
-    <label for="status" class="form-label">Status</label>
-    <select class="form-select" id="status" name="status" required>
-      <option value="-1">Ativo</option>
-      <option value="0">Inativo</option>
-    </select>
-  </div>
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    icon.classList.remove('bi-eye-slash');
+    icon.classList.add('bi-eye');
+  } else {
+    passwordInput.type = 'password';
+    icon.classList.remove('bi-eye');
+    icon.classList.add('bi-eye-slash');
+  }
+}
 
-  <div class="col-12">
-    <button type="button" class="btn btn-success" onclick="confirmarSalvaUsuario()">Salvar</button>
-  </div>
-</form>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('novoUsuarioForm');
+  const identificacaoInput = document.getElementById('identificacao');
+  const senhaInput = document.getElementById('senha');
+  const confirmarSenhaInput = document.getElementById('confirmarSenha');
+  const identificacaoInvalidFeedback = document.getElementById('identificacaoInvalidFeedback');
+  const confirmarSenhaInvalidFeedback = document.getElementById('confirmarSenhaInvalidFeedback');
 
+  // Toggle de senha
+  document.getElementById('toggleSenha').addEventListener('click', function() {
+    togglePasswordVisibility('senha', 'toggleSenha');
+  });
+  document.getElementById('toggleConfirmarSenha').addEventListener('click', function() {
+    togglePasswordVisibility('confirmarSenha', 'toggleConfirmarSenha');
+  });
+
+  // Validação do campo Identificação em tempo real (impede espaços)
+  identificacaoInput.addEventListener('input', function(event) {
+    const value = event.target.value;
+    const newValue = value.replace(/\s+/g, ''); // Remove todos os espaços
+    if (value !== newValue) {
+      event.target.value = newValue; // Atualiza o valor sem espaços
+    }
+
+    // Validação visual
+    if (newValue.includes(' ') || newValue.split(' ').length > 1 || newValue === '') {
+      identificacaoInput.classList.add('is-invalid');
+      identificacaoInput.classList.remove('is-valid');
+    } else if (newValue.length > 0) {
+        identificacaoInput.classList.remove('is-invalid');
+        identificacaoInput.classList.add('is-valid');
+    } else { // Campo vazio após apagar tudo
+        identificacaoInput.classList.remove('is-valid', 'is-invalid');
+    }
+  });
+  
+  // Validação da confirmação de senha em tempo real
+  function validatePasswordConfirmation() {
+    if (senhaInput.value !== confirmarSenhaInput.value && confirmarSenhaInput.value.length > 0) {
+      confirmarSenhaInput.classList.add('is-invalid');
+      confirmarSenhaInput.classList.remove('is-valid');
+      confirmarSenhaInvalidFeedback.textContent = 'As senhas não coincidem.';
+      return false;
+    } else if (confirmarSenhaInput.value.length > 0 && confirmarSenhaInput.value.length < 6) {
+      confirmarSenhaInput.classList.add('is-invalid');
+      confirmarSenhaInput.classList.remove('is-valid');
+      confirmarSenhaInvalidFeedback.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+      return false;
+    } else if (confirmarSenhaInput.value.length > 0) {
+      confirmarSenhaInput.classList.remove('is-invalid');
+      confirmarSenhaInput.classList.add('is-valid');
+      return true;
+    } else { // Campo vazio
+      confirmarSenhaInput.classList.remove('is-valid', 'is-invalid');
+      return false; // Ou true se não for obrigatório até o submit
+    }
+  }
+  senhaInput.addEventListener('input', validatePasswordConfirmation);
+  confirmarSenhaInput.addEventListener('input', validatePasswordConfirmation);
+
+
+  form.addEventListener('submit', function(event) {
+    event.preventDefault(); // Previne o envio padrão do formulário
+
+    let isValidCustom = true;
+    // Validação customizada para identificacao
+    const identificacaoValue = identificacaoInput.value.trim();
+    if (identificacaoValue.includes(' ') || identificacaoValue.split(' ').length > 1) {
+      identificacaoInput.classList.add('is-invalid');
+      identificacaoInput.classList.remove('is-valid');
+      isValidCustom = false;
+    } else if (identificacaoValue) {
+      identificacaoInput.classList.remove('is-invalid');
+      identificacaoInput.classList.add('is-valid');
+    }
+
+    // Validação customizada para senhas
+    if (senhaInput.value !== confirmarSenhaInput.value) {
+      confirmarSenhaInput.classList.add('is-invalid');
+      confirmarSenhaInput.classList.remove('is-valid');
+      confirmarSenhaInvalidFeedback.textContent = 'As senhas não coincidem.';
+      isValidCustom = false;
+    } else if (senhaInput.value && confirmarSenhaInput.value) {
+        if (senhaInput.value.length >=6) {
+            senhaInput.classList.remove('is-invalid');
+            senhaInput.classList.add('is-valid');
+            confirmarSenhaInput.classList.remove('is-invalid');
+            confirmarSenhaInput.classList.add('is-valid');
+        } else {
+             senhaInput.classList.add('is-invalid');
+             senhaInput.classList.remove('is-valid');
+             confirmarSenhaInput.classList.add('is-invalid');
+             confirmarSenhaInput.classList.remove('is-valid');
+             confirmarSenhaInvalidFeedback.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+             isValidCustom = false;
+        }
+    }
+
+
+    // Adiciona .was-validated para mostrar feedback do Bootstrap para campos required, pattern etc.
+    form.classList.add('was-validated');
+
+    if (!form.checkValidity() || !isValidCustom) {
+      // Se a validação do navegador falhar OU nossa validação customizada falhar
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Por favor, corrija os erros no formulário.',
+        customClass: { popup: 'swal2-zindex-high' }
+      });
+      return; // Interrompe aqui se houver erros
+    }
+
+    // Se tudo estiver OK, mostra o SweetAlert para confirmação final
+    Swal.fire({
+      title: 'Confirmar Cadastro',
+      text: 'Tem certeza que deseja cadastrar este usuário?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#198754',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sim, salvar',
+      cancelButtonText: 'Cancelar',
+      customClass: { popup: 'swal2-zindex-high' }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.submit(); // Envia o formulário de fato
+      }
+    });
+  });
+});
+
+// Estilo para garantir que o modal do Swal fique na frente de modais Bootstrap (já existente)
+const styleSwalZIndex = document.createElement('style');
+styleSwalZIndex.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwalZIndex);
+</script>
 {% endset %}

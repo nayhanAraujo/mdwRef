@@ -1,148 +1,481 @@
 {% extends 'layout.html' %}
 {% block title %}Fórmulas Cadastradas{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-file-bar-graph-fill me-2"></i> Fórmulas Cadastradas
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-calculator-fill me-2 icon-gradient"></i> Fórmulas Cadastradas
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm">
+  <div class="card-header bg-light py-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary">Filtros e Cadastro</h5>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovaFormula">
+          <i class="bi bi-plus-circle-fill me-1"></i> Nova Fórmula
+        </button>
+    </div>
+  </div>
   <div class="card-body">
-    <!-- Formulário de Filtros -->
-    <form method="GET" action="{{ url_for('formulas.visualizar_formulas') }}" class="mb-4">
-      <div class="row g-3">
-        <div class="col-md-3">
-          <label class="form-label">Variável (Sigla)</label>
-          <input type="text" name="sigla" class="form-control" value="{{ filtro_sigla }}" placeholder="Ex.: VR_AO1">
+    <div class="p-3 border rounded bg-light-subtle mb-4">
+      <form method="GET" action="{{ url_for('formulas.visualizar_formulas') }}">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label for="filtro_sigla" class="form-label">Variável (Sigla)</label>
+            <input type="text" id="filtro_sigla" name="sigla" class="form-control form-control-sm" value="{{ filtro_sigla }}" placeholder="Ex.: VR_AO1">
+          </div>
+          <div class="col-md-3">
+            <label for="filtro_nome" class="form-label">Nome da Fórmula</label>
+            <input type="text" id="filtro_nome" name="nome" class="form-control form-control-sm" value="{{ filtro_nome }}" placeholder="Ex.: Cálculo de IMC">
+          </div>
+          <div class="col-md-4">
+            <label for="filtro_formula" class="form-label">Conteúdo da Fórmula</label>
+            <input type="text" id="filtro_formula" name="formula" class="form-control form-control-sm" value="{{ filtro_formula }}" placeholder="Ex.: VR_PESO / (VR_ALTURA*VR_ALTURA)">
+          </div>
+          <div class="col-md-1">
+            <button type="submit" class="btn btn-primary btn-sm w-100">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+          </div>
+          <div class="col-md-1">
+            <a href="{{ url_for('formulas.visualizar_formulas') }}" class="btn btn-outline-secondary btn-sm w-100" title="Limpar Filtros">
+              <i class="bi bi-eraser"></i> Limpar
+            </a>
+          </div>
         </div>
-        <div class="col-md-3">
-          <label class="form-label">Nome</label>
-          <input type="text" name="nome" class="form-control" value="{{ filtro_nome }}" placeholder="Ex.: Fórmula para VR_AO1">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Fórmula</label>
-          <input type="text" name="formula" class="form-control" value="{{ filtro_formula }}" placeholder="Ex.: VR_AO1 * 2">
-        </div>
-        <div class="col-md-3 d-flex align-items-end">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-search"></i> Filtrar
-          </button>
-        </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
-    <!-- Mensagem de Erro -->
-    {% if get_flashed_messages() %}
-      <div class="alert alert-danger mb-3">
-        {% for category, message in get_flashed_messages(with_categories=true) %}
-          {{ message }}
-        {% endfor %}
-      </div>
-    {% endif %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-    <!-- Tabela de Fórmulas -->
     <div class="table-responsive">
       <table class="table table-hover table-bordered align-middle">
-        <thead class="table-primary text-center">
-          <tr>
-            <th>Variável</th>
-            <th>Nome</th>
-            <th>Fórmula</th>
-            <th>Ações</th>
+        <thead class="table-light">
+          <tr class="text-center">
+            <th style="width: 15%;">Variável Principal</th>
+            <th class="text-start">Nome da Fórmula</th>
+            <th class="text-start">Fórmula</th>
+            <th style="width: 15%;">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% if formulas %}
             {% for cod, nome, formula, sigla in formulas %}
               <tr>
-                <td class="text-center">{{ sigla }}</td>
-                <td>{{ nome }}</td>
-                <td>{{ formula }}</td>
+                <td class="text-center"><code>{{ sigla }}</code></td>
+                <td class="text-start">{{ nome }}</td>
+                <td class="text-start"><code>{{ formula }}</code></td>
                 <td class="text-center">
-                  <a href="{{ url_for('formulas.editar_formula', codformula=cod) }}" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-pencil-square"></i> Editar
-                  </a>
-                  <form action="{{ url_for('formulas.excluir_formula', codformula=cod) }}" method="POST" class="d-inline excluir-formula-form">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                      <i class="bi bi-trash"></i> Excluir
-                    </button>
-                  </form>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <a href="{{ url_for('formulas.editar_formula', codformula=cod) }}" class="btn btn-outline-secondary" title="Editar Fórmula">
+                      <i class="bi bi-pencil-square"></i> Editar
+                    </a>
+                    <form action="{{ url_for('formulas.excluir_formula', codformula=cod) }}" method="POST" class="d-inline excluir-formula-form">
+                      <button type="submit" class="btn btn-outline-danger" title="Excluir Fórmula">
+                        <i class="bi bi-trash-fill"></i> Excluir
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="4" class="text-center">Nenhuma fórmula encontrada.</td>
+              <td colspan="4" class="text-center text-muted fst-italic">Nenhuma fórmula encontrada com os filtros aplicados.</td>
             </tr>
           {% endif %}
         </tbody>
       </table>
     </div>
 
-    <!-- Paginação -->
-    {% if total_paginas > 1 %}
-      <nav aria-label="Paginação">
-        <ul class="pagination justify-content-center">
-          {% if pagina > 1 %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('formulas.visualizar_formulas', page=pagina-1, sigla=filtro_sigla, nome=filtro_nome, formula=filtro_formula) }}">Anterior</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">Anterior</span>
-            </li>
-          {% endif %}
-          <li class="page-item disabled">
-            <span class="page-link">Página {{ pagina }} de {{ total_paginas }}</span>
+    {% if total_paginas is defined and total_paginas > 0 %}
+    <nav aria-label="Paginação de Fórmulas" class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if pagina > 1 %}
+          <li class="page-item">
+              <a class="page-link" href="{{ url_for('formulas.visualizar_formulas', page=pagina-1, sigla=filtro_sigla, nome=filtro_nome, formula=filtro_formula) }}"><i class="bi bi-chevron-left"></i> Anterior</a>
           </li>
-          {% if pagina < total_paginas %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('formulas.visualizar_formulas', page=pagina+1, sigla=filtro_sigla, nome=filtro_nome, formula=filtro_formula) }}">Próxima</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">Próxima</span>
-            </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span></li>
+        {% endif %}
+        
+        {% set delta = 2 %}
+        {% set left = pagina - delta %}
+        {% set right = pagina + delta + 1 %}
+        {% set range_ = [] %}
+        {% set range_with_dots = [] %}
+        {% set l = 0 %}
+
+        {% for i in range(1, total_paginas + 1) %}
+          {% if i == 1 or i == total_paginas or (i >= left and i < right) %}
+            {% if range_.append(i) %}{% endif %}
           {% endif %}
-        </ul>
-      </nav>
+        {% endfor %}
+
+        {% for i in range_ %}
+          {% if l %}
+            {% if i - l == 2 %}
+              {% if range_with_dots.append(l + 1) %}{% endif %}
+            {% elif i - l != 1 %}
+              {% if range_with_dots.append('...') %}{% endif %}
+            {% endif %}
+          {% endif %}
+          {% if range_with_dots.append(i) %}{% endif %}
+          {% set l = i %}
+        {% endfor %}
+
+        {% for i in range_with_dots %}
+          {% if i == '...' %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+          {% elif i == pagina %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('formulas.visualizar_formulas', page=i, sigla=filtro_sigla, nome=filtro_nome, formula=filtro_formula) }}">{{ i }}</a></li>
+          {% endif %}
+        {% endfor %}
+
+        {% if pagina < total_paginas %}
+          <li class="page-item">
+              <a class="page-link" href="{{ url_for('formulas.visualizar_formulas', page=pagina+1, sigla=filtro_sigla, nome=filtro_nome, formula=filtro_formula) }}">Próxima <i class="bi bi-chevron-right"></i></a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Próxima <i class="bi bi-chevron-right"></i></span></li>
+        {% endif %}
+      </ul>
+       {% if total_formulas is defined %}
+       <p class="text-center text-muted small mt-2">Página {{ pagina }} de {{ total_paginas }} (Total de {{ total_formulas }} fórmulas)</p>
+       {% endif %}
+    </nav>
+    {% elif formulas %} 
+      <p class="text-center text-muted small mt-2">Total de {{ formulas|length }} fórmulas</p>
     {% endif %}
 
-    <!-- Botões de Ação -->
-    <div class="d-flex justify-content-between">
-      <a href="{{ url_for('formulas.nova_formula') }}" class="btn btn-success">
-        <i class="bi bi-plus-circle"></i> Nova Fórmula
-      </a>
-      <a href="{{ url_for('variaveis.home') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Voltar
+    <div class="mt-4 text-end">
+      <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left-circle me-1"></i> Voltar para Biblioteca
       </a>
     </div>
   </div>
 </div>
 
+<div class="modal fade" id="modalNovaFormula" tabindex="-1" aria-labelledby="modalNovaFormulaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNovaFormulaLabel"><i class="bi bi-plus-circle-fill me-2"></i>Cadastrar Nova Fórmula</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('formulas.nova_formula') }}" id="formNovaFormula" class="needs-validation" novalidate>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="siglaFormulaModal" class="form-label">Variável Principal (Sigla) <span class="text-danger">*</span></label>
+            <select name="sigla" id="siglaFormulaModal" class="form-select" required>
+              <option value="" disabled selected>Selecione a variável principal...</option>
+              {% for s in siglas_para_modal %}
+                <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+            <div class="invalid-feedback">
+                Por favor, selecione a variável principal.
+            </div>
+          </div>
+          <div class="mb-3 position-relative"> {# Adicionado position-relative para o container de sugestões #}
+            <label for="formulaTextModal" class="form-label">Fórmula <span class="text-danger">*</span></label>
+            <textarea name="formula" id="formulaTextModal" rows="4" class="form-control" placeholder="Ex: (<<VR_PESO>> / (<<VR_ALTURA>> * <<VR_ALTURA>>)) * 10000" required></textarea>
+            {# O div de sugestões será inserido aqui pelo JavaScript #}
+            <div class="form-text small">
+              Use <code>&lt;&lt;NOME_VARIAVEL&gt;&gt;</code> para referenciar outras variáveis. Digite <code>&lt;&lt;</code> ou comece a digitar <code>VR_</code> para ver sugestões.
+            </div>
+            <div class="invalid-feedback">
+                Por favor, insira a expressão da fórmula.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save-fill me-1"></i> Salvar Fórmula
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ... (Estilos do cabeçalho da página e outros existentes) ... */
+  .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
+  .page-header .icon-gradient {background: linear-gradient(45deg, var(--bs-primary), var(--bs-info)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; font-size: 1.65rem; vertical-align: middle;}
+  .page-header-divider {border-top: 1px solid rgba(0, 0, 0, 0.08);}
+
+  /* Estilos para o dropdown de sugestões de autocompletar */
+  .suggestions-container {
+    border: 1px solid #ced4da; /* Borda similar aos inputs Bootstrap */
+    border-top: none;
+    z-index: 1056; /* Para aparecer sobre o modal (modal tem z-index 1050-1055) */
+    max-height: 200px; /* Altura máxima com scroll */
+    overflow-y: auto;
+    background-color: white; /* Fundo branco */
+    width: 100%; /* Para ocupar a largura do elemento pai (div.mb-3) */
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); /* Sombra para destaque */
+  }
+  .suggestions-container .list-group-item {
+    cursor: pointer;
+    padding: 0.4rem 0.75rem; /* Padding um pouco menor */
+    font-size: 0.875rem; /* Fonte menor */
+  }
+  .suggestions-container .list-group-item:hover,
+  .suggestions-container .list-group-item.active { /* Para navegação por teclado */
+    background-color: #e9ecef; /* Cor de hover sutil do Bootstrap */
+    color: #000;
+  }
+  .suggestions-container code {
+    font-weight: bold;
+    color: var(--bs-primary); /* Destaca a sigla da variável */
+  }
+</style>
+
 <script>
-  document.querySelectorAll('.excluir-formula-form').forEach(form => {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      Swal.fire({
-        title: 'Confirmar Exclusão',
-        text: 'Deseja realmente excluir esta fórmula?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Excluir',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          form.submit();
+document.addEventListener('DOMContentLoaded', function() {
+  // ... (JavaScript existente para exclusão de fórmula e validação de modal) ...
+
+  const variaveisParaSugestao = {{ variaveis_para_sugestao | tojson | safe if variaveis_para_sugestao else '[]' }};
+  const formulaTextarea = document.getElementById('formulaTextModal');
+  let suggestionsDiv = null; 
+
+  function createSuggestionsDiv() {
+    if (!suggestionsDiv) {
+      suggestionsDiv = document.createElement('div');
+      suggestionsDiv.id = 'formulaVariableSuggestions';
+      suggestionsDiv.className = 'list-group suggestions-container'; 
+      suggestionsDiv.style.display = 'none'; 
+      // Anexa ao pai do textarea, que deve ter position: relative
+      if(formulaTextarea && formulaTextarea.parentNode){
+        formulaTextarea.parentNode.appendChild(suggestionsDiv);
+      }
+    }
+    return suggestionsDiv;
+  }
+
+  function updateSuggestionsPosition() {
+    if (!suggestionsDiv || !formulaTextarea || !formulaTextarea.parentNode) return;
+    // Posiciona relativamente ao pai do textarea (que tem position:relative)
+    suggestionsDiv.style.position = 'absolute';
+    suggestionsDiv.style.top = formulaTextarea.offsetHeight + 'px'; // Logo abaixo do textarea
+    suggestionsDiv.style.left = '0px'; // Alinhado à esquerda do pai
+    suggestionsDiv.style.width = formulaTextarea.offsetWidth + 'px';
+  }
+
+  function showSuggestions(searchTerm) {
+    const div = createSuggestionsDiv();
+    div.innerHTML = ''; 
+    updateSuggestionsPosition();
+
+    if (!searchTerm || searchTerm.length < 1) {
+      div.style.display = 'none';
+      return;
+    }
+
+    // Filtrar por sigla começando com VR_ se o termo também começa, ou nome clínico
+    const searchUpper = searchTerm.toUpperCase();
+    const filteredVariables = variaveisParaSugestao.filter(v => {
+        const siglaUpper = v.sigla.toUpperCase();
+        const nomeClinicoUpper = v.nome_clinico ? v.nome_clinico.toUpperCase() : "";
+        
+        if (searchUpper.startsWith("VR_")) {
+            return siglaUpper.startsWith(searchUpper);
         }
+        return siglaUpper.includes(searchUpper) || nomeClinicoUpper.includes(searchUpper);
+
+    }).slice(0, 7); 
+
+    if (filteredVariables.length === 0) {
+      div.style.display = 'none';
+      return;
+    }
+
+    filteredVariables.forEach(variable => {
+      const item = document.createElement('a');
+      item.href = '#'; 
+      item.className = 'list-group-item list-group-item-action';
+      item.innerHTML = `<code>&lt;&lt;${variable.sigla}&gt;&gt;</code> <small class="text-muted ms-1">(${variable.nome_clinico || 'Sem nome clínico'})</small>`;
+      
+      item.addEventListener('mousedown', function(e) { 
+        e.preventDefault();
+        insertVariableIntoFormula(`<<${variable.sigla}>>`, getCurrentPartialVariable());
       });
+      div.appendChild(item);
     });
-  });
+    div.style.display = 'block';
+  }
+
+  function getCurrentPartialVariable() {
+      const cursorPos = formulaTextarea.selectionStart;
+      const textBeforeCursor = formulaTextarea.value.substring(0, cursorPos);
+      const lastOpenDoubleAngle = textBeforeCursor.lastIndexOf('<<');
+      const lastCloseDoubleAngle = textBeforeCursor.lastIndexOf('>>');
+
+      if (lastOpenDoubleAngle !== -1 && lastOpenDoubleAngle > lastCloseDoubleAngle) {
+          return textBeforeCursor.substring(lastOpenDoubleAngle);
+      }
+      return null; 
+  }
+
+  function insertVariableIntoFormula(variableToInsert, partialTypedVariable) {
+    const currentText = formulaTextarea.value;
+    const selectionStart = formulaTextarea.selectionStart;
+    const selectionEnd = formulaTextarea.selectionEnd;
+    let textBefore, textAfter;
+
+    if (partialTypedVariable) {
+        const startOfPartial = currentText.lastIndexOf(partialTypedVariable, selectionStart);
+        if (startOfPartial !== -1 && (selectionStart >= startOfPartial && selectionStart <= startOfPartial + partialTypedVariable.length)) {
+            // Estamos dentro ou no final da variável parcial
+            textBefore = currentText.substring(0, startOfPartial);
+            textAfter = currentText.substring(startOfPartial + partialTypedVariable.length);
+        } else { // Inserção simples se não houver correspondência clara da variável parcial
+            textBefore = currentText.substring(0, selectionStart);
+            textAfter = currentText.substring(selectionEnd);
+        }
+    } else {
+        textBefore = currentText.substring(0, selectionStart);
+        textAfter = currentText.substring(selectionEnd);
+    }
+    
+    formulaTextarea.value = textBefore + variableToInsert + textAfter;
+    formulaTextarea.focus();
+    const newCursorPos = textBefore.length + variableToInsert.length;
+    formulaTextarea.setSelectionRange(newCursorPos, newCursorPos);
+    
+    if (suggestionsDiv) {
+      suggestionsDiv.style.display = 'none';
+    }
+  }
+
+  if (formulaTextarea) {
+    // Garante que o pai do textarea seja relativo para o posicionamento absoluto do suggestionsDiv
+    if(formulaTextarea.parentNode) formulaTextarea.parentNode.style.position = 'relative';
+
+    formulaTextarea.addEventListener('input', function() {
+      const partial = getCurrentPartialVariable();
+      if (partial) {
+          const searchTerm = partial.startsWith('<<') ? partial.substring(2) : partial;
+          showSuggestions(searchTerm);
+      } else {
+          if (suggestionsDiv) suggestionsDiv.style.display = 'none';
+      }
+    });
+
+    formulaTextarea.addEventListener('keydown', function(e) {
+        if (suggestionsDiv && suggestionsDiv.style.display === 'block') {
+            const items = suggestionsDiv.querySelectorAll('.list-group-item');
+            if (items.length === 0) return;
+
+            let activeItem = suggestionsDiv.querySelector('.list-group-item.active');
+            let activeIndex = activeItem ? Array.from(items).indexOf(activeItem) : -1;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (activeItem) activeItem.classList.remove('active');
+                activeIndex = (activeIndex + 1) % items.length;
+                items[activeIndex].classList.add('active');
+                items[activeIndex].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (activeItem) activeItem.classList.remove('active');
+                activeIndex = (activeIndex - 1 + items.length) % items.length;
+                items[activeIndex].classList.add('active');
+                items[activeIndex].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter' && activeItem) {
+                e.preventDefault();
+                activeItem.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+            } else if (e.key === 'Escape') {
+                suggestionsDiv.style.display = 'none';
+            }
+        }
+    });
+
+    formulaTextarea.addEventListener('blur', function() {
+      setTimeout(() => {
+        if (suggestionsDiv && !suggestionsDiv.contains(document.activeElement)) {
+           suggestionsDiv.style.display = 'none';
+        }
+      }, 150);
+    });
+
+    window.addEventListener('resize', updateSuggestionsPosition);
+    const modalBody = formulaTextarea.closest('.modal-body');
+    if(modalBody) modalBody.addEventListener('scroll', updateSuggestionsPosition);
+  }
+
+  // ... (restante do seu JavaScript: exclusão, validação do modal de nova fórmula, etc.) ...
+  // Código para validação e submissão do formNovaFormula
+    const formNovaFormula = document.getElementById('formNovaFormula');
+    if (formNovaFormula) {
+        formNovaFormula.addEventListener('submit', function(event) {
+        if (!formNovaFormula.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            // Opcional: SweetAlert de confirmação antes de submeter
+            event.preventDefault(); // Previne submit para mostrar Swal
+            Swal.fire({
+                title: 'Confirmar Criação',
+                text: 'Deseja realmente salvar esta nova fórmula?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-check-lg"></i> Sim, Salvar',
+                cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+                customClass: { popup: 'swal2-zindex-high' }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    formNovaFormula.submit(); 
+                }
+            });
+        }
+        formNovaFormula.classList.add('was-validated');
+        }, false);
+    }
+
+    // Limpar o campo do modal ao fechar
+    const modalNovaFormula = document.getElementById('modalNovaFormula');
+    if (modalNovaFormula) {
+        modalNovaFormula.addEventListener('hidden.bs.modal', function () {
+        if (formNovaFormula) {
+            formNovaFormula.reset();
+            formNovaFormula.classList.remove('was-validated');
+            const siglaSelect = formNovaFormula.querySelector('#siglaFormulaModal');
+            if (siglaSelect) siglaSelect.selectedIndex = 0;
+            if (suggestionsDiv) suggestionsDiv.style.display = 'none'; // Esconde sugestões
+        }
+        });
+    }
+});
+
+const styleSwalZIndex = document.createElement('style');
+styleSwalZIndex.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwalZIndex);
 </script>
 {% endset %}

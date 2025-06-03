@@ -14,6 +14,7 @@ from routes.linguagens import linguagens_bp
 from routes.scripts import scripts_bp
 from routes.secoes import secoes_bp
 from routes.modelos import modelos_bp
+from routes.pacotes import pacotes_bp
 from routes.codigos_universais import codigos_universais_bp  # Adicione esta linha
 from dotenv import load_dotenv  # Adicione este import
 from datetime import timedelta
@@ -26,6 +27,8 @@ if os.path.exists('.env'):
     
 # Configurações adaptáveis para local/dev
 IS_LOCAL = os.environ.get('FLASK_ENV') == 'development'
+
+
 
 def create_app():
     app = Flask(__name__)
@@ -45,6 +48,17 @@ def create_app():
     app.config['SESSION_PERMANENT'] = False
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Expira em 30 minutos
     app.config['SESSION_USE_SIGNER'] = True
+
+    # In app.py or config.py
+    app.config.update(
+        SMTP_SERVER='smtp.gmail.com',  # e.g., Gmail SMTP server
+        SMTP_PORT=587,
+        SMTP_USERNAME='nayhanbsb@gmail.com',
+        SMTP_PASSWORD='txkt aiqx qqvk vjdr',  # Use an app-specific password for Gmail
+        SMTP_SENDER='nayhanbsb@gmail.com'
+    )
+
+
 
     if is_local:
         # Usar um caminho explícito no diretório raiz do projeto
@@ -93,7 +107,7 @@ def create_app():
             'user': os.environ.get('FIREBIRD_USER', 'SYSDBA'),
             'password': os.environ.get('FIREBIRD_PASSWORD', 'masterkey')
         }
-
+  
     # Inicialização da conexão com o banco de dados
     @app.before_request
     def before_request():
@@ -138,26 +152,32 @@ def create_app():
         if request.endpoint in ['auth.login', 'auth.forgot_password']:
             return dict(links_menu=[])
         links = [
-            ('Início', 'variaveis.home', 'house'),
-            ('Novo Script', 'scripts.novo_script', 'plus-circle'),  
-            ('Visualizar Scripts', 'scripts.visualizar_scripts', 'list'),
-           # ('Nova Seção', 'secoes.nova_secao', 'plus-circle'),  
-            #('Visualizar Seções', 'secoes.visualizar_secoes', 'list'),
-            ('Novo Modelo', 'modelos.novo_modelo', 'plus-circle'),  
-            ('Visualizar Modelos', 'modelos.visualizar_modelos', 'list'),
-            ('Nova Variável', 'variaveis.nova_variavel', 'plus-circle'),
-            ('Nova Fórmula', 'formulas.nova_formula', 'calculator'),
-            ('Cadastrar Referência', 'referencias.nova_referencia', 'book'),
-            #('Cadastrar Usuário', 'users.novo_usuario', 'person-plus'),
-            #('Visualizar Usuários', 'users.usuarios', 'people-fill'),
-            ('Fórmulas Cadastradas', 'formulas.visualizar_formulas', 'calculator-fill'),
-            ('Visualizar Variáveis', 'variaveis.visualizar_variaveis', 'card-list'),
-            #('Visualizar Unidades', 'unidades.visualizar_unidades', 'speedometer2'),
-            ('Visualizar Especialidades', 'especialidades.visualizar_especialidades', 'briefcase-fill'),
-            ('Visualizar Linguagens', 'linguagens.visualizar_linguagens', 'translate'),
-            #('Códigos Universais', 'codigos_universais.visualizar_codigos_universais', 'list'),  # Adicione esta linha
-            ('Biblioteca', 'bibliotecas.biblioteca', 'collection'),
-        ]
+      
+    ('Dashboards', 'variaveis.home', 'speedometer'),  # Painel → velocímetro
+    ('Novo Script', 'scripts.novo_script', 'file-earmark-plus'),  # Novo → arquivo com +
+    ('Visualizar Scripts', 'scripts.visualizar_scripts', 'file-earmark-text'),  # Visualizar → arquivo com texto
+    #('Nova Seção', 'secoes.nova_secao', 'file-earmark-plus'),  # Seções → arquivo com +
+    #('Visualizar Seções', 'secoes.visualizar_secoes', 'file-earmark-text'),  
+    ('Novo Modelo', 'modelos.novo_modelo', 'file-earmark-plus'),  # Novo modelo → arquivo com +
+    ('Visualizar Modelos', 'modelos.visualizar_modelos', 'file-earmark-text'),  # Visualizar modelo → arquivo com texto
+    ('Nova Variável', 'variaveis.nova_variavel', 'clipboard-plus'),  # Nova variável → clipboard +
+    #('Nova Fórmula', 'formulas.nova_formula', 'calculator'),  # Fórmula → calculadora
+    #('Cadastrar Referência', 'referencias.nova_referencia', 'book-half'),  # Referência → livro meio aberto
+    #('Cadastrar Usuário', 'users.novo_usuario', 'person-plus'),  
+    #('Visualizar Usuários', 'users.usuarios', 'people'),  
+    ('Visualizar Variáveis', 'variaveis.visualizar_variaveis', 'card-list'),  # Lista → cartão com lista
+    ('Fórmulas Cadastradas', 'formulas.visualizar_formulas', 'calculator-fill'),  # Calculadora preenchida
+    #('Visualizar Unidades', 'unidades.visualizar_unidades', 'rulers'),  
+    ('Visualizar Especialidades', 'especialidades.visualizar_especialidades', 'briefcase'),  # Profissões → maleta
+    ('Visualizar Linguagens', 'linguagens.visualizar_linguagens', 'translate'),  # Linguagens → ícone de tradução
+    ('Gerenciar Classificações', 'variaveis.gerenciar_grupos_classificacoes', 'tags-fill'),  # Classificações → tags
+    #('Códigos Universais', 'codigos_universais.visualizar_codigos_universais', 'qr-code-scan'),  
+    ('Biblioteca', 'bibliotecas.biblioteca', 'bookshelf'),  # Biblioteca → prateleira de livros
+    ('Pacote', 'pacotes.visualizar_pacotes', 'box-seam')
+    
+]
+
+    
         return dict(links_menu=links)
 
     # Registrar Blueprints
@@ -175,6 +195,8 @@ def create_app():
     app.register_blueprint(secoes_bp, url_prefix='/secoes') 
     app.register_blueprint(modelos_bp, url_prefix='/modelos')
     app.register_blueprint(codigos_universais_bp, url_prefix='/codigos_universais')  # Adicione esta linha
+    app.register_blueprint(pacotes_bp,url_prefix='/pacotes')
+
 
     return app
 

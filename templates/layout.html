@@ -29,27 +29,92 @@
       height: 100vh;
       width: 100%;
     }
-    .sidebar {
-      width: 220px;
-      background: #0d6efd;
-      color: white;
-      padding-top: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .sidebar a {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 20px;
-      color: white;
-      text-decoration: none;
-    }
-    .sidebar a:hover,
-    .sidebar a.active {
-      background-color: #0b5ed7;
-    }
+  
+/* ... (Seus estilos existentes como html, body, wrapper, content, login-*, etc. permanecem) ... */
+
+.sidebar {
+  width: 250px; /* Um pouco mais larga para melhor espaçamento */
+  /* background: #0d6efd; */ /* Cor original do Bootstrap Primary */
+  background: #2c3e50; /* Novo: Tom de cinza-azulado escuro, mais moderno */
+  /* background: #1a2530; */ /* Alternativa: Um tom ainda mais escuro */
+  color: #ecf0f1; /* Texto claro para contraste com fundo escuro */
+  padding-top: 0; /* Removido padding-top global, será tratado por seções */
+  display: flex;
+  flex-direction: column;
+  /* justify-content: space-between; */ /* Removido para controle mais granular */
+  transition: width 0.3s ease; /* Para futuras animações de colapso */
+}
+
+.sidebar-header {
+  padding: 20px 25px; /* Padding vertical e horizontal */
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* Linha separadora sutil */
+}
+
+.sidebar-header .app-title {
+  margin: 0;
+  font-size: 1.4rem; /* Tamanho do título */
+  font-weight: 600;
+  color: #ffffff; /* Título branco para destaque */
+  letter-spacing: 0.5px;
+}
+
+.sidebar-menu {
+  flex-grow: 1; /* Faz esta seção ocupar o espaço disponível */
+  overflow-y: auto; /* Habilita scroll se os itens de menu excederem a altura */
+}
+
+.sidebar-link { /* Estilo base para todos os links na sidebar */
+  display: flex;
+  align-items: center;
+  padding: 14px 25px; /* Mais padding vertical para "respiro" */
+  color: #bdc3c7; /* Cor padrão para texto do link (um cinza claro) */
+  text-decoration: none;
+  border-left: 4px solid transparent; /* Para indicador visual no item ativo/hover */
+  transition: background-color 0.2s ease, color 0.2s ease, border-left-color 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(255, 255, 255, 0.05); /* Fundo sutil no hover */
+  color: #ffffff; /* Texto branco no hover */
+  border-left-color: #3498db; /* Cor de destaque azul para a borda no hover */
+}
+
+.sidebar-link.active {
+  background-color: rgba(255, 255, 255, 0.08); /* Fundo um pouco mais destacado para ativo */
+  color: #ffffff; /* Texto branco para ativo */
+  font-weight: 500;
+  border-left-color: #ffffff; /* Borda branca para o item ativo */
+}
+
+.sidebar-link .link-icon {
+  font-size: 1.2rem; /* Tamanho dos ícones */
+  margin-right: 15px; /* Espaçamento entre ícone e texto */
+  width: 24px; /* Alinhamento dos ícones */
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-link:hover .link-icon,
+.sidebar-link.active .link-icon {
+  transform: scale(1.1); /* Leve aumento do ícone no hover/ativo */
+}
+
+.sidebar-link .link-text {
+  font-size: 0.95rem;
+}
+
+.sidebar-footer {
+  padding: 10px 0; /* Padding apenas vertical */
+  border-top: 1px solid rgba(255, 255, 255, 0.08); /* Linha separadora sutil */
+}
+.sidebar-footer .logout-link { /* O logout-link usa a classe .sidebar-link */
+    font-size: 0.9rem; /* Pode ser um pouco menor */
+}
+.sidebar-footer .logout-link:hover { /* Sobrescreve a cor da borda do hover geral */
+    border-left-color: #e74c3c; /* Borda vermelha para logout no hover, por exemplo */
+}
+
     .content {
       flex: 1;
       padding: 20px;
@@ -129,43 +194,84 @@
     opacity: 1;
   }
 
+  .table th, .table td {
+  vertical-align: middle;
+}
+
+.code {
+  font-family: monospace;
+  background-color: #f1f3f5;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+  
+
+.page-header .page-title {
+  font-weight: 600; /* Um pouco menos bold que o fw-bold original, mas ainda destacado */
+  color: #343a40; /* Cor escura principal para o texto, em vez do azul primário direto */
+  font-size: 1.75rem; /* h2 é um pouco maior que h3 */
+}
+
+.page-header .icon-gradient {
+  /* Exemplo de gradiente usando as cores da nova sidebar ou cores primárias do app */
+  /* Ajuste as cores conforme sua paleta */
+  background: linear-gradient(45deg, #3498db, #2980b9); /* Exemplo com tons de azul */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  font-size: 1.5rem; /* Ajusta o tamanho do ícone se necessário */
+}
+
+.page-header .text-muted strong {
+    color: #495057; /* Torna o nome do usuário um pouco mais destacado que o "text-muted" normal */
+}
+
+.page-header-divider {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
     
   </style>
 </head>
 <body>
   {% block content %}
-    {% if session.get('usuario') %}
-      <div class="wrapper">
-        <div class="sidebar">
-          <div>
-            <h4 class="text-center mb-3">REFERÊNCIAS</h4>
-            <hr style="border-color: rgba(255,255,255,0.3); width: 80%; margin: auto;">
-            {% for texto, endpoint, icone in links_menu %}
-              <a href="{{ url_for(endpoint) }}" class="{% if request.endpoint == endpoint %}active{% endif %}">
-                <i class="bi bi-{{ icone }} me-1"></i> {{ texto }}
-              </a>
-            {% endfor %}
-          </div>
-          <div class="logout mb-3 ms-3">
-            <a href="{{ url_for('auth.logout') }}" class="text-white small">
-              <i class="bi bi-box-arrow-left"></i> Sair
-            </a>
-          </div>
-        </div>
-        <div class="content">
-          {% with messages = get_flashed_messages() %}
-            {% if messages %}
-              <div class="alert alert-info">{{ messages[0] }}</div>
-            {% endif %}
-          {% endwith %}
-          {{ content | safe }}
-        </div>
+  {% if session.get('usuario') %}
+  <div class="wrapper">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h5 class="app-title">MDW REF</h5>
       </div>
-    {% else %}
-      <div class="login-body">
-        {{ content | safe }}
+
+      <div class="sidebar-menu"> 
+        {% for texto, endpoint, icone in links_menu %}
+          <a href="{{ url_for(endpoint) }}" class="sidebar-link {% if request.endpoint == endpoint %}active{% endif %}">
+            <i class="bi bi-{{ icone }} link-icon"></i> 
+            <span class="link-text">{{ texto }}</span>
+          </a>
+        {% endfor %}
       </div>
-    {% endif %}
+
+      <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-link logout-link">
+          <i class="bi bi-box-arrow-left link-icon"></i>
+          <span class="link-text">Sair</span>
+        </a>
+      </div>
+    </div>
+    <div class="content">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="alert alert-info">{{ messages[0] }}</div>
+        {% endif %}
+      {% endwith %}
+      {{ content | safe }}
+    </div>
+  </div>
+{% else %}
+  <div class="login-body">
+    {{ content | safe }}
+  </div>
+{% endif %}
   {% endblock %}
 
 <script>

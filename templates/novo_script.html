@@ -40,6 +40,10 @@
           <label class="form-label">Arquivo JSON (Laudos UX) *</label>
           <input type="file" class="form-control" id="arquivo_json" name="arquivo_json" accept=".json">
         </div>
+        <div class="mb-3" id="campo-arquivo-mrd" style="display: none;">
+          <label class="form-label">Arquivo MRD </label>
+          <input type="file" class="form-control" id="arquivo_mrd" name="arquivo_mrd" accept=".json,.mrd">
+        </div>
         <div class="mb-3">
           <label class="form-label">Linguagem</label>
           <input type="text" class="form-control" id="linguagem" name="linguagem" placeholder="Ex.: C#, HTML" oninput="toggleCampoCaminhoProjeto()">
@@ -50,8 +54,8 @@
         </div>
         <div class="mb-3">
           <label class="form-label">Descrição</label>
-          <textarea class="form-control" id="descricao" name="descricao" rows="5" maxlength="255" placeholder="Descreva a funcionalidade ou propósito do script"></textarea>
-          <small class="form-text text-muted">Máximo de 255 caracteres.</small>
+          <textarea class="form-control" id="descricao" name="descricao" rows="5" maxlength="500" placeholder="Descreva a funcionalidade ou propósito do script"></textarea>
+          <small class="form-text text-muted">Máximo de 500 caracteres.</small>
         </div>
         <div class="mb-3">
           <label class="form-label">Imagens da Interface (PNG, JPG)</label>
@@ -92,12 +96,25 @@
 function toggleCamposSistema() {
   const sistema = document.getElementById('sistema').value;
   const campoArquivoJson = document.getElementById('campo-arquivo-json');
+  const campoArquivoMrd = document.getElementById('campo-arquivo-mrd');
+  const arquivoJsonInput = document.getElementById('arquivo_json');
+  const arquivoMrdInput = document.getElementById('arquivo_mrd');
+
   if (sistema === 'Laudos UX') {
     campoArquivoJson.style.display = 'block';
-    document.getElementById('arquivo_json').setAttribute('required', 'required');
+    campoArquivoMrd.style.display = 'block';
+    arquivoJsonInput.setAttribute('required', 'required');
+    arquivoMrdInput.setAttribute('accept', '.json');
+  } else if (sistema === 'Laudos Flex') {
+    campoArquivoJson.style.display = 'none';
+    campoArquivoMrd.style.display = 'block';
+    arquivoJsonInput.removeAttribute('required');
+    arquivoMrdInput.setAttribute('accept', '.mrd');
   } else {
     campoArquivoJson.style.display = 'none';
-    document.getElementById('arquivo_json').removeAttribute('required');
+    campoArquivoMrd.style.display = 'none';
+    arquivoJsonInput.removeAttribute('required');
+    arquivoMrdInput.removeAttribute('required');
   }
 }
 
@@ -127,6 +144,7 @@ function confirmarSalvarScript() {
   const nome = document.getElementById('nome').value.trim();
   const sistema = document.getElementById('sistema').value;
   const arquivoJson = document.getElementById('arquivo_json').files[0];
+  const arquivoMrd = document.getElementById('arquivo_mrd').files[0];
   const aprovado = document.getElementById('aprovado').checked;
   const aprovadoPor = document.getElementById('aprovado_por').value.trim();
   const imagens = document.getElementById('imagens').files;
@@ -141,22 +159,48 @@ function confirmarSalvarScript() {
     return;
   }
 
-  if (sistema === 'Laudos UX' && !arquivoJson) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Arquivo JSON obrigatório',
-      text: 'Você deve selecionar um arquivo JSON para o sistema Laudos UX.'
-    });
-    return;
-  }
-
-  if (sistema === 'Laudos UX' && arquivoJson && !arquivoJson.name.endsWith('.json')) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Formato inválido',
-      text: 'O arquivo JSON deve ter a extensão .json.'
-    });
-    return;
+  if (sistema === 'Laudos UX') {
+    if (!arquivoJson) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Arquivo JSON obrigatório',
+        text: 'Você deve selecionar um arquivo JSON para o sistema Laudos UX.'
+      });
+      return;
+    }
+    if (!arquivoJson.name.endsWith('.json')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formato inválido',
+        text: 'O arquivo JSON deve ter a extensão .json.'
+      });
+      return;
+    }
+    if (!arquivoMrd || !arquivoMrd.name.endsWith('.json')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formato inválido',
+        text: 'O arquivo MRD para Laudos UX deve ter a extensão .json.'
+      });
+      return;
+    }
+  } else if (sistema === 'Laudos Flex') {
+    if (!arquivoMrd) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Arquivo MRD obrigatório',
+        text: 'Você deve selecionar um arquivo MRD para o sistema Laudos Flex.'
+      });
+      return;
+    }
+    if (!arquivoMrd.name.endsWith('.mrd')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formato inválido',
+        text: 'O arquivo MRD para Laudos Flex deve ter a extensão .mrd.'
+      });
+      return;
+    }
   }
 
   if (aprovado && !aprovadoPor) {

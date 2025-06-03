@@ -1,42 +1,131 @@
 {% extends 'layout.html' %}
 
+{% block title %}Visualizar Usuários{% endblock %}
+
 {% set content %}
-<h3 class="mb-4">Usuários Cadastrados</h3>
-<table class="table table-hover table-bordered align-middle">
-  <thead class="table-primary">
-    <tr class="text-center">
-      <th>#</th>
-      <th>Nome</th>
-      <th>Identificação</th>
-      <th>Perfil</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for cod, nome, identificacao, perfil in usuarios %}
-    <tr class="text-center">
-      <td>{{ cod }}</td>
-      <td class="text-start">{{ nome }}</td>
-      <td class="text-start">{{ identificacao }}</td>
-      <td>
-        {% if perfil == 'admin' %}
-          <span class="badge bg-info text-dark">Administrador</span>
-        {% else %}
-          <span class="badge bg-secondary">Comum</span>
-        {% endif %}
-      </td>
-          <td>
-        <a href="{{ url_for('users.editar_usuario', codusuario=cod) }}" class="btn btn-sm btn-outline-primary">
-          <i class="bi bi-pencil-square"></i> Editar
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-people-fill me-2 icon-gradient"></i> Visualizar Usuários
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
+  </div>
+  <hr class="mt-2 mb-0 page-header-divider">
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-light py-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary">Usuários Cadastrados</h5>
+        <a href="{{ url_for('users.novo_usuario') }}" class="btn btn-primary">
+          <i class="bi bi-person-plus-fill me-1"></i> Novo Usuário
         </a>
-        <form action="{{ url_for('users.excluir_usuario', codusuario=cod) }}" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?')">
-          <button type="submit" class="btn btn-sm btn-outline-danger">
-            <i class="bi bi-trash"></i> Excluir
-          </button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered align-middle">
+        <thead class="table-light">
+          <tr class="text-center">
+            <th style="width: 5%;">#</th>
+            <th class="text-start">Nome</th>
+            <th class="text-start">Login (Identificação)</th>
+            <th>Perfil</th>
+            <th>Status</th>
+            <th style="width: 15%;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {# Assumindo que a rota 'users.usuarios' agora retorna status como o 5º elemento da tupla #}
+          {% for cod, nome, identificacao, perfil, status_val in usuarios %}
+          <tr class="text-center">
+            <td>{{ cod }}</td>
+            <td class="text-start">{{ nome }}</td>
+            <td class="text-start"><code>{{ identificacao }}</code></td>
+            <td>
+              {% if perfil == 'admin' %}
+                <span class="badge bg-info text-dark"><i class="bi bi-shield-lock-fill me-1"></i>Administrador</span>
+              {% else %}
+                <span class="badge bg-secondary"><i class="bi bi-person-fill me-1"></i>Comum</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if status_val == -1 %}
+                <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Ativo</span>
+              {% elif status_val == 0 %}
+                <span class="badge bg-danger"><i class="bi bi-slash-circle-fill me-1"></i>Inativo</span>
+              {% else %}
+                <span class="badge bg-warning text-dark"><i class="bi bi-question-circle-fill me-1"></i>Desconhecido</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="{{ url_for('users.editar_usuario', codusuario=cod) }}" class="btn btn-outline-primary" title="Editar Usuário">
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+                {# O formulário agora não tem onsubmit, o JS cuidará da confirmação #}
+                <form action="{{ url_for('users.excluir_usuario', codusuario=cod) }}" method="POST" class="d-inline excluir-usuario-form">
+                  <button type="submit" class="btn btn-outline-danger" title="Excluir Usuário">
+                    <i class="bi bi-trash-fill"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted fst-italic">
+              Nenhum usuário cadastrado no momento. <a href="{{ url_for('users.novo_usuario') }}">Clique aqui</a> para adicionar um novo usuário.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // SweetAlert2 para confirmação de exclusão
+  document.querySelectorAll('.excluir-usuario-form').forEach(form => {
+    form.addEventListener('submit', function(event) {
+      event.preventDefault(); // Previne o envio direto do formulário
+      
+      const swalWithBootstrapButtons = Swal.mixin({
+        customClass: {
+          confirmButton: 'btn btn-danger mx-1',
+          cancelButton: 'btn btn-secondary mx-1'
+        },
+        buttonsStyling: false,
+        popup: 'swal2-zindex-high' // Usa a classe para z-index alto
+      });
+
+      swalWithBootstrapButtons.fire({
+        title: 'Confirmar Exclusão',
+        text: 'Tem certeza que deseja excluir este usuário? Esta ação não poderá ser desfeita.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir!',
+        cancelButtonText: '<i class="bi bi-x-lg me-1"></i> Cancelar',
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit(); // Prossegue com o envio do formulário
+        }
+      });
+    });
+  });
+});
+
+// Estilo para garantir que o modal do Swal fique na frente de modais Bootstrap, se houver
+// Pode ser movido para um CSS global ou layout.html se usado em múltiplas páginas
+const styleSwalZIndex = document.createElement('style');
+styleSwalZIndex.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwalZIndex);
+</script>
 {% endset %}

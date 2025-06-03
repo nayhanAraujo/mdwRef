@@ -1,329 +1,386 @@
 {% extends 'layout.html' %}
 {% block title %}Visualizar Variáveis{% endblock %}
-{% set content %}
-<!-- Incluir o Tailwind CSS via CDN -->
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
-<div class="flex justify-between items-center mb-4">
-  <h3 class="text-2xl font-bold text-blue-600">
-    <svg class="inline-block w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    Visualizar Variáveis
-  </h3>
-  <div class="text-gray-500 text-sm">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+{% set content %}
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-card-list me-2 icon-gradient"></i> 
+        Visualizar Variáveis
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
-<div class="shadow-md rounded-lg">
-  <div class="p-6">
-    <!-- Filtro de Pesquisa -->
-    <div class="mb-4 flex justify-between items-center">
-      <div class="w-1/3">
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="row mb-4 align-items-center">
+      <div class="col-md-5">
         <form method="GET" action="{{ url_for('variaveis.visualizar_variaveis') }}">
-          <div class="flex items-center">
-            <input type="text" name="variavel" class="form-control w-full px-4 py-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pesquisar por variável..." value="{{ request.args.get('variavel', '') }}">
-            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600">
-              <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <div class="input-group">
+            <input type="text" name="variavel" class="form-control" placeholder="Pesquisar por nome ou variável..." value="{{ request.args.get('variavel', '') }}">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i>
             </button>
           </div>
         </form>
       </div>
-      <div class="flex space-x-2">
-        <a href="{{ url_for('variaveis.nova_variavel') }}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-          <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-          Nova Variável
+      <div class="col-md-7 text-md-end mt-3 mt-md-0">
+        <a href="{{ url_for('variaveis.nova_variavel') }}" class="btn btn-success me-1 mb-1 mb-md-0">
+          <i class="bi bi-plus-circle me-1"></i> Nova Variável
         </a>
-        <a href="{{ url_for('variaveis.importar_variaveis') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-          <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-          Importar Variáveis
+        <a href="{{ url_for('variaveis.importar_variaveis') }}" class="btn btn-info me-1 mb-1 mb-md-0">
+          <i class="bi bi-upload me-1"></i> Importar Variáveis (.cs)
         </a>
-        <a href="{{ url_for('variaveis.vincular_codigo_universal') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-          <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-          Vincular Códigos DICOM
+        <a href="{{ url_for('variaveis.vincular_codigo_universal') }}" class="btn btn-secondary mb-1 mb-md-0">
+          <i class="bi bi-link-45deg me-1"></i> Vincular Códigos DICOM
         </a>
       </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-300">
-        <thead class="bg-blue-100">
+    <div class="actions-legend mb-3 p-3 border rounded bg-light-subtle small">
+      <h6 class="fw-bold mb-2"><i class="bi bi-key-fill me-1"></i>Legenda das Ações na Tabela:</h6>
+      <div class="d-flex flex-wrap">
+        <span class="me-3 mb-1"><i class="bi bi-paperclip text-dark"></i> Vincular Anexo</span>
+        <span class="me-3 mb-1"><i class="bi bi-pencil-square text-primary"></i> Editar Variável</span>
+        <span class="me-3 mb-1"><i class="bi bi-search-heart text-info"></i> Detalhes (Normalidade, Equações)</span>
+        <span class="me-3 mb-1"><i class="bi bi-calculator text-success"></i> Ver Fórmula</span>
+        <span class="me-3 mb-1"><i class="bi bi-book text-warning"></i> Consultar Estudos</span>
+        <span class="me-3 mb-1"><i class="bi bi-qr-code-scan text-info"></i> Ver Códigos DICOM</span>
+        <span class="me-3 mb-1"><i class="bi bi-trash text-danger"></i> Excluir Variável</span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped table-hover">
+        <thead class="table-light">
           <tr>
-            <th class="py-2 px-4 border-b text-center">Código</th>
-            <th class="py-2 px-4 border-b text-center">Nome</th>
-            <th class="py-2 px-4 border-b text-center">Variável</th>
-            <th class="py-2 px-4 border-b text-center">Sigla</th>
-            <th class="py-2 px-4 border-b text-center">Abreviação</th>
-            <th class="py-2 px-4 border-b text-center">Alternativas</th>
-            <th class="py-2 px-4 border-b text-center">Scripts Vinculados</th>
-            <th class="py-2 px-4 border-b text-center">Anexos</th>
-            <th class="py-2 px-4 border-b text-center">Ações</th>
+            <th class="text-center align-middle" style="width: 5%;">Código</th>
+            <th class="text-start align-middle">Nome Clínico</th>
+            <th class="text-start align-middle">Variável</th>
+            <th class="text-center align-middle">Sigla</th>
+            <th class="text-center align-middle">Abreviação</th>
+            <th class="text-start align-middle">Alternativas</th>
+            <th class="text-start align-middle">Scripts Vinculados</th>
+            <th class="text-start align-middle">Anexos</th>
+            <th class="text-center align-middle" style="width: 20%;">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for detalhe in variaveis_detalhes %}
             <tr>
-              <td class="py-2 px-4 border-b text-center">{{ detalhe.variavel[0] }}</td>
-              <td class="py-2 px-4 border-b">{{ detalhe.variavel[1] }}</td>
-              <td class="py-2 px-4 border-b">{{ detalhe.variavel[2] }}</td>
-              <td class="py-2 px-4 border-b">{{ detalhe.variavel[3] }}</td>
-              <td class="py-2 px-4 border-b">{{ detalhe.variavel[4] }}</td>
-              <td class="py-2 px-4 border-b">
+              <td class="text-center align-middle">{{ detalhe.variavel[0] }}</td>
+              <td class="align-middle">{{ detalhe.variavel[1] }}</td>
+              <td class="align-middle"><code>{{ detalhe.variavel[2] }}</code></td>
+              <td class="text-center align-middle">{{ detalhe.variavel[3] }}</td>
+              <td class="text-center align-middle">{{ detalhe.variavel[4] }}</td>
+              <td class="align-middle">
                 {% if detalhe.alternativas %}
-                  <ul class="list-disc pl-5">
+                  <ul class="list-unstyled ps-1 mb-0">
                     {% for alternativa in detalhe.alternativas %}
-                      <li>{{ alternativa }}</li>
+                      <li><code>{{ alternativa }}</code></li>
                     {% endfor %}
                   </ul>
                 {% else %}
-                  -
+                  <span class="text-muted fst-italic">-</span>
                 {% endif %}
               </td>
-              <td class="py-2 px-4 border-b">
+              <td class="align-middle">
                 {% if detalhe.scripts %}
-                  <ul class="list-disc pl-5">
+                  <ul class="list-unstyled ps-1 mb-0">
                     {% for script in detalhe.scripts %}
-                      <li>{{ script[1] }}</li>
+                      <li>{{ script[1] }}</li> {# Supondo que script[1] é o nome do script #}
                     {% endfor %}
                   </ul>
                 {% else %}
-                  -
+                  <span class="text-muted fst-italic">-</span>
                 {% endif %}
               </td>
-              <td class="py-2 px-4 border-b">
+              <td class="align-middle">
                 {% if detalhe.anexos %}
-                  <ul class="list-disc pl-5">
+                  <ul class="list-unstyled ps-1 mb-0 small">
                     {% for anexo in detalhe.anexos %}
                       <li>
-                        {{ anexo.descricao or anexo.tipo_anexo }} ({{ anexo.tipo_anexo }})
+                        <i class="bi bi-paperclip"></i> {{ anexo.descricao or anexo.tipo_anexo }}
                         {% if anexo.referencia %}
-                          - Ref: {{ anexo.referencia.autores }} ({{ anexo.referencia.ano }})
+                          <span class="text-muted">(Ref: {{ anexo.referencia.autores|truncate(20, True) }} {{ anexo.referencia.ano }})</span>
                         {% endif %}
-                        - <a href="{% if anexo.tipo_anexo == 'URL' %}{{ anexo.caminho }}{% else %}{{ url_for('static', filename=anexo.caminho|replace('/static/', '')) }}{% endif %}" target="_blank">Visualizar</a>
+                        <a href="{% if anexo.tipo_anexo == 'URL' %}{{ anexo.caminho }}{% else %}{{ url_for('static', filename=anexo.caminho|replace('/static/', '')) }}{% endif %}" target="_blank" class="ms-1"><i class="bi bi-box-arrow-up-right"></i></a>
                       </li>
                     {% endfor %}
                   </ul>
                 {% else %}
-                  -
+                  <span class="text-muted fst-italic">-</span>
                 {% endif %}
               </td>
-              <td class="py-2 px-4 border-b text-center space-x-2">
-                <!-- Botão Vincular Anexo -->
-                <a href="{{ url_for('variaveis.vincular_anexo', codvariavel=detalhe.variavel[0]) }}" class="text-blue-500 hover:text-blue-700" title="Vincular anexo à variável">
-                  <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                </a>
-                <!-- Botão Editar -->
-                <a href="{{ url_for('variaveis.editar_variavel', codvariavel=detalhe.variavel[0]) }}" class="text-blue-500 hover:text-blue-700" title="Editar variável">
-                  <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                </a>
-                <!-- Botão Excluir -->
-                <form action="{{ url_for('variaveis.excluir_variavel', codvariavel=detalhe.variavel[0]) }}" method="POST" style="display:inline;" class="excluir-variavel-form" title="Excluir variável">
-                  <button type="submit" class="text-red-500 hover:text-red-700">
-                    <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              <td class="text-center align-middle">
+                <div class="btn-group btn-group-sm" role="group" aria-label="Ações da Variável">
+                  <a href="{{ url_for('variaveis.vincular_anexo', codvariavel=detalhe.variavel[0]) }}" class="btn btn-outline-dark" title="Vincular Anexo">
+                    <i class="bi bi-paperclip"></i>
+                  </a>
+                  <a href="{{ url_for('variaveis.editar_variavel', codvariavel=detalhe.variavel[0]) }}" class="btn btn-outline-primary" title="Editar Variável">
+                    <i class="bi bi-pencil-square"></i>
+                  </a>
+                  <button type="button" class="btn btn-outline-info" 
+                          data-bs-toggle="modal" 
+                          data-bs-target="#detailsModal"
+                          data-codvariavel="{{ detalhe.variavel[0] }}"
+                          data-nome="{{ detalhe.variavel[1] }}"
+                          data-variavel="{{ detalhe.variavel[2] }}"
+                          title="Detalhes (Normalidade e Equações)">
+                    <i class="bi bi-search-heart"></i>
                   </button>
-                </form>
-                <!-- Botão Detalhes -->
-                <button onclick="openDetailsModal('details-modal-{{ detalhe.variavel[0] }}')" class="text-green-500 hover:text-green-700" title="Normalidade e equações da variável">
-                  <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </button>
-                <!-- Botão Fórmula -->
-                {% if detalhe.formula %}
-                  <button onclick="openFormulaModal('formula-modal-{{ detalhe.variavel[0] }}')" class="text-purple-500 hover:text-purple-700" title="Fórmula variável">
-                    <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m-3-3v6m-9 9h18"></path></svg>
-                  </button>
-                {% endif %}
-                <!-- Botão Consultar Estudos -->
-                <a href="{{ url_for('variaveis.consultar_estudos', codvariavel=detalhe.variavel[0]) }}" class="text-yellow-500 hover:text-yellow-700" title="Estudos relacionados a variável">
-                  <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path></svg>
-                </a>
-                <!-- Botão Ver Códigos DICOM -->
-                <button class="text-teal-500 hover:text-teal-700 ver-codigos-btn" 
-                        data-codvariavel="{{ detalhe.variavel[0] }}" 
-                        data-nome="{{ detalhe.variavel[1] }}" 
-                        title="Ver códigos DICOM vinculados">
-                  <svg class="inline-block w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                </button>
+                  {% if detalhe.formula %}
+                    <button type="button" class="btn btn-outline-success" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#formulaModal"
+                            data-codvariavel="{{ detalhe.variavel[0] }}"
+                            data-variavel="{{ detalhe.variavel[2] }}"
+                            data-formula="{{ detalhe.formula[0] }}"
+                            data-casas="{{ detalhe.formula[1] }}"
+                            title="Ver Fórmula">
+                      <i class="bi bi-calculator"></i>
+                    </button>
+                  {% endif %}
+                  <a href="{{ url_for('variaveis.consultar_estudos', codvariavel=detalhe.variavel[0]) }}" class="btn btn-outline-warning" title="Consultar Estudos">
+                    <i class="bi bi-book"></i>
+                  </a>
+                   <button type="button" class="btn btn-outline-info ver-codigos-btn" 
+                           data-codvariavel="{{ detalhe.variavel[0] }}" 
+                           data-nome="{{ detalhe.variavel[1] }}" 
+                           title="Ver códigos DICOM vinculados">
+                     <i class="bi bi-qr-code-scan"></i>
+                   </button>
+                  <form action="{{ url_for('variaveis.excluir_variavel', codvariavel=detalhe.variavel[0]) }}" method="POST" class="d-inline excluir-variavel-form">
+                    <button type="submit" class="btn btn-outline-danger" title="Excluir Variável">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
-
-            <!-- Modal para Detalhes (Normalidade e Equações) -->
-            <div id="details-modal-{{ detalhe.variavel[0] }}" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-              <div class="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-lg">
-                <h3 class="text-xl font-bold mb-4">Detalhes da Variável {{ detalhe.variavel[2] }}</h3>
-                <div class="mb-4">
-                  <h4 class="font-semibold">Normalidade:</h4>
-                  {% if detalhe.normalidade %}
-                    <p>Sexo: {{ detalhe.normalidade[0] }}, Min: {{ detalhe.normalidade[1] }}, Max: {{ detalhe.normalidade[2] }}, Idade Min: {{ detalhe.normalidade[3] }}, Idade Max: {{ detalhe.normalidade[4] }}, Ref: {{ detalhe.normalidade[5] }} {{ detalhe.normalidade[6] }}</p>
-                  {% else %}
-                    <p>-</p>
-                  {% endif %}
-                </div>
-                <div class="mb-4">
-                  <h4 class="font-semibold">Equações:</h4>
-                  {% if detalhe.equacoes %}
-                    <ul class="list-disc pl-5">
-                      {% for equacao in detalhe.equacoes %}
-                        <li>{{ equacao[0] }}: {{ equacao[1] }} (Ref: {{ equacao[2] }} {{ equacao[3] }})</li>
-                      {% endfor %}
-                    </ul>
-                  {% else %}
-                    <p>-</p>
-                  {% endif %}
-                </div>
-                <button onclick="closeModal('details-modal-{{ detalhe.variavel[0] }}')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-                  Fechar
-                </button>
-              </div>
-            </div>
-
-            <!-- Modal para Fórmula -->
-            {% if detalhe.formula %}
-              <div id="formula-modal-{{ detalhe.variavel[0] }}" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-                <div class="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-lg">
-                  <h3 class="text-xl font-bold mb-4">Fórmula da Variável {{ detalhe.variavel[2] }}</h3>
-                  <p>{{ detalhe.formula[0] }} (Casas: {{ detalhe.formula[1] }})</p>
-                  <button onclick="closeModal('formula-modal-{{ detalhe.variavel[0] }}')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-4">
-                    Fechar
-                  </button>
-                </div>
-              </div>
-            {% endif %}
           {% endfor %}
         </tbody>
       </table>
     </div>
 
-    <!-- Controles de Paginação -->
-    <div class="flex justify-between items-center mt-4">
-      <div class="text-gray-600">
-        Página {{ pagina }} de {{ total_paginas }}
+    {% if total_paginas > 0 %}
+    <nav aria-label="Page navigation" class="mt-4">
+      <ul class="pagination justify-content-between">
+        <li class="page-item align-self-center text-muted small">
+          Página {{ pagina }} de {{ total_paginas }}
+        </li>
+        <li class="d-flex">
+          {% if pagina > 1 %}
+            <a class="page-link" href="{{ url_for('variaveis.visualizar_variaveis', page=pagina-1, variavel=request.args.get('variavel', '')) }}">
+              <i class="bi bi-chevron-left"></i> Anterior
+            </a>
+          {% else %}
+            <span class="page-link disabled" tabindex="-1" aria-disabled="true">
+              <i class="bi bi-chevron-left"></i> Anterior
+            </span>
+          {% endif %}
+          {% if pagina < total_paginas %}
+            <a class="page-link" href="{{ url_for('variaveis.visualizar_variaveis', page=pagina+1, variavel=request.args.get('variavel', '')) }}">
+              Próximo <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link disabled" tabindex="-1" aria-disabled="true">
+              Próximo <i class="bi bi-chevron-right"></i>
+            </span>
+          {% endif %}
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailsModalLabel">Detalhes da Variável</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="flex space-x-2">
-        {% if pagina > 1 %}
-          <a href="{{ url_for('variaveis.visualizar_variaveis', page=pagina-1, variavel=request.args.get('variavel', '')) }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-            <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-            Anterior
-          </a>
-        {% else %}
-          <button disabled class="bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed">
-            <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-            Anterior
-          </button>
-        {% endif %}
-        {% if pagina < total_paginas %}
-          <a href="{{ url_for('variaveis.visualizar_variaveis', page=pagina+1, variavel=request.args.get('variavel', '')) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Próximo
-            <svg class="inline-block w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-          </a>
-        {% else %}
-          <button disabled class="bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed">
-            Próximo
-            <svg class="inline-block w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-          </button>
-        {% endif %}
+      <div class="modal-body">
+        <p><strong>Nome Clínico:</strong> <span id="detailsModalNomeClinico"></span></p>
+        <p><strong>Variável:</strong> <code><span id="detailsModalVariavel"></span></code></p>
+        <hr>
+        <h6><i class="bi bi-rulers me-1"></i> Normalidade:</h6>
+        <div id="detailsModalNormalidade">
+          <p class="text-muted">Nenhuma informação de normalidade disponível.</p>
+        </div>
+        <hr>
+        <h6><i class="bi bi-diagram-3 me-1"></i> Equações:</h6>
+        <div id="detailsModalEquacoes">
+          <p class="text-muted">Nenhuma equação associada.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="formulaModal" tabindex="-1" aria-labelledby="formulaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="formulaModalLabel">Fórmula da Variável</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Variável:</strong> <code><span id="formulaModalVariavel"></span></code></p>
+        <div class="mb-2">
+          <strong>Fórmula:</strong>
+          <pre class="bg-light p-2 rounded"><code><span id="formulaModalFormula"></span></code></pre>
+        </div>
+        <p><strong>Casas Decimais:</strong> <span id="formulaModalCasas"></span></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// Função para abrir o modal
-function openDetailsModal(modalId) {
-  document.getElementById(modalId).classList.remove('hidden');
-}
-
-// Função para abrir o modal de fórmula
-function openFormulaModal(modalId) {
-  document.getElementById(modalId).classList.remove('hidden');
-}
-
-// Função para fechar o modal
-function closeModal(modalId) {
-  document.getElementById(modalId).classList.add('hidden');
-}
-
-// SweetAlert2 para confirmação de exclusão
-document.querySelectorAll('.excluir-variavel-form').forEach(form => {
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    Swal.fire({
-      title: 'Confirmar Exclusão',
-      text: 'Tem certeza que deseja excluir esta variável?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Excluir',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        form.submit();
-      }
+document.addEventListener('DOMContentLoaded', function() {
+  // SweetAlert2 para confirmação de exclusão
+  document.querySelectorAll('.excluir-variavel-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      Swal.fire({
+        title: 'Confirmar Exclusão',
+        text: 'Tem certeza que deseja excluir esta variável? Esta ação não pode ser desfeita.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir',
+        cancelButtonText: '<i class="bi bi-x-circle me-1"></i> Cancelar',
+        customClass: { popup: 'swal2-zindex-high' }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
     });
   });
-});
 
-// Visualizar Códigos DICOM Vinculados
-document.querySelectorAll('.ver-codigos-btn').forEach(button => {
-  button.addEventListener('click', async function() {
-    console.log('Botão Ver Códigos DICOM clicado:', this.dataset);
-    const codvariavel = this.dataset.codvariavel;
-    const nomeVariavel = this.dataset.nome;
+  // Manipulação do Modal de Detalhes
+  const detailsModalElement = document.getElementById('detailsModal');
+  if (detailsModalElement) {
+    detailsModalElement.addEventListener('show.bs.modal', async function (event) {
+      const button = event.relatedTarget;
+      const codVariavel = button.dataset.codvariavel;
+      const nomeVariavel = button.dataset.nome;
+      const varVariavel = button.dataset.variavel;
 
-    // Preparar conteúdo inicial do SweetAlert2
-    let htmlContent = `
-      <p><strong>Variável:</strong> ${nomeVariavel}</p>
-      <div id="codigos-content">
-        <strong>Códigos DICOM Vinculados:</strong>
-        <ul id="codigos-list" class="list-disc pl-5"><li>Carregando...</li></ul>
-      </div>
-    `;
+      const modalTitle = detailsModalElement.querySelector('.modal-title');
+      const modalNomeClinico = detailsModalElement.querySelector('#detailsModalNomeClinico');
+      const modalVariavel = detailsModalElement.querySelector('#detailsModalVariavel');
+      const normalidadeDiv = detailsModalElement.querySelector('#detailsModalNormalidade');
+      const equacoesDiv = detailsModalElement.querySelector('#detailsModalEquacoes');
 
-    // Exibir SweetAlert2
-    Swal.fire({
-      title: 'Códigos DICOM Vinculados',
-      html: htmlContent,
-      showCloseButton: true,
-      showConfirmButton: false,
-      customClass: {
-        popup: 'swal-wide'
-      },
-      didOpen: async () => {
-        try {
-          const response = await fetch(`/variaveis/get_codigos_vinculados/${codvariavel}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          const codigos = await response.json();
-          console.log('Resposta da rota /get_codigos_vinculados:', codigos);
+      modalTitle.textContent = 'Detalhes da Variável: ' + nomeVariavel;
+      modalNomeClinico.textContent = nomeVariavel;
+      modalVariavel.textContent = varVariavel;
+      
+      normalidadeDiv.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Carregando...</span></div> <span class="text-muted small">Carregando normalidade...</span></div>';
+      equacoesDiv.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Carregando...</span></div> <span class="text-muted small">Carregando equações...</span></div>';
 
-          const codigosList = document.getElementById('codigos-list');
-          if (!codigosList) {
-            console.error('Elemento #codigos-list não encontrado no SweetAlert2');
-            return;
-          }
+      // TODO: Implementar fetch para buscar dados de normalidade e equações via AJAX.
+      // Esta é uma simulação, substitua pelo seu fetch real.
+      setTimeout(() => {
+        normalidadeDiv.innerHTML = '<p class="text-muted fst-italic small"><i class="bi bi-info-circle me-1"></i>Dados de normalidade não disponíveis nesta visualização. Edite a variável para ver/modificar.</p>';
+        equacoesDiv.innerHTML = '<p class="text-muted fst-italic small"><i class="bi bi-info-circle me-1"></i>Equações não disponíveis nesta visualização. Edite a variável para ver/modificar.</p>';
+      }, 1000); // Simula um delay de rede
+    });
+  }
 
-          codigosList.innerHTML = '';
-          if (codigos.error) {
-            codigosList.innerHTML = `<li class="text-red-500">Erro ao carregar códigos: ${codigos.error}</li>`;
-          } else if (codigos.length > 0) {
-            codigos.forEach(codigo => {
-              const li = document.createElement('li');
-              li.textContent = `${codigo.codigo} - ${codigo.descricaoptbr || 'Sem descrição em PT-BR'}`;
-              codigosList.appendChild(li);
-            });
-          } else {
-            codigosList.innerHTML = '<li>Nenhum código DICOM vinculado.</li>';
-          }
-        } catch (error) {
-          console.error('Erro ao buscar códigos vinculados:', error);
-          const codigosList = document.getElementById('codigos-list');
-          if (codigosList) {
-            codigosList.innerHTML = `<li class="text-red-500">Erro ao carregar códigos: ${error.message}</li>`;
+  // Manipulação do Modal de Fórmula
+  const formulaModalElement = document.getElementById('formulaModal');
+  if (formulaModalElement) {
+    formulaModalElement.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const varVariavel = button.dataset.variavel;
+      const formula = button.dataset.formula;
+      const casas = button.dataset.casas;
+
+      const modalTitle = formulaModalElement.querySelector('.modal-title');
+      const modalVariavel = formulaModalElement.querySelector('#formulaModalVariavel');
+      const modalFormula = formulaModalElement.querySelector('#formulaModalFormula');
+      const modalCasas = formulaModalElement.querySelector('#formulaModalCasas');
+
+      modalTitle.textContent = 'Fórmula da Variável: ' + varVariavel;
+      modalVariavel.textContent = varVariavel;
+      modalFormula.textContent = formula;
+      modalCasas.textContent = casas;
+    });
+  }
+
+  // Visualizar Códigos DICOM Vinculados (SweetAlert2)
+  document.querySelectorAll('.ver-codigos-btn').forEach(button => {
+    button.addEventListener('click', async function() {
+      const codvariavel = this.dataset.codvariavel;
+      const nomeVariavel = this.dataset.nome;
+
+      Swal.fire({
+        title: 'Códigos DICOM Vinculados',
+        html: `
+          <p class="text-start mb-1"><strong>Variável:</strong> ${nomeVariavel}</p>
+          <div id="codigos-content" class="text-start mt-2">
+            <h6 class="mb-1">Códigos Vinculados:</h6>
+            <ul id="codigos-list" class="list-unstyled ps-3 small"><li><div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Carregando...</span></div> Carregando...</li></ul>
+          </div>`,
+        showCloseButton: true,
+        showConfirmButton: false, // Não precisa de botão de confirmar aqui
+        customClass: { popup: 'swal2-zindex-high swal-wide' },
+        didOpen: async () => {
+          try {
+            const response = await fetch(`/variaveis/get_codigos_vinculados/${codvariavel}`);
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            const codigos = await response.json();
+            
+            const codigosList = Swal.getHtmlContainer().querySelector('#codigos-list');
+            if (!codigosList) return;
+
+            codigosList.innerHTML = ''; // Limpa o "Carregando..."
+            if (codigos.error) {
+              codigosList.innerHTML = `<li class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Erro: ${codigos.error}</li>`;
+            } else if (codigos.length > 0) {
+              codigos.forEach(codigo => {
+                const li = document.createElement('li');
+                li.innerHTML = `<code>${codigo.codigo}</code> - ${codigo.descricaoptbr || '<span class="text-muted fst-italic">Sem descrição em PT-BR</span>'}`;
+                codigosList.appendChild(li);
+              });
+            } else {
+              codigosList.innerHTML = '<li><i class="bi bi-info-circle me-1"></i>Nenhum código DICOM vinculado.</li>';
+            }
+          } catch (error) {
+            console.error('Erro ao buscar códigos vinculados:', error);
+            const codigosList = Swal.getHtmlContainer().querySelector('#codigos-list');
+            if (codigosList) {
+              codigosList.innerHTML = `<li class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Erro ao carregar os códigos.</li>`;
+            }
           }
         }
-      }
+      });
     });
   });
 });
+
+// Estilo para garantir que o modal do Swal fique na frente de modais Bootstrap
+const styleSwalZIndex = document.createElement('style');
+styleSwalZIndex.textContent = '.swal2-zindex-high { z-index: 1060 !important; } .swal-wide { width: 600px !important; }';
+document.head.appendChild(styleSwalZIndex);
 </script>
 {% endset %}

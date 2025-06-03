@@ -1,13 +1,18 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash,current_app,jsonify
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from functools import wraps
 import re
 import os
 import uuid
 import subprocess
 import json
 import uuid
+import logging
 
+# Configurar logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 variaveis_bp = Blueprint('variaveis', __name__)
 
@@ -19,7 +24,16 @@ def get_db():
     if conn is None or cur is None:
         raise Exception("Conexão com o banco de dados não foi inicializada.")
     return conn, cur
-    
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'usuario' not in session or session['usuario'].get('role') != 'admin':
+            flash("Acesso negado: Apenas administradores podem acessar esta funcionalidade.", "error")
+            return redirect(url_for('variaveis.visualizar_variaveis'))
+        return f(*args, **kwargs)
+    return decorated_function    
 
 def parse_cs_file(file_content):
     """
@@ -231,38 +245,636 @@ def confirmar_importacao():
 
     return render_template('confirmar_importacao.html', dados=dados)
 
+# Dentro de routes/variaveis.py
+
 @variaveis_bp.route('/')
 def home():
     if 'usuario' not in session:
         return redirect(url_for('auth.login'))
     conn, cur = get_db()
-    cur.execute("""
-        SELECT U.DESCRICAO, COUNT(*) FROM VARIAVEIS V
-        JOIN UNIDADEMEDIDA U ON V.CODUNIDADEMEDIDA = U.CODUNIDADEMEDIDA
-        GROUP BY U.DESCRICAO
-        ORDER BY COUNT(*) DESC
-    """)
-    variaveis_unidade = cur.fetchall()
-    labels1 = [row[0] for row in variaveis_unidade]
-    dados1 = [row[1] for row in variaveis_unidade]
-    cur.execute("SELECT COUNT(DISTINCT CODVARIAVEL) FROM FORMULA_VARIAVEL")
-    com_formula = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM VARIAVEIS")
-    total_variaveis = cur.fetchone()[0]
-    sem_formula = total_variaveis - com_formula
-    cur.execute("SELECT v.CODUNIDADEMEDIDA, COUNT(*) FROM VARIAVEIS v GROUP BY 1 ORDER BY CODUNIDADEMEDIDA")
-    decimais = cur.fetchall()
-    labels2 = [str(row[0]) for row in decimais]
-    dados2 = [row[1] for row in decimais]
-    cur.execute("SELECT COUNT(DISTINCT CODVARIAVEL) FROM NORMALIDADE")
-    com_normalidade = cur.fetchone()[0]
-    sem_normalidade = total_variaveis - com_normalidade
-    return render_template('index.html',
-        labels1=labels1, dados1=dados1,
-        labels2=labels2, dados2=dados2,
-        com_formula=com_formula, sem_formula=sem_formula,
-        com_normalidade=com_normalidade, sem_normalidade=sem_normalidade)
 
+    try: # Adicionar um bloco try-except geral para a rota é uma boa prática
+        # Dados para Gráfico 1: Variáveis por Unidade de Medida
+        cur.execute("""
+            SELECT U.DESCRICAO, COUNT(V.CODVARIAVEL) 
+            FROM UNIDADEMEDIDA U
+            LEFT JOIN VARIAVEIS V ON V.CODUNIDADEMEDIDA = U.CODUNIDADEMEDIDA
+            GROUP BY U.DESCRICAO
+            ORDER BY COUNT(V.CODVARIAVEL) DESC
+        """)
+        variaveis_unidade_data = cur.fetchall()
+        labels_vars_por_unidade = [row[0] if row[0] is not None else "Sem Unidade" for row in variaveis_unidade_data]
+        dados_vars_por_unidade = [row[1] for row in variaveis_unidade_data]
+
+        # Dados para Gráfico 2: Variáveis Com vs. Sem Fórmula
+        cur.execute("SELECT COUNT(DISTINCT CODVARIAVEL) FROM FORMULA_VARIAVEL")
+        com_formula_result = cur.fetchone()
+        com_formula = com_formula_result[0] if com_formula_result else 0
+
+        cur.execute("SELECT COUNT(*) FROM VARIAVEIS")
+        total_variaveis_result = cur.fetchone()
+        total_variaveis = total_variaveis_result[0] if total_variaveis_result else 0
+        sem_formula = total_variaveis - com_formula
+
+        # Dados para Gráfico 3: Distribuição de Casas Decimais
+        cur.execute("SELECT CASASDECIMAIS, COUNT(*) FROM VARIAVEIS WHERE CASASDECIMAIS IS NOT NULL GROUP BY CASASDECIMAIS ORDER BY CASASDECIMAIS")
+        casas_decimais_dist_data = cur.fetchall()
+        labels_casas_decimais = [f"{row[0] if row[0] is not None else 'N/A'} casas" for row in casas_decimais_dist_data]
+        dados_casas_decimais = [row[1] for row in casas_decimais_dist_data]
+
+        # Dados para Gráfico 4: Variáveis Com vs. Sem Normalidade
+        cur.execute("SELECT COUNT(DISTINCT CODVARIAVEL) FROM NORMALIDADE")
+        com_normalidade_result = cur.fetchone()
+        com_normalidade = com_normalidade_result[0] if com_normalidade_result else 0
+        sem_normalidade = total_variaveis - com_normalidade
+
+        # --- Novos KPIs ---
+        cur.execute("SELECT COUNT(*) FROM SCRIPTLAUDO")
+        total_scripts_result = cur.fetchone()
+        total_scripts = total_scripts_result[0] if total_scripts_result else 0
+
+        cur.execute("SELECT COUNT(*) FROM REFERENCIA")
+        total_referencias_result = cur.fetchone()
+        total_referencias = total_referencias_result[0] if total_referencias_result else 0
+
+        cur.execute("SELECT COUNT(*) FROM USUARIO")
+        total_usuarios_result = cur.fetchone()
+        total_usuarios = total_usuarios_result[0] if total_usuarios_result else 0
+
+        # --- Novos Dados para Gráficos ---
+        # Scripts por Status (Aprovado)
+        cur.execute("SELECT APROVADO, COUNT(*) FROM SCRIPTLAUDO GROUP BY APROVADO")
+        scripts_aprov_data = cur.fetchall()
+        # Garante que tenhamos dados para ambos os casos (Aprovado/Não Aprovado) mesmo que um não exista no DB
+        aprov_map = {row[0]: row[1] for row in scripts_aprov_data}
+        labels_scripts_aprovado = ['Aprovados', 'Não Aprovados']
+        dados_scripts_aprovado = [aprov_map.get(1, 0), aprov_map.get(0, 0)]
+
+
+        # Scripts por Status (Ativo)
+        cur.execute("SELECT ATIVO, COUNT(*) FROM SCRIPTLAUDO GROUP BY ATIVO")
+        scripts_ativo_data = cur.fetchall()
+        ativo_map = {row[0]: row[1] for row in scripts_ativo_data}
+        labels_scripts_ativo = ['Ativos', 'Inativos']
+        dados_scripts_ativo = [ativo_map.get(1, 0), ativo_map.get(0, 0)]
+        
+        # Scripts por Sistema
+        cur.execute("SELECT SISTEMA, COUNT(*) FROM SCRIPTLAUDO WHERE SISTEMA IS NOT NULL AND SISTEMA != '' GROUP BY SISTEMA")
+        scripts_sistema_data = cur.fetchall()
+        labels_scripts_sistema = [row[0] if row[0] else "Não Especificado" for row in scripts_sistema_data]
+        dados_scripts_sistema = [row[1] for row in scripts_sistema_data]
+
+        # Referências por Ano
+        cur.execute("SELECT ANO, COUNT(*) FROM REFERENCIA WHERE ANO IS NOT NULL GROUP BY ANO ORDER BY ANO ASC")
+        ref_ano_data = cur.fetchall()
+        labels_ref_ano = [str(row[0]) for row in ref_ano_data]
+        dados_ref_ano = [row[1] for row in ref_ano_data]
+
+        # Usuários por Perfil
+        cur.execute("SELECT PERFIL, COUNT(*) FROM USUARIO WHERE PERFIL IS NOT NULL AND PERFIL != '' GROUP BY PERFIL")
+        user_perfil_data = cur.fetchall()
+        labels_user_perfil = [row[0].capitalize() if row[0] else 'Não Definido' for row in user_perfil_data]
+        dados_user_perfil = [row[1] for row in user_perfil_data]
+
+        return render_template('index.html',
+            labels_vars_por_unidade=labels_vars_por_unidade, dados_vars_por_unidade=dados_vars_por_unidade,
+            com_formula=com_formula, sem_formula=sem_formula,
+            labels_casas_decimais=labels_casas_decimais, dados_casas_decimais=dados_casas_decimais,
+            com_normalidade=com_normalidade, sem_normalidade=sem_normalidade,
+            
+            total_variaveis=total_variaveis,
+            total_scripts=total_scripts,
+            total_referencias=total_referencias,
+            total_usuarios=total_usuarios,
+
+            labels_scripts_aprovado=labels_scripts_aprovado, dados_scripts_aprovado=dados_scripts_aprovado,
+            labels_scripts_ativo=labels_scripts_ativo, dados_scripts_ativo=dados_scripts_ativo,
+            labels_scripts_sistema=labels_scripts_sistema, dados_scripts_sistema=dados_scripts_sistema,
+            labels_ref_ano=labels_ref_ano, dados_ref_ano=dados_ref_ano,
+            labels_user_perfil=labels_user_perfil, dados_user_perfil=dados_user_perfil
+        )
+    except Exception as e:
+        current_app.logger.error(f"Erro ao carregar dashboards: {str(e)}", exc_info=True)
+        flash(f"Ocorreu um erro ao carregar os dashboards. Por favor, tente mais tarde. Detalhes: {str(e)}", "error")
+        return redirect(url_for('bibliotecas.biblioteca')) # Ou uma página de erro apropriada
+
+
+@variaveis_bp.route('/nova_variavel', methods=['GET', 'POST'])
+@admin_required
+def nova_variavel():
+    if 'usuario' not in session or not session['usuario'].get('codusuario'):
+        logger.error("Usuário não autenticado ou codusuario não encontrado na sessão: %s", session.get('usuario'))
+        flash("Erro: Usuário não autenticado. Faça login novamente.", "error")
+        return redirect(url_for('auth.login'))
+
+    conn, cur = get_db()
+    codusuario = session['usuario']['codusuario']
+    logger.debug("codusuario obtido da sessão: %s", codusuario)
+
+    if request.method == 'POST':
+        # Campos obrigatórios
+        nome = request.form['nome'].strip()
+        if not nome:
+            flash("O campo Nome é obrigatório.", "error")
+            return redirect(request.url)
+
+        # Campos opcionais
+        variavel = request.form.get('variavel', '').strip() or None
+        sigla = request.form.get('sigla', '').strip().upper() or None
+        abreviacao = request.form.get('abreviacao', '').strip() or None
+        descricao = request.form.get('descricao', '').strip() or None
+        observacao = request.form.get('observacao', '').strip() or None
+        codunidade = request.form.get('unidade') or None
+        casas_decimais = request.form.get('casas_decimais') or None
+        codmodoimagem = request.form.get('codmodoimagem') or None
+        codmetodo = request.form.get('codmetodo') or None
+        alternativas = request.form.getlist('alternativas[]')
+        scripts = request.form.getlist('scripts[]')
+        possui_formula = 'possui_formula' in request.form
+        possui_normalidade = 'possui_normalidade' in request.form
+        formula = request.form.get('formula', '').strip() or None
+        equacoes_linguagem = request.form.getlist('equacoes_linguagem[]')
+        equacoes_referencia = request.form.getlist('equacoes_referencia[]')
+        equacoes_texto = request.form.getlist('equacoes_texto[]')
+        if possui_formula and any(equacao for equacao in equacoes_texto if equacao.strip()):
+            for i, (linguagem, referencia, texto) in enumerate(zip(equacoes_linguagem, equacoes_referencia, equacoes_texto)):
+                if texto.strip() and not referencia:
+                    flash(f"Selecione uma referência para a equação {i+1}.", "error")
+                    return redirect(request.url)
+
+        # Validações
+        if variavel and not variavel.startswith('VR_'):
+            flash("O campo Variável deve começar com 'VR_'.", "error")
+            return redirect(request.url)
+
+        if sigla:
+            cur.execute("SELECT 1 FROM VARIAVEIS WHERE UPPER(SIGLA) = UPPER(?)", (sigla,))
+            if cur.fetchone():
+                flash("Já existe uma variável com essa sigla.", "error")
+                return redirect(request.url)
+
+        # Normalidades
+        normalidades = []
+        if possui_normalidade:
+            i = 0
+            normalidades = []
+            while f'normalidades[{i}][valormin_m]' in request.form or f'normalidades[{i}][valormin_f]' in request.form:
+                valormin_m = request.form.get(f'normalidades[{i}][valormin_m]')
+                valormax_m = request.form.get(f'normalidades[{i}][valormax_m]')
+                valormin_f = request.form.get(f'normalidades[{i}][valormin_f]')
+                valormax_f = request.form.get(f'normalidades[{i}][valormax_f]')
+                referencia = request.form.get(f'normalidades[{i}][referencia]')
+
+                if (valormin_m or valormax_m or valormin_f or valormax_f) and not referencia:
+                    flash(f"Selecione uma referência para a normalidade {i+1}.", "error")
+                    return redirect(request.url)
+
+                if valormin_m and valormax_m and referencia:
+                    try:
+                        normalidades.append({
+                            'sexo': 'M', 'valormin': float(valormin_m), 'valormax': float(valormax_m), 'referencia': referencia
+                        })
+                    except ValueError:
+                        flash("Valores de normalidade para masculino devem ser numéricos.", "error")
+                        return redirect(request.url)
+                if valormin_f and valormax_f and referencia:
+                    try:
+                        normalidades.append({
+                            'sexo': 'F', 'valormin': float(valormin_f), 'valormax': float(valormax_f), 'referencia': referencia
+                        })
+                    except ValueError:
+                        flash("Valores de normalidade para feminino devem ser numéricos.", "error")
+                        return redirect(request.url)
+                i += 1
+
+            if possui_normalidade and not normalidades:
+                flash("Pelo menos uma normalidade válida com referência deve ser fornecida.", "error")
+                return redirect(request.url)
+                i += 1
+
+        if possui_normalidade and not normalidades:
+            flash("Pelo menos uma normalidade válida deve ser fornecida quando a normalidade está habilitada.", "error")
+            return redirect(request.url)
+
+        # Classificações
+        codgrupo = request.form.get('codgrupo') or None
+        classificacoes = []
+        for i in range(len(request.form.getlist('classificacoes[0][codclassificacao]'))):
+            codclassificacao = request.form.get(f'classificacoes[{i}][codclassificacao]')
+            valormin = request.form.get(f'classificacoes[{i}][valormin]')
+            valormax = request.form.get(f'classificacoes[{i}][valormax]')
+            if codclassificacao:
+                try:
+                    classificacoes.append({
+                        'codclassificacao': codclassificacao,
+                        'valormin': float(valormin) if valormin else None,
+                        'valormax': float(valormax) if valormax else None
+                    })
+                except ValueError:
+                    flash("Valores de classificação devem ser numéricos.", "error")
+                    return redirect(request.url)
+
+        try:
+            logger.debug("Inserindo variável com codusuario: %s, nome: %s", codusuario, nome)
+            cur.execute("""
+                INSERT INTO VARIAVEIS (
+                    NOME, VARIAVEL, SIGLA, ABREVIACAO, DESCRICAO, CODUNIDADEMEDIDA, 
+                    CASASDECIMAIS, CODUSUARIO, CODMODOIMAGEM, CODMETODO, OBSERVACAO, DTHRULTMODIFICACAO
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING CODVARIAVEL
+            """, (
+                nome, variavel, sigla, abreviacao, descricao, 
+                int(codunidade) if codunidade else None, 
+                int(casas_decimais) if casas_decimais else None, 
+                codusuario, 
+                int(codmodoimagem) if codmodoimagem else None, 
+                int(codmetodo) if codmetodo else None, 
+                observacao, 
+                datetime.now()
+            ))
+            codvariavel = cur.fetchone()[0]
+
+            for alternativa in alternativas:
+                if alternativa.strip():
+                    cur.execute("INSERT INTO VARIAVEIS_ALTERNATIVAS (CODVARIAVEL, ALTERNATIVA) VALUES (?, ?)",
+                               (codvariavel, alternativa.strip()))
+
+            for codscript in scripts:
+                if codscript:
+                    cur.execute("INSERT INTO SCRIPTLAUDO_VARIAVEL (CODSCRIPTLAUDO, CODVARIAVEL) VALUES (?, ?)",
+                               (codscript, codvariavel))
+
+            if possui_formula and formula:
+                cur.execute("""
+                    INSERT INTO FORMULAS (FORMULA, CASADECIMAIS, DTHRULTMODIFICACAO)
+                    VALUES (?, ?, ?)
+                    RETURNING CODFORMULA
+                """, (formula, casas_decimais or 2, datetime.now()))
+                codformula = cur.fetchone()[0]
+                cur.execute("INSERT INTO FORMULA_VARIAVEL (CODFORMULA, CODVARIAVEL) VALUES (?, ?)",
+                           (codformula, codvariavel))
+
+                for linguagem, referencia, texto in zip(equacoes_linguagem, equacoes_referencia, equacoes_texto):
+                    if linguagem and texto:
+                        cur.execute("INSERT INTO EQUACOES_LINGUAGEM (CODFORMULA, CODLINGUAGEM, CODREFERENCIA, EQUACAO) VALUES (?, ?, ?, ?)",
+                                   (codformula, linguagem, referencia or None, texto.strip()))
+
+            if possui_normalidade and normalidades:
+                for normalidade in normalidades:
+                    cur.execute("""
+                        INSERT INTO NORMALIDADE (CODVARIAVEL, SEXO, VALORMIN, VALORMAX, CODREFERENCIA, CODUSUARIO, DTHRULTMODIFICACAO)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (codvariavel, normalidade['sexo'], normalidade['valormin'], normalidade['valormax'], normalidade['referencia'], codusuario, datetime.now()))
+
+            if classificacoes:
+                for classificacao in classificacoes:
+                    cur.execute("""
+                        INSERT INTO VARIAVEIS_CLASSIFICACOES (CODVARIAVEL, CODCLASSIFICACAO, CODUSUARIO, DTHRULTMODIFICACAO)
+                        VALUES (?, ?, ?, ?)
+                    """, (codvariavel, classificacao['codclassificacao'], codusuario, datetime.now()))
+                    cur.execute("""
+                        INSERT INTO VARIAVEIS_CLASSIFICACOES_VALORES (CODVARIAVEL, CODCLASSIFICACAO, VALORMIN, VALORMAX, CODUSUARIO, DTHRULTMODIFICACAO)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (codvariavel, classificacao['codclassificacao'], classificacao['valormin'], classificacao['valormax'], codusuario, datetime.now()))
+
+            conn.commit()
+            flash("Variável cadastrada com sucesso!", "success")
+            return redirect(url_for('variaveis.visualizar_variaveis'))
+        except Exception as e:
+            conn.rollback()
+            logger.error("Erro ao cadastrar variável: %s", str(e))
+            flash(f"Erro ao cadastrar variável: {str(e)}", "error")
+            return redirect(request.url)
+
+    cur.execute("SELECT CODUNIDADEMEDIDA, DESCRICAO FROM UNIDADEMEDIDA ORDER BY DESCRICAO")
+    unidades = cur.fetchall()
+    cur.execute("SELECT CODSCRIPTLAUDO, NOME FROM SCRIPTLAUDO ORDER BY NOME")
+    scripts = cur.fetchall()
+    cur.execute("SELECT SIGLA, NOME FROM VARIAVEIS ORDER BY NOME")
+    variaveis_existentes = cur.fetchall()
+    cur.execute("SELECT CODLINGUAGEM, NOME FROM TIPOLINGUAGEM ORDER BY NOME")
+    linguagens = cur.fetchall()
+    cur.execute("""
+        SELECT DISTINCT r.CODREFERENCIA, r.TITULO, r.ANO,
+               LIST(a.NOME, ', ') AS AUTORES
+        FROM REFERENCIA r
+        LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
+        LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
+        GROUP BY r.CODREFERENCIA, r.TITULO, r.ANO
+        ORDER BY r.ANO DESC
+    """)
+    referencias = cur.fetchall()
+    cur.execute("SELECT CODGRUPO, NOME FROM GRUPOS_CLASSIFICACOES ORDER BY NOME")
+    grupos = cur.fetchall()
+
+    return render_template('nova_variavel.html',
+                           unidades=unidades,
+                           scripts=scripts,
+                           variaveis_existentes=variaveis_existentes,
+                           linguagens=linguagens,
+                           referencias=referencias,
+                           grupos=grupos)
+
+@variaveis_bp.route('/editar_variavel/<int:codvariavel>', methods=['GET', 'POST'])
+@admin_required
+
+def editar_variavel(codvariavel):
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    conn, cur = get_db()
+    codusuario = session['usuario']['codusuario']
+
+    if request.method == 'POST':
+        nome = request.form['nome'].strip()
+        variavel = request.form['variavel'].strip()
+        sigla = request.form['sigla'].strip().upper()
+        abreviacao = request.form['abreviacao'].strip()
+        descricao = request.form['descricao'].strip() or None
+        unidade = request.form['unidade']
+        casas_decimais = request.form['casas_decimais'] or None
+        scripts = request.form.getlist('scripts[]')
+        dicom_codes = request.form.getlist('dicom_codes[]')
+        possui_formula = 'possui_formula' in request.form
+        possui_normalidade = 'possui_normalidade' in request.form
+        formula = request.form.get('formula', '').strip() or None
+        formula_casas_decimais = request.form.get('formula_casas_decimais', '2')
+        equacoes_linguagem = request.form.getlist('equacoes_linguagem[]')
+        equacoes_referencia = request.form.getlist('equacoes_referencia[]')
+        equacoes_texto = request.form.getlist('equacoes_texto[]')
+        alternativas = request.form.getlist('alternativas[]')
+
+        if possui_formula and any(equacao for equacao in equacoes_texto if equacao.strip()):
+            for i, (linguagem, referencia, texto) in enumerate(zip(equacoes_linguagem, equacoes_referencia, equacoes_texto)):
+                if texto.strip() and not referencia:
+                    flash(f"Selecione uma referência para a equação {i+1}.", "error")
+                    return redirect(request.url)
+                
+        
+        normalidades = []
+        if possui_normalidade:
+            i = 0
+            while f'normalidades[{i}][valormin_m]' in request.form or f'normalidades[{i}][valormin_f]' in request.form:
+                valormin_m = request.form.get(f'normalidades[{i}][valormin_m]')
+                valormax_m = request.form.get(f'normalidades[{i}][valormax_m]')
+                valormin_f = request.form.get(f'normalidades[{i}][valormin_f]')
+                valormax_f = request.form.get(f'normalidades[{i}][valormax_f]')
+                referencia = request.form.get(f'normalidades[{i}][referencia]')
+                
+                # Validar se pelo menos um conjunto de valores (masculino ou feminino) foi preenchido
+                if (valormin_m or valormax_m or valormin_f or valormax_f) and not referencia:
+                    flash(f"Selecione uma referência para a normalidade {i+1}.", "error")
+                    return redirect(request.url)
+
+                if valormin_m and valormax_m and referencia:
+                    try:
+                        normalidades.append({
+                            'sexo': 'M', 'valormin': float(valormin_m), 'valormax': float(valormax_m), 'referencia': referencia
+                        })
+                    except ValueError:
+                        flash("Valores de normalidade para masculino devem ser numéricos.", "error")
+                        return redirect(request.url)
+                if valormin_f and valormax_f and referencia:
+                    try:
+                        normalidades.append({
+                            'sexo': 'F', 'valormin': float(valormin_f), 'valormax': float(valormax_f), 'referencia': referencia
+                        })
+                    except ValueError:
+                        flash("Valores de normalidade para feminino devem ser numéricos.", "error")
+                        return redirect(request.url)
+                i += 1
+
+            if possui_normalidade and not normalidades:
+               flash("Pelo menos uma normalidade válida com referência deve ser fornecida.", "error")
+               return redirect(request.url)
+
+        codgrupo = request.form.get('codgrupo')
+        classificacoes = []
+        for i in range(len(request.form.getlist('classificacoes[0][codclassificacao]'))):
+            codclassificacao = request.form.get(f'classificacoes[{i}][codclassificacao]')
+            valormin = request.form.get(f'classificacoes[{i}][valormin]')
+            valormax = request.form.get(f'classificacoes[{i}][valormax]')
+            if codclassificacao:
+                classificacoes.append({
+                    'codclassificacao': codclassificacao,
+                    'valormin': float(valormin) if valormin else None,
+                    'valormax': float(valormax) if valormax else None
+                })
+
+        if not variavel.startswith('VR_'):
+            flash("O campo Variável deve começar com 'VR_'.", "error")
+            return redirect(request.url)
+
+        cur.execute("SELECT 1 FROM VARIAVEIS WHERE UPPER(SIGLA) = UPPER(?) AND CODVARIAVEL != ?", (sigla, codvariavel))
+        if cur.fetchone():
+            flash("Já existe uma variável com essa sigla.", "error")
+            return redirect(request.url)
+
+        if possui_normalidade and not normalidades:
+            flash("Pelo menos uma normalidade válida deve ser fornecida quando a normalidade está habilitada.", "error")
+            return redirect(request.url)
+
+        try:
+            cur.execute("""
+                UPDATE VARIAVEIS
+                SET NOME = ?, VARIAVEL = ?, SIGLA = ?, ABREVIACAO = ?, DESCRICAO = ?, 
+                    CODUNIDADEMEDIDA = ?, CASASDECIMAIS = ?, CODUSUARIO = ?, DTHRULTMODIFICACAO = ?
+                WHERE CODVARIAVEL = ?
+            """, (nome, variavel, sigla, abreviacao, descricao, unidade, casas_decimais, 
+                  codusuario, datetime.now(), codvariavel))
+
+            cur.execute("DELETE FROM VARIAVEIS_ALTERNATIVAS WHERE CODVARIAVEL = ?", (codvariavel,))
+            for alternativa in alternativas:
+                if alternativa.strip():
+                    cur.execute("""
+                        INSERT INTO VARIAVEIS_ALTERNATIVAS (CODVARIAVEL, ALTERNATIVA, CODUSUARIO, DTHRULTMODIFICACAO)
+                        VALUES (?, ?, ?, ?)
+                    """, (codvariavel, alternativa.strip(), codusuario, datetime.now()))
+
+            cur.execute("DELETE FROM SCRIPTLAUDO_VARIAVEL WHERE CODVARIAVEL = ?", (codvariavel,))
+            for codscript in scripts:
+                if codscript:
+                    cur.execute("""
+                        INSERT INTO SCRIPTLAUDO_VARIAVEL (CODSCRIPTLAUDO, CODVARIAVEL, CODUSUARIO, DTHRULTMODIFICACAO)
+                        VALUES (?, ?, ?, ?)
+                    """, (codscript, codvariavel, codusuario, datetime.now()))
+
+            cur.execute("DELETE FROM VARIAVEL_CODIGO_UNIVERSAL WHERE CODVARIAVEL = ?", (codvariavel,))
+            for cod_universal in dicom_codes:
+                if cod_universal:
+                    cur.execute("""
+                        INSERT INTO VARIAVEL_CODIGO_UNIVERSAL (CODVARIAVEL, COD_UNIVERSAL, CODUSUARIO, DTHRULTMODIFICACAO)
+                        VALUES (?, ?, ?, ?)
+                    """, (codvariavel, cod_universal, codusuario, datetime.now()))
+
+            if possui_formula and formula:
+                cur.execute("DELETE FROM FORMULA_VARIAVEL WHERE CODVARIAVEL = ?", (codvariavel,))
+                cur.execute("""
+                    INSERT INTO FORMULAS (FORMULA, CASADECIMAIS, DTHRULTMODIFICACAO, CODUSUARIO)
+                    VALUES (?, ?, ?, ?)
+                    RETURNING CODFORMULA
+                """, (formula, formula_casas_decimais, datetime.now(), codusuario))
+                codformula = cur.fetchone()[0]
+                cur.execute("""
+                    INSERT INTO FORMULA_VARIAVEL (CODFORMULA, CODVARIAVEL, CODUSUARIO, DTHRULTMODIFICACAO)
+                    VALUES (?, ?, ?, ?)
+                """, (codformula, codvariavel, codusuario, datetime.now()))
+
+                for lang, ref, texto in zip(equacoes_linguagem, equacoes_referencia, equacoes_texto):
+                    if lang and texto:
+                        cur.execute("""
+                            INSERT INTO EQUACOES_LINGUAGEM (CODFORMULA, CODLINGUAGEM, CODREFERENCIA, EQUACAO)
+                            VALUES (?, ?, ?, ?)
+                        """, (codformula, lang, ref or None, texto))
+            else:
+                cur.execute("DELETE FROM FORMULA_VARIAVEL WHERE CODVARIAVEL = ?", (codvariavel,))
+
+            cur.execute("DELETE FROM NORMALIDADE WHERE CODVARIAVEL = ?", (codvariavel,))
+            if possui_normalidade and normalidades:
+                for normalidade in normalidades:
+                    cur.execute("""
+                        INSERT INTO NORMALIDADE (CODVARIAVEL, SEXO, VALORMIN, VALORMAX, CODREFERENCIA, CODUSUARIO, DTHRULTMODIFICACAO)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (codvariavel, normalidade['sexo'], normalidade['valormin'], normalidade['valormax'], normalidade['referencia'], codusuario, datetime.now()))
+
+            cur.execute("DELETE FROM VARIAVEIS_CLASSIFICACOES WHERE CODVARIAVEL = ?", (codvariavel,))
+            cur.execute("DELETE FROM VARIAVEIS_CLASSIFICACOES_VALORES WHERE CODVARIAVEL = ?", (codvariavel,))
+            for classificacao in classificacoes:
+                cur.execute("""
+                    INSERT INTO VARIAVEIS_CLASSIFICACOES (CODVARIAVEL, CODCLASSIFICACAO, CODUSUARIO, DTHRULTMODIFICACAO)
+                    VALUES (?, ?, ?, ?)
+                """, (codvariavel, classificacao['codclassificacao'], codusuario, datetime.now()))
+                cur.execute("""
+                    INSERT INTO VARIAVEIS_CLASSIFICACOES_VALORES (CODVARIAVEL, CODCLASSIFICACAO, VALORMIN, VALORMAX, CODUSUARIO, DTHRULTMODIFICACAO)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (codvariavel, classificacao['codclassificacao'], classificacao['valormin'], classificacao['valormax'], codusuario, datetime.now()))
+
+            conn.commit()
+            flash("Variável atualizada com sucesso!", "success")
+            return redirect(url_for('variaveis.visualizar_variaveis'))
+        except Exception as e:
+            conn.rollback()
+            flash(f"Erro ao atualizar variável: {str(e)}", "error")
+            return redirect(request.url)
+
+    try:
+        cur.execute("""
+            SELECT NOME, VARIAVEL, SIGLA, ABREVIACAO, DESCRICAO, CODUNIDADEMEDIDA, CASASDECIMAIS
+            FROM VARIAVEIS
+            WHERE CODVARIAVEL = ?
+        """, (codvariavel,))
+        variavel = cur.fetchone()
+        if not variavel:
+            flash("Variável não encontrada.", "error")
+            return redirect(url_for('variaveis.visualizar_variaveis'))
+
+        cur.execute("SELECT CODUNIDADEMEDIDA, DESCRICAO FROM UNIDADEMEDIDA ORDER BY DESCRICAO")
+        unidades = cur.fetchall()
+        cur.execute("SELECT CODSCRIPTLAUDO, NOME FROM SCRIPTLAUDO ORDER BY NOME")
+        scripts = cur.fetchall()
+        cur.execute("SELECT CODSCRIPTLAUDO FROM SCRIPTLAUDO_VARIAVEL WHERE CODVARIAVEL = ?", (codvariavel,))
+        scripts_vinculados = [row[0] for row in cur.fetchall()]
+        cur.execute("SELECT COD_UNIVERSAL, CODIGO, DESCRICAOPTBR FROM CODIGO_UNIVERSAL ORDER BY CODIGO")
+        codigos_universais = cur.fetchall()
+        cur.execute("SELECT COD_UNIVERSAL FROM VARIAVEL_CODIGO_UNIVERSAL WHERE CODVARIAVEL = ?", (codvariavel,))
+        dicom_codes_vinculados = [row[0] for row in cur.fetchall()]
+        cur.execute("SELECT SIGLA, NOME FROM VARIAVEIS WHERE CODVARIAVEL != ? ORDER BY NOME", (codvariavel,))
+        variaveis_existentes = cur.fetchall()
+        cur.execute("""
+            SELECT DISTINCT r.CODREFERENCIA, r.TITULO, r.ANO,
+                   LIST(a.NOME, ', ') AS AUTORES
+            FROM REFERENCIA r
+            LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
+            LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
+            GROUP BY r.CODREFERENCIA, r.TITULO, r.ANO
+            ORDER BY r.ANO DESC
+        """)
+        referencias = cur.fetchall()
+        cur.execute("SELECT CODLINGUAGEM, DESCRICAO FROM TIPOLINGUAGEM ORDER BY DESCRICAO")
+        linguagens = cur.fetchall()
+        cur.execute("SELECT ALTERNATIVA FROM VARIAVEIS_ALTERNATIVAS WHERE CODVARIAVEL = ?", (codvariavel,))
+        alternativas = [row[0] for row in cur.fetchall()]
+        cur.execute("""
+            SELECT el.CODLINGUAGEM, el.EQUACAO, el.CODREFERENCIA
+            FROM EQUACOES_LINGUAGEM el
+            JOIN FORMULA_VARIAVEL fv ON el.CODFORMULA = fv.CODFORMULA
+            WHERE fv.CODVARIAVEL = ?
+        """, (codvariavel,))
+        equacoes = [{'codlinguagem': row[0], 'equacao': row[1], 'codreferencia': row[2]} for row in cur.fetchall()]
+        cur.execute("""
+            SELECT f.FORMULA, f.CASADECIMAIS
+            FROM FORMULAS f
+            JOIN FORMULA_VARIAVEL fv ON f.CODFORMULA = fv.CODFORMULA
+            WHERE fv.CODVARIAVEL = ?
+        """, (codvariavel,))
+        formula_data = cur.fetchone()
+        formula = formula_data[0] if formula_data else None
+        formula_casas_decimais = formula_data[1] if formula_data else 2
+        cur.execute("""
+            SELECT SEXO, VALORMIN, VALORMAX, CODREFERENCIA
+            FROM NORMALIDADE
+            WHERE CODVARIAVEL = ?
+        """, (codvariavel,))
+        normalidades = []
+        normalidade_dict = {}
+        for row in cur.fetchall():
+            sexo = row[0]
+            if sexo not in normalidade_dict:
+                normalidade_dict[sexo] = {'valormin': row[1], 'valormax': row[2], 'referencia': row[3]}
+        if normalidade_dict:
+            normalidade = {}
+            if 'M' in normalidade_dict:
+                normalidade['valormin_m'] = normalidade_dict['M']['valormin']
+                normalidade['valormax_m'] = normalidade_dict['M']['valormax']
+                normalidade['referencia'] = normalidade_dict['M']['referencia']
+            if 'F' in normalidade_dict:
+                normalidade['valormin_f'] = normalidade_dict['F']['valormin']
+                normalidade['valormax_f'] = normalidade_dict['F']['valormax']
+                normalidade['referencia'] = normalidade['referencia'] or normalidade_dict['F']['referencia']
+            normalidades.append(normalidade)
+        cur.execute("SELECT CODGRUPO, NOME FROM GRUPOS_CLASSIFICACOES ORDER BY NOME")
+        grupos = cur.fetchall()
+        cur.execute("""
+            SELECT vc.CODCLASSIFICACAO, c.NOME, vcv.VALORMIN, vcv.VALORMAX
+            FROM VARIAVEIS_CLASSIFICACOES vc
+            JOIN CLASSIFICACOES c ON vc.CODCLASSIFICACAO = c.CODCLASSIFICACAO
+            LEFT JOIN VARIAVEIS_CLASSIFICACOES_VALORES vcv ON vc.CODVARIAVEL = vcv.CODVARIAVEL AND vc.CODCLASSIFICACAO = vcv.CODCLASSIFICACAO
+            WHERE vc.CODVARIAVEL = ?
+        """, (codvariavel,))
+        classificacoes_vinculadas = [
+            {'codclassificacao': row[0], 'nome': row[1], 'valormin': row[2], 'valormax': row[3]} 
+            for row in cur.fetchall()
+        ]
+        grupo_selecionado = None
+        if classificacoes_vinculadas:
+            cur.execute("""
+                SELECT DISTINCT c.CODGRUPO
+                FROM CLASSIFICACOES c
+                JOIN VARIAVEIS_CLASSIFICACOES vc ON c.CODCLASSIFICACAO = vc.CODCLASSIFICACAO
+                WHERE vc.CODVARIAVEL = ?
+            """, (codvariavel,))
+            grupo_selecionado = cur.fetchone()[0] if cur.fetchone() else None
+
+        return render_template('editar_variavel.html',
+                               variavel=(variavel[0], variavel[1], variavel[2], variavel[3], variavel[4], variavel[5], variavel[6], formula, formula_casas_decimais),
+                               unidades=unidades,
+                               scripts=scripts,
+                               scripts_vinculados=scripts_vinculados,
+                               codigos_universais=codigos_universais,
+                               dicom_codes_vinculados=dicom_codes_vinculados,
+                               variaveis_existentes=variaveis_existentes,
+                               referencias=referencias,
+                               linguagens=linguagens,
+                               alternativas=alternativas,
+                               equacoes=equacoes,
+                               normalidades=normalidades,
+                               grupos=grupos,
+                               classificacoes_vinculadas=classificacoes_vinculadas,
+                               grupo_selecionado=grupo_selecionado)
+    except Exception as e:
+        flash(f"Erro ao carregar formulário: {str(e)}", "error")
+        return redirect(url_for('variaveis.visualizar_variaveis'))
 
 @variaveis_bp.route('/visualizar_variaveis')
 def visualizar_variaveis():
@@ -388,162 +1000,7 @@ def visualizar_variaveis():
                            total_paginas=total_paginas)
 
 
-@variaveis_bp.route('/nova_variavel', methods=['GET', 'POST'])
-def nova_variavel():
-    if 'usuario' not in session:
-        return redirect(url_for('auth.login'))
 
-    conn, cur = get_db()
-    codusuario = session['usuario']['codusuario']
-
-    if request.method == 'POST':
-        nome = request.form['nome'].strip()
-        variavel = request.form['variavel'].strip()
-        sigla = request.form['sigla'].strip().upper()
-        abreviacao = request.form['abreviacao'].strip()
-        descricao = request.form['descricao'].strip() or None
-        unidade = request.form['unidade']
-        casas_decimais = request.form['casas_decimais']
-        possui_formula = 'possui_formula' in request.form
-        possui_normalidade = 'possui_normalidade' in request.form
-        alternativas = request.form.getlist('alternativas[]')
-        scripts = request.form.getlist('scripts[]')
-        formula = request.form.get('formula', '').strip() or None
-        equacoes_linguagem = request.form.getlist('equacoes_linguagem[]')
-        equacoes_referencia = request.form.getlist('equacoes_referencia[]')
-        equacoes_texto = request.form.getlist('equacoes_texto[]')
-        sexo = request.form.getlist('sexo[]')
-        idade_min = request.form.get('idade_min', '').strip() or None
-        idade_max = request.form.get('idade_max', '').strip() or None
-        referencia_normalidade = request.form.get('referencia', '').strip() or None
-
-        # Normalidade
-        normalidades = []
-        if possui_normalidade and sexo:
-            if len(sexo) == 2:  # Ambos os sexos selecionados
-                valormin_m = request.form.get('valormin_m', '').strip() or None
-                valormax_m = request.form.get('valormax_m', '').strip() or None
-                valormin_f = request.form.get('valormin_f', '').strip() or None
-                valormax_f = request.form.get('valormax_f', '').strip() or None
-                if not (valormin_m and valormax_m and valormin_f and valormax_f):
-                    flash("Valores mínimos e máximos são obrigatórios para ambos os sexos.", "error")
-                    return redirect(request.url)
-                normalidades.append(('M', valormin_m, valormax_m))
-                normalidades.append(('F', valormin_f, valormax_f))
-            elif len(sexo) == 1:  # Apenas um sexo
-                valormin = request.form.get('valormin', '').strip() or None
-                valormax = request.form.get('valormax', '').strip() or None
-                if not (valormin and valormax):
-                    flash("Valores mínimo e máximo são obrigatórios.", "error")
-                    return redirect(request.url)
-                normalidades.append((sexo[0], valormin, valormax))
-            else:
-                flash("Pelo menos um sexo deve ser selecionado.", "error")
-                return redirect(request.url)
-
-        # Validações
-        if not variavel.startswith('VR_'):
-            flash("A Variável deve começar com 'VR_'.", "error")
-            return redirect(request.url)
-
-        cur.execute("SELECT 1 FROM VARIAVEIS WHERE UPPER(SIGLA) = UPPER(?)", (sigla,))
-        if cur.fetchone():
-            flash("Já existe uma variável com essa sigla.", "error")
-            return redirect(request.url)
-
-        try:
-            # Inserir a variável
-            cur.execute("""
-                INSERT INTO VARIAVEIS (NOME, VARIAVEL, SIGLA, ABREVIACAO, DESCRICAO, CODUNIDADEMEDIDA, CASASDECIMAIS)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                RETURNING CODVARIAVEL
-            """, (nome, variavel, sigla, abreviacao, descricao, unidade, casas_decimais))
-            codvariavel = cur.fetchone()[0]
-
-            # Inserir alternativas
-            for alternativa in alternativas:
-                if alternativa.strip():
-                    cur.execute("INSERT INTO VARIAVEIS_ALTERNATIVAS (CODVARIAVEL, ALTERNATIVA) VALUES (?, ?)", 
-                               (codvariavel, alternativa.strip()))
-
-            # Inserir scripts vinculados
-            for codscript in scripts:
-                if codscript:
-                    cur.execute("INSERT INTO SCRIPTLAUDO_VARIAVEL (CODSCRIPTLAUDO, CODVARIAVEL) VALUES (?, ?)", 
-                               (codscript, codvariavel))
-
-            # Inserir fórmula
-            if possui_formula and formula:
-                cur.execute("""
-                    INSERT INTO FORMULAS (FORMULA, CASADECIMAIS, DTHRULTMODIFICACAO)
-                    VALUES (?, ?, ?)
-                    RETURNING CODFORMULA
-                """, (formula, casas_decimais, datetime.now()))
-                codformula = cur.fetchone()[0]
-
-                cur.execute("INSERT INTO FORMULA_VARIAVEL (CODFORMULA, CODVARIAVEL) VALUES (?, ?)", 
-                           (codformula, codvariavel))
-
-                # Inserir equações
-                for linguagem, referencia, texto in zip(equacoes_linguagem, equacoes_referencia, equacoes_texto):
-                    if linguagem and texto:
-                        cur.execute("INSERT INTO EQUACOES_LINGUAGEM (CODFORMULA, CODLINGUAGEM, CODREFERENCIA, EQUACAO) VALUES (?, ?, ?, ?)", 
-                                   (codformula, linguagem, referencia or None, texto.strip()))
-
-            # Inserir normalidade
-            if normalidades:
-                for sexo, valormin, valormax in normalidades:
-                    cur.execute("""
-                        INSERT INTO NORMALIDADE (CODVARIAVEL, SEXO, VALORMIN, VALORMAX, IDADE_MIN, IDADE_MAX, CODREFERENCIA)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (codvariavel, sexo, valormin, valormax, idade_min, idade_max, referencia_normalidade or None))
-
-            conn.commit()
-            flash("Variável cadastrada com sucesso!", "success")
-            return redirect(url_for('variaveis.visualizar_variaveis'))
-        except Exception as e:
-            conn.rollback()
-            flash(f"Erro ao cadastrar variável: {str(e)}", "error")
-            return redirect(request.url)
-
-    # Buscar unidades de medida
-    cur.execute("SELECT CODUNIDADEMEDIDA, DESCRICAO FROM UNIDADEMEDIDA ORDER BY DESCRICAO")
-    unidades = cur.fetchall()
-
-    # Buscar scripts
-    cur.execute("SELECT CODSCRIPTLAUDO, NOME FROM SCRIPTLAUDO ORDER BY NOME")
-    scripts = cur.fetchall()
-
-    # Buscar variáveis existentes
-    cur.execute("SELECT SIGLA, NOME FROM VARIAVEIS ORDER BY NOME")
-    variaveis_existentes = cur.fetchall()
-
-    # Buscar linguagens
-    cur.execute("SELECT CODLINGUAGEM, NOME FROM TIPOLINGUAGEM ORDER BY NOME")
-    linguagens = cur.fetchall()
-
-    # Buscar referências
-    cur.execute("""
-        SELECT DISTINCT r.CODREFERENCIA, r.TITULO, r.ANO,
-               LIST(a.NOME, ', ') AS AUTORES
-        FROM REFERENCIA r
-        LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
-        LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
-        GROUP BY r.CODREFERENCIA, r.TITULO, r.ANO
-        ORDER BY r.ANO DESC
-    """)
-    referencias = cur.fetchall()
-
-    return render_template('nova_variavel.html',
-                           unidades=unidades,
-                           scripts=scripts,
-                           variaveis_existentes=variaveis_existentes,
-                           linguagens=linguagens,
-                           referencias=referencias)
-
-
-@variaveis_bp.route('/editar_variavel/<int:codvariavel>', methods=['GET', 'POST'])
-def editar_variavel(codvariavel):
     if 'usuario' not in session:
         current_app.logger.error("Sessão de usuário não encontrada.")
         return redirect(url_for('auth.login'))
@@ -570,14 +1027,10 @@ def editar_variavel(codvariavel):
         equacoes_referencia = request.form.getlist('equacoes_referencia[]')
         equacoes_texto = request.form.getlist('equacoes_texto[]')
         alternativas = request.form.getlist('alternativas[]')
-        sexo = request.form.getlist('sexo[]')
-        valormin_m = request.form.get('valormin_m', '')
-        valormax_m = request.form.get('valormax_m', '')
-        valormin_f = request.form.get('valormin_f', '')
-        valormax_f = request.form.get('valormax_f', '')
-        valormin = request.form.get('valormin', '')
-        valormax = request.form.get('valormax', '')
-        referencia = request.form.get('referencia', '') or None
+        normalidades_sexo = request.form.getlist('normalidades_sexo[]')
+        normalidades_valormin = request.form.getlist('normalidades_valormin[]')
+        normalidades_valormax = request.form.getlist('normalidades_valormax[]')
+        normalidades_referencia = request.form.getlist('normalidades_referencia[]')
 
         try:
             # Validar sigla
@@ -590,6 +1043,16 @@ def editar_variavel(codvariavel):
             if cur.fetchone():
                 flash("Já existe uma variável com essa sigla.", "error")
                 return redirect(request.url)
+
+            # Validar normalidades
+            if possui_normalidade:
+                for sexo, valormin, valormax, ref in zip(normalidades_sexo, normalidades_valormin, normalidades_valormax, normalidades_referencia):
+                    if not (sexo and valormin and valormax and ref):
+                        flash("Todos os campos de normalidade (Sexo, Valor Mínimo, Valor Máximo, Referência) são obrigatórios.", "error")
+                        return redirect(request.url)
+                    if sexo not in ('M', 'F', 'A'):
+                        flash("Sexo inválido para normalidade.", "error")
+                        return redirect(request.url)
 
             # Atualizar variável
             cur.execute("""
@@ -633,20 +1096,9 @@ def editar_variavel(codvariavel):
 
             # Atualizar fórmulas e equações
             if possui_formula and formula:
-                # Primeiro, remover referências em FORMULA_VARIAVEL
+                # Remover referências em FORMULA_VARIAVEL
                 cur.execute("DELETE FROM FORMULA_VARIAVEL WHERE CODVARIAVEL = ?", (codvariavel,))
                 current_app.logger.info(f"Excluídas referências de FORMULA_VARIAVEL para CODVARIAVEL={codvariavel}")
-
-                # Agora, remover fórmulas órfãs em FORMULAS
-                cur.execute("""
-                    DELETE FROM FORMULAS 
-                    WHERE CODFORMULA IN (
-                        SELECT CODFORMULA 
-                        FROM FORMULA_VARIAVEL 
-                        WHERE CODVARIAVEL = ?
-                    ) OR CODFORMULA NOT IN (SELECT CODFORMULA FROM FORMULA_VARIAVEL)
-                """, (codvariavel,))
-                current_app.logger.info(f"Excluídas fórmulas órfãs para CODVARIAVEL={codvariavel}")
 
                 # Inserir nova fórmula
                 cur.execute("""
@@ -665,47 +1117,25 @@ def editar_variavel(codvariavel):
                 for lang, ref, texto in zip(equacoes_linguagem, equacoes_referencia, equacoes_texto):
                     if lang and texto:
                         cur.execute("""
-                            INSERT INTO FORMULAS (CODLINGUAGEM, EQUACAO, CODREFERENCIA, DTHRULTMODIFICACAO, CODUSUARIO)
-                            VALUES (?, ?, ?, ?, ?)
-                            RETURNING CODFORMULA
-                        """, (lang, texto, ref or None, datetime.now(), codusuario))
-                        codformula = cur.fetchone()[0]
-                        cur.execute("""
-                            INSERT INTO FORMULA_VARIAVEL (CODFORMULA, CODVARIAVEL, CODUSUARIO, DTHRULTMODIFICACAO)
+                            INSERT INTO EQUACOES_LINGUAGEM (CODFORMULA, CODLINGUAGEM, CODREFERENCIA, EQUACAO)
                             VALUES (?, ?, ?, ?)
-                        """, (codformula, codvariavel, codusuario, datetime.now()))
+                        """, (codformula, lang, ref or None, texto))
                 current_app.logger.info(f"Inseridas {len([t for t in equacoes_texto if t])} equações para CODVARIAVEL={codvariavel}")
             else:
-                # Se não possui fórmula, limpar todas as referências
+                # Limpar fórmulas
                 cur.execute("DELETE FROM FORMULA_VARIAVEL WHERE CODVARIAVEL = ?", (codvariavel,))
-                cur.execute("""
-                    DELETE FROM FORMULAS 
-                    WHERE CODFORMULA NOT IN (SELECT CODFORMULA FROM FORMULA_VARIAVEL)
-                """,)
+                cur.execute("DELETE FROM FORMULAS WHERE CODFORMULA NOT IN (SELECT CODFORMULA FROM FORMULA_VARIAVEL)")
                 current_app.logger.info(f"Excluídas fórmulas e referências para CODVARIAVEL={codvariavel}")
 
-            # Atualizar normalidade
+            # Atualizar normalidades
             cur.execute("DELETE FROM NORMALIDADE WHERE CODVARIAVEL = ?", (codvariavel,))
-            if possui_normalidade and sexo:
-                if 'M' in sexo and 'F' in sexo and valormin and valormax:
+            if possui_normalidade:
+                for sexo, valormin, valormax, ref in zip(normalidades_sexo, normalidades_valormin, normalidades_valormax, normalidades_referencia):
                     cur.execute("""
                         INSERT INTO NORMALIDADE (CODVARIAVEL, SEXO, VALORMIN, VALORMAX, CODREFERENCIA, CODUSUARIO, DTHRULTMODIFICACAO)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (codvariavel, 'A', valormin, valormax, referencia, codusuario, datetime.now()))
-                    current_app.logger.info(f"Inserida normalidade para Ambos para CODVARIAVEL={codvariavel}")
-                else:
-                    if 'M' in sexo and valormin_m and valormax_m:
-                        cur.execute("""
-                            INSERT INTO NORMALIDADE (CODVARIAVEL, SEXO, VALORMIN, VALORMAX, CODREFERENCIA, CODUSUARIO, DTHRULTMODIFICACAO)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (codvariavel, 'M', valormin_m, valormax_m, referencia, codusuario, datetime.now()))
-                        current_app.logger.info(f"Inserida normalidade para Masculino para CODVARIAVEL={codvariavel}")
-                    if 'F' in sexo and valormin_f and valormax_f:
-                        cur.execute("""
-                            INSERT INTO NORMALIDADE (CODVARIAVEL, SEXO, VALORMIN, VALORMAX, CODREFERENCIA, CODUSUARIO, DTHRULTMODIFICACAO)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (codvariavel, 'F', valormin_f, valormax_f, referencia, codusuario, datetime.now()))
-                        current_app.logger.info(f"Inserida normalidade para Feminino para CODVARIAVEL={codvariavel}")
+                    """, (codvariavel, sexo, valormin, valormax, ref, codusuario, datetime.now()))
+                current_app.logger.info(f"Inseridas {len(normalidades_sexo)} normalidades para CODVARIAVEL={codvariavel}")
 
             conn.commit()
             current_app.logger.info(f"Variável CODVARIAVEL={codvariavel} e vínculos atualizados com sucesso.")
@@ -773,9 +1203,9 @@ def editar_variavel(codvariavel):
 
         # Equações
         cur.execute("""
-            SELECT f.CODLINGUAGEM, f.EQUACAO, f.CODREFERENCIA
-            FROM FORMULAS f
-            JOIN FORMULA_VARIAVEL fv ON f.CODFORMULA = fv.CODFORMULA
+            SELECT el.CODLINGUAGEM, el.EQUACAO, el.CODREFERENCIA
+            FROM EQUACOES_LINGUAGEM el
+            JOIN FORMULA_VARIAVEL fv ON el.CODFORMULA = fv.CODFORMULA
             WHERE fv.CODVARIAVEL = ?
         """, (codvariavel,))
         equacoes = [{'codlinguagem': row[0], 'equacao': row[1], 'codreferencia': row[2]} for row in cur.fetchall()]
@@ -792,21 +1222,13 @@ def editar_variavel(codvariavel):
         formula_casas_decimais = formula_data[1] if formula_data else 2
 
         # Normalidades
-        normalidades = {'masculino': None, 'feminino': None, 'unico': None, 'referencia': None}
         cur.execute("""
             SELECT SEXO, VALORMIN, VALORMAX, CODREFERENCIA
             FROM NORMALIDADE
             WHERE CODVARIAVEL = ?
         """, (codvariavel,))
-        for row in cur.fetchall():
-            sexo, valormin, valormax, codreferencia = row
-            if sexo == 'M':
-                normalidades['masculino'] = {'valormin': valormin, 'valormax': valormax}
-            elif sexo == 'F':
-                normalidades['feminino'] = {'valormin': valormin, 'valormax': valormax}
-            elif sexo == 'A':
-                normalidades['unico'] = {'valormin': valormin, 'valormax': valormax}
-            normalidades['referencia'] = codreferencia
+        normalidades = [{'sexo': row[0], 'valormin': row[1], 'valormax': row[2], 'referencia': row[3]} for row in cur.fetchall()]
+        current_app.logger.info(f"Carregadas {len(normalidades)} normalidades para CODVARIAVEL={codvariavel}")
 
         return render_template('editar_variavel.html',
                                variavel=(variavel[0], variavel[1], variavel[2], variavel[3], variavel[4], variavel[5], variavel[6], formula, formula_casas_decimais),
@@ -828,6 +1250,7 @@ def editar_variavel(codvariavel):
 
 
 @variaveis_bp.route('/excluir_variavel/<int:codvariavel>', methods=["POST"])
+@admin_required
 def excluir_variavel(codvariavel):
     if 'usuario' not in session:
         current_app.logger.error("Sessão de usuário não encontrada.")
@@ -1486,6 +1909,8 @@ def vincular_codigo_universal():
 
 @variaveis_bp.route('/get_codigos_vinculados/<int:codvariavel>', methods=['GET'])
 def get_codigos_vinculados(codvariavel):
+
+
     if 'usuario' not in session:
         return jsonify({'error': 'Usuário não autenticado'}), 401
     conn, cur = get_db()
@@ -1503,3 +1928,220 @@ def get_codigos_vinculados(codvariavel):
     except Exception as e:
         current_app.logger.error(f"Erro ao buscar códigos vinculados para CODVARIAVEL={codvariavel}: {str(e)}")
         return jsonify({'error': str(e)}), 500
+    
+
+@variaveis_bp.route('/get_classificacoes_grupo/<int:codgrupo>')
+def get_classificacoes_grupo(codgrupo):
+    if 'usuario' not in session:
+        return jsonify({'error': 'Usuário não autenticado.'}), 401
+
+    conn, cur = get_db()
+    try:
+        cur.execute("""
+            SELECT CODCLASSIFICACAO, NOME
+            FROM CLASSIFICACOES
+            WHERE CODGRUPO = ?
+            ORDER BY NOME
+        """, (codgrupo,))
+        classificacoes = [{'codclassificacao': row[0], 'nome': row[1]} for row in cur.fetchall()]
+        return jsonify(classificacoes)
+    except Exception as e:
+        return jsonify({'error': f'Erro ao carregar classificações: {str(e)}'})
+
+
+@variaveis_bp.route('/gerenciar_grupos_classificacoes')
+def gerenciar_grupos_classificacoes():
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    conn, cur = get_db()
+    try:
+        cur.execute("""
+            SELECT g.CODGRUPO, g.NOME
+            FROM GRUPOS_CLASSIFICACOES g
+            ORDER BY g.NOME
+        """)
+        grupos = cur.fetchall()
+        grupos_detalhes = []
+        for grupo in grupos:
+            codgrupo = grupo[0]
+            cur.execute("""
+                SELECT c.CODCLASSIFICACAO, c.NOME
+                FROM CLASSIFICACOES c
+                WHERE c.CODGRUPO = ?
+                ORDER BY c.NOME
+            """, (codgrupo,))
+            classificacoes = cur.fetchall()
+            grupos_detalhes.append({
+                'codgrupo': codgrupo,
+                'nome': grupo[1],
+                'classificacoes': [{'codclassificacao': c[0], 'nome': c[1]} for c in classificacoes]
+            })
+        return render_template('gerenciar_classificacoes.html', grupos=grupos_detalhes)
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Erro ao carregar grupos e classificações: {str(e)}'})
+
+@variaveis_bp.route('/novo_grupo', methods=['POST'])
+def novo_grupo():
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado.'}), 401
+
+    conn, cur = get_db()
+    codusuario = session['usuario']['codusuario']
+    nome = request.form['nome'].strip()
+
+    try:
+        cur.execute("SELECT 1 FROM GRUPOS_CLASSIFICACOES WHERE UPPER(NOME) = UPPER(?)", (nome,))
+        if cur.fetchone():
+            return jsonify({'success': False, 'message': 'Já existe um grupo com esse nome.'})
+
+        cur.execute("""
+            INSERT INTO GRUPOS_CLASSIFICACOES (NOME, CODUSUARIO, DTHRULTMODIFICACAO)
+            VALUES (?, ?, ?)
+        """, (nome, codusuario, datetime.now()))
+        conn.commit()
+        return jsonify({'success': True, 'message': 'Grupo cadastrado com sucesso!'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao cadastrar grupo: {str(e)}'})
+
+@variaveis_bp.route('/editar_grupo/<int:codgrupo>', methods=['POST'])
+def editar_grupo(codgrupo):
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado.'}), 401
+
+    conn, cur = get_db()
+    codusuario = session['usuario']['codusuario']
+    nome = request.form['nome'].strip()
+
+    try:
+        cur.execute("SELECT 1 FROM GRUPOS_CLASSIFICACOES WHERE UPPER(NOME) = UPPER(?) AND CODGRUPO != ?", (nome, codgrupo))
+        if cur.fetchone():
+            return jsonify({'success': False, 'message': 'Já existe um grupo com esse nome.'})
+
+        cur.execute("""
+            UPDATE GRUPOS_CLASSIFICACOES
+            SET NOME = ?, CODUSUARIO = ?, DTHRULTMODIFICACAO = ?
+            WHERE CODGRUPO = ?
+        """, (nome, codusuario, datetime.now(), codgrupo))
+        if cur.rowcount == 0:
+            return jsonify({'success': False, 'message': 'Grupo não encontrado.'})
+        conn.commit()
+        return jsonify({'success': True, 'message': 'Grupo atualizado com sucesso!'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao atualizar grupo: {str(e)}'})
+
+@variaveis_bp.route('/excluir_grupo/<int:codgrupo>')
+def excluir_grupo(codgrupo):
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado.'}), 401
+
+    conn, cur = get_db()
+    try:
+        cur.execute("SELECT 1 FROM CLASSIFICACOES WHERE CODGRUPO = ?", (codgrupo,))
+        if cur.fetchone():
+            return jsonify({'success': False, 'message': 'Não é possível excluir o grupo porque ele possui classificações associadas.'})
+
+        cur.execute("DELETE FROM GRUPOS_CLASSIFICACOES WHERE CODGRUPO = ?", (codgrupo,))
+        if cur.rowcount == 0:
+            return jsonify({'success': False, 'message': 'Grupo não encontrado.'})
+        conn.commit()
+        return jsonify({'success': True, 'message': 'Grupo excluído com sucesso!'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao excluir grupo: {str(e)}'})
+
+@variaveis_bp.route('/nova_classificacao', methods=['POST'])
+def nova_classificacao():
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado.'}), 401
+
+    conn, cur = get_db()
+    codusuario = session['usuario']['codusuario']
+    nome = request.form['nome'].strip()
+    codgrupo = request.form['codgrupo']
+
+    try:
+        cur.execute("SELECT 1 FROM CLASSIFICACOES WHERE UPPER(NOME) = UPPER(?)", (nome,))
+        if cur.fetchone():
+            return jsonify({'success': False, 'message': 'Já existe uma classificação com esse nome.'})
+
+        cur.execute("""
+            INSERT INTO CLASSIFICACOES (NOME, CODGRUPO, CODUSUARIO, DTHRULTMODIFICACAO)
+            VALUES (?, ?, ?, ?)
+        """, (nome, codgrupo, codusuario, datetime.now()))
+        conn.commit()
+        return jsonify({'success': True, 'message': 'Classificação cadastrada com sucesso!'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao cadastrar classificação: {str(e)}'})
+
+@variaveis_bp.route('/editar_classificacao/<int:codclassificacao>', methods=['POST'])
+def editar_classificacao(codclassificacao):
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado.'}), 401
+
+    conn, cur = get_db()
+    codusuario = session['usuario']['codusuario']
+    nome = request.form['nome'].strip()
+    codgrupo = request.form['codgrupo']
+
+    try:
+        cur.execute("SELECT 1 FROM CLASSIFICACOES WHERE UPPER(NOME) = UPPER(?) AND CODCLASSIFICACAO != ?", (nome, codclassificacao))
+        if cur.fetchone():
+            return jsonify({'success': False, 'message': 'Já existe uma classificação com esse nome.'})
+
+        cur.execute("""
+            UPDATE CLASSIFICACOES
+            SET NOME = ?, CODGRUPO = ?, CODUSUARIO = ?, DTHRULTMODIFICACAO = ?
+            WHERE CODCLASSIFICACAO = ?
+        """, (nome, codgrupo, codusuario, datetime.now(), codclassificacao))
+        if cur.rowcount == 0:
+            return jsonify({'success': False, 'message': 'Classificação não encontrada.'})
+        conn.commit()
+        return jsonify({'success': True, 'message': 'Classificação atualizada com sucesso!'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao atualizar classificação: {str(e)}'})
+
+@variaveis_bp.route('/excluir_classificacao/<int:codclassificacao>')
+def excluir_classificacao(codclassificacao):
+    if 'usuario' not in session:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado.'}), 401
+
+    conn, cur = get_db()
+    try:
+        cur.execute("SELECT 1 FROM VARIAVEIS_CLASSIFICACOES WHERE CODCLASSIFICACAO = ?", (codclassificacao,))
+        if cur.fetchone():
+            return jsonify({'success': False, 'message': 'Não é possível excluir a classificação porque ela está vinculada a variáveis.'})
+
+        cur.execute("DELETE FROM CLASSIFICACOES WHERE CODCLASSIFICACAO = ?", (codclassificacao,))
+        if cur.rowcount == 0:
+            return jsonify({'success': False, 'message': 'Classificação não encontrada.'})
+        conn.commit()
+        return jsonify({'success': True, 'message': 'Classificação excluída com sucesso!'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao excluir classificação: {str(e)}'})
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    conn, cur = get_db()
+    try:
+        # Check if classification is linked to variables
+        cur.execute("SELECT 1 FROM VARIAVEIS_CLASSIFICACOES WHERE CODCLASSIFICACAO = ?", (codclassificacao,))
+        if cur.fetchone():
+            flash("Não é possível excluir a classificação porque ela está vinculada a variáveis.", "error")
+            return redirect(url_for('variaveis.gerenciar_grupos_classificacoes'))
+
+        cur.execute("DELETE FROM CLASSIFICACOES WHERE CODCLASSIFICACAO = ?", (codclassificacao,))
+        if cur.rowcount == 0:
+            flash("Classificação não encontrada.", "error")
+        else:
+            conn.commit()
+            flash("Classificação excluída com sucesso!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erro ao excluir classificação: {str(e)}", "error")
+    return redirect(url_for('variaveis.gerenciar_grupos_classificacoes'))    

@@ -3,7 +3,7 @@
 {% set content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-pencil-square me-2"></i> Editar Script
+    <i class="bi bi-pencil-square me-2"></i> Editar Script: {{ script.nome }}
   </h3>
   <div class="text-muted small">
     Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
@@ -16,102 +16,113 @@
       <form method="POST" enctype="multipart/form-data">
         <h5 class="text-primary">Informações do Script</h5>
         <div class="mb-3">
-          <label for="nome" class="form-label">Nome *</label>
-          <input type="text" name="nome" id="nome" class="form-control" value="{{ script.nome }}" required>
+          <label class="form-label">Nome do Script *</label>
+          <input type="text" class="form-control" id="nome" name="nome" value="{{ script.nome }}" required>
         </div>
         <div class="mb-3">
-          <label for="codpacote" class="form-label">Pacote</label>
+          <label class="form-label">Pacote</label>
           <select name="codpacote" id="codpacote" class="form-select">
             <option value="">Nenhum</option>
             {% for pacote in pacotes %}
-              <option value="{{ pacote[0] }}" {% if script.codpacote == pacote[0] %}selected{% endif %}>{{ pacote[1] }}{% if pacote[2] %} - {{ pacote[2] }}{% endif %}</option>
+              <option value="{{ pacote[0] }}" {% if pacote[0] == script.codpacote %}selected{% endif %}>{{ pacote[1] }}{% if pacote[2] %} - {{ pacote[2] }}{% endif %}</option>
             {% endfor %}
           </select>
         </div>
         <div class="mb-3">
-          <label for="sistema" class="form-label">Sistema</label>
+          <label class="form-label">Sistema</label>
           <select name="sistema" id="sistema" class="form-select" onchange="toggleCamposSistema()">
             <option value="">Nenhum</option>
             <option value="Laudos UX" {% if script.sistema == 'Laudos UX' %}selected{% endif %}>Laudos UX</option>
             <option value="Laudos Flex" {% if script.sistema == 'Laudos Flex' %}selected{% endif %}>Laudos Flex</option>
           </select>
         </div>
-        <div mouldingb-3" id="campo-arquivo-json" style="display: {% if script.sistema == 'Laudos UX' %}block{% else %}none{% endif %};">
-          <label for="arquivo_json" class="form-label">Arquivo JSON (Laudos UX)</label>
+        <div class="mb-3" id="campo-arquivo-json" style="display: {% if script.sistema == 'Laudos UX' %}block{% else %}none{% endif %};">
+          <label class="form-label">Arquivo JSON (Laudos UX) {% if script.sistema == 'Laudos UX' and script.tem_arquivo_json %}*{% endif %}</label>
           <input type="file" class="form-control" id="arquivo_json" name="arquivo_json" accept=".json">
-          {% if script.tem_arquivo_json %}
-            <small class="form-text text-muted">Arquivo JSON existente. Selecione um novo arquivo para substituí-lo.</small>
+          {% if script.sistema == 'Laudos UX' and script.tem_arquivo_json %}
+            <small class="form-text text-muted">Deixe em branco para manter o arquivo atual.</small>
           {% endif %}
         </div>
-        <div class="mb-3" id="campo-arquivo-mrd" style="display: {% if script.sistema in ['Laudos UX', 'Laudos Flex'] %}block{% else %}none{% endif %};">
-          <label for="arquivo_mrd" class="form-label">Arquivo MRD</label>
-          <input type="file" class="form-control" id="arquivo_mrd" name="arquivo_mrd" accept="{% if script.sistema == 'Laudos UX' %}.json{% else %}.mrd{% endif %}">
-          {% if script.tem_arquivo_mrd %}
-            <small class="form-text text-muted">Arquivo MRD existente. Selecione um novo arquivo para substituí-lo.</small>
+        <div class="mb-3" id="campo-arquivo-mrd" style="display: {% if script.sistema in ['Laudos UX', 'Laudos Flex'] and script.tem_arquivo_mrd %}block{% else %}none{% endif %};">
+          <label class="form-label">Arquivo MRD</label>
+          <input type="file" class="form-control" id="arquivo_mrd" name="arquivo_mrd" accept=".json,.mrd">
+          {% if script.sistema in ['Laudos UX', 'Laudos Flex'] and script.tem_arquivo_mrd %}
+            <small class="form-text text-muted">Deixe em branco para manter o arquivo atual.</small>
           {% endif %}
         </div>
         <div class="mb-3">
-          <label for="linguagem" class="form-label">Linguagem</label>
-          <input type="text" name="linguagem" id="linguagem" class="form-control" value="{{ script.linguagem }}" placeholder="Ex.: C#, HTML" oninput="toggleCampoCaminhoProjeto()">
+          <label class="form-label">Linguagem</label>
+          <input type="text" class="form-control" id="linguagem" name="linguagem" value="{{ script.linguagem }}" placeholder="Ex.: C#, HTML" oninput="toggleCampoCaminhoProjeto()">
         </div>
         <div class="mb-3" id="campo-caminho-projeto" style="display: {% if script.linguagem|upper == 'C#' %}block{% else %}none{% endif %};">
-          <label for="caminho_projeto" class="form-label">Caminho do Projeto (C#)</label>
-          <input type="text" name="caminho_projeto" id="caminho_projeto" class="form-control" value="{{ script.caminho_projeto }}" placeholder="Ex.: /caminho/do/projeto">
+          <label class="form-label">Caminho do Projeto (C#)</label>
+          <input type="text" class="form-control" id="caminho_projeto" name="caminho_projeto" value="{{ script.caminho_projeto }}" placeholder="Ex.: /caminho/do/projeto">
+        </div>
+        <div class="mb-3" id="campo-caminho-azure" style="display: {% if script.sistema == 'Laudos Flex' %}block{% else %}none{% endif %};">
+          <label class="form-label">Caminho do Projeto no Azure DevOps (C#)</label>
+          <input type="text" class="form-control" id="caminho_azure" name="caminho_azure" value="{{ script.caminho_azure }}" placeholder="Ex.: https://dev.azure.com/org/project/_git/repo">
+        </div>
+        <div class="mb-3" id="campo-arquivo-dll" style="display: {% if script.linguagem|upper == 'C#' %}block{% else %}none{% endif %};">
+          <label class="form-label">Arquivo DLL (C#)</label>
+          <input type="file" class="form-control" id="arquivo_dll" name="arquivo_dll" accept=".dll">
+          {% if script.tem_arquivo_dll %}
+            <small class="form-text text-muted">Deixe em branco para manter o arquivo atual.</small>
+          {% endif %}
         </div>
         <div class="mb-3">
-          <label for="descricao" class="form-label">Descrição</label>
-          <textarea name="descricao" id="descricao" class="form-control" rows="5" maxlength="500" placeholder="Descreva a funcionalidade ou propósito do script">{{ script.descricao }}</textarea>
+          <label class="form-label">Descrição</label>
+          <textarea class="form-control" id="descricao" name="descricao" rows="5" maxlength="500" placeholder="Descreva a funcionalidade ou propósito do script">{{ script.descricao }}</textarea>
           <small class="form-text text-muted">Máximo de 500 caracteres.</small>
         </div>
         <div class="mb-3">
           <label class="form-label">Imagens da Interface (PNG, JPG)</label>
           <input type="file" class="form-control" id="imagens" name="imagens[]" accept=".png,.jpg,.jpeg" multiple>
-          <small class="form-text text-muted">Selecione uma ou mais imagens (máximo 5MB cada).</small>
+          <small class="form-text text-muted">Selecione uma ou mais imagens (máximo 5MB cada). Deixe em branco para manter as atuais.</small>
           {% if script.imagens %}
-            <h6 class="mt-3">Imagens Existentes</h6>
-            <ul class="list-group">
+            <div class="mt-2">
               {% for imagem in script.imagens %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center mb-2">
+                  <img src="{{ imagem.caminho }}" alt="{{ imagem.nome }}" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
                   <span>{{ imagem.nome }}</span>
-                  <button type="button" class="btn btn-danger btn-sm" onclick="confirmarExcluirArquivo({{ imagem.codarquivo }})">
-                    <i class="bi bi-trash"></i> Excluir
-                  </button>
-                </li>
+                  <a href="{{ url_for('scripts.excluir_arquivo', codarquivo=imagem.codarquivo) }}" class="btn btn-sm btn-danger ms-2" onclick="return confirm('Deseja realmente excluir esta imagem?');">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
               {% endfor %}
-            </ul>
+            </div>
           {% endif %}
         </div>
         <div class="mb-3">
           <label class="form-label">Impressões (PDF)</label>
           <input type="file" class="form-control" id="pdfs" name="pdfs[]" accept=".pdf" multiple>
-          <small class="form-text text-muted">Selecione um ou mais PDFs (máximo 5MB cada).</small>
+          <small class="form-text text-muted">Selecione um ou mais PDFs (máximo 5MB cada). Deixe em branco para manter os atuais.</small>
           {% if script.pdfs %}
-            <h6 class="mt-3 mb-3">PDFs Existentes</h6>
-            <ul class="list-group">
+            <div class="mt-2">
               {% for pdf in script.pdfs %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center mb-2">
                   <span>{{ pdf.nome }}</span>
-                  <button type="button" class="btn btn-danger btn-sm" onclick="confirmarExcluirArquivo({{ pdf.codarquivo }})">
-                    <i class="bi bi-trash"></i> Excluir
-                  </button>
-                </li>
-            </ul>
+                  <a href="{{ url_for('scripts.excluir_arquivo', codarquivo=pdf.codarquivo) }}" class="btn btn-sm btn-danger ms-2" onclick="return confirm('Deseja realmente excluir este PDF?');">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
           {% endif %}
         </div>
-        <div class="form-group-3 mb-check">
+        <div class="mb-3 form-check">
           <input type="checkbox" class="form-check-input" id="aprovado" name="aprovado" {% if script.aprovado %}checked{% endif %} onchange="toggleAprovadoPor()">
           <label class="form-check-label" for="aprovado">Aprovado</label>
         </div>
         <div class="mb-3" id="campo-aprovado-por" style="display: {% if script.aprovado %}block{% else %}none{% endif %};">
-          <label for="aprovado_por" class="form-label">Aprovado Por *</label>
-          <input type="text" class="form-control" id="aprovado_por" name="aprovado_por" value="{{ script.aprovado_por or '' }}" placeholder="Ex.: Dr. João Silva ou Clínica São Paulo">
+          <label class="form-label">Aprovado Por {% if script.aprovado %}*{% endif %}</label>
+          <input type="text" class="form-control" id="aprovado_por" name="aprovado_por" value="{{ script.aprovado_por }}" placeholder="Ex.: Dr. João Silva ou Clínica São Paulo">
         </div>
         <div class="mb-3 form-check">
           <input type="checkbox" class="form-check-input" id="ativo" name="ativo" {% if script.ativo %}checked{% endif %}>
           <label class="form-check-label" for="ativo">Ativo</label>
         </div>
         <div class="text-end">
-          <button type="button" class="btn btn-success" onclick="confirmarSalvarScript()">
+          <button type="submit" class="btn btn-success">
             <i class="bi bi-save"></i> Salvar
           </button>
           <a href="{{ url_for('scripts.visualizar_scripts') }}" class="btn btn-outline-secondary">
@@ -124,35 +135,103 @@
 </div>
 
 <script>
-function toggleCamposSistema() {
-  const sistema = document.getElementById('sistema').value;
-  const campoArquivoJson = document.getElementById('campo-arquivo-json');
-  const campoArquivoMrd = document.getElementById('campo-arquivo-mrd');
-  const arquivoMrdInput = document.getElementById('arquivo_mrd');
+function toggleCamposCondicionais() {
+    const sistemaSelect = document.getElementById('sistema');
+    const linguagemInput = document.getElementById('linguagem');
+    
+    const sistema = sistemaSelect ? sistemaSelect.value : '';
+    const linguagem = linguagemInput ? linguagemInput.value.trim().toUpperCase() : '';
 
-  if (sistema === 'Laudos UX') {
-    campoArquivoJson.style.display = 'block';
-    campoArquivoMrd.style.display = 'block';
-    arquivoMrdInput.setAttribute('accept', '.json');
-  } else if (sistema === 'Laudos Flex') {
-    campoArquivoJson.style.display = 'none';
-    campoArquivoMrd.style.display = 'block';
-    arquivoMrdInput.setAttribute('accept', '.mrd');
-  } else {
-    campoArquivoJson.style.display = 'none';
-    campoArquivoMrd.style.display = 'none';
-  }
+    const campoArquivoJson = document.getElementById('campo-arquivo-json');
+    const arquivoJsonInput = document.getElementById('arquivo_json');
+    
+    const campoArquivoMrd = document.getElementById('campo-arquivo-mrd');
+    const arquivoMrdInput = document.getElementById('arquivo_mrd');
+
+    const campoCaminhoProjeto = document.getElementById('campo-caminho-projeto'); // C# Geral
+    const campoArquivoDll = document.getElementById('campo-arquivo-dll');     // C# Geral
+    const campoCaminhoAzure = document.getElementById('campo-caminho-azure'); // C# + Laudos Flex
+
+    // Visibilidade do Arquivo JSON (somente Laudos UX)
+    if (campoArquivoJson) {
+        campoArquivoJson.style.display = (sistema === 'Laudos UX') ? 'block' : 'none';
+        if (arquivoJsonInput) {
+            if (sistema === 'Laudos UX' && !arquivoJsonInput.value && !document.querySelector('input[name="codscriptlaudo"]')) { // Apenas obrigatório em novo_script
+                arquivoJsonInput.setAttribute('required', 'required');
+            } else {
+                arquivoJsonInput.removeAttribute('required');
+            }
+        }
+    }
+
+    // Visibilidade e tipo do Arquivo MRD
+    if (campoArquivoMrd) {
+        campoArquivoMrd.style.display = (sistema === 'Laudos UX' || sistema === 'Laudos Flex') ? 'block' : 'none';
+        if (arquivoMrdInput) {
+            if (sistema === 'Laudos UX') {
+                arquivoMrdInput.setAttribute('accept', '.json');
+            } else if (sistema === 'Laudos Flex') {
+                arquivoMrdInput.setAttribute('accept', '.mrd');
+            } else {
+                arquivoMrdInput.removeAttribute('accept');
+            }
+        }
+    }
+
+    // Visibilidade do Caminho do Projeto e DLL (somente C#)
+    const isCSharp = (linguagem === 'C#');
+    if (campoCaminhoProjeto) {
+        campoCaminhoProjeto.style.display = isCSharp ? 'block' : 'none';
+    }
+    if (campoArquivoDll) {
+        campoArquivoDll.style.display = isCSharp ? 'block' : 'none';
+    }
+
+    // Visibilidade do Caminho Azure DevOps (C# E Laudos Flex)
+    if (campoCaminhoAzure) {
+        campoCaminhoAzure.style.display = (isCSharp && sistema === 'Laudos Flex') ? 'block' : 'none';
+    }
 }
 
-function toggleCampoCaminhoProjeto() {
-  const linguagem = document.getElementById('linguagem').value.trim().toUpperCase();
-  const campoCaminhoProjeto = document.getElementById('campo-caminho-projeto');
-  if (linguagem === 'C#') {
-    campoCaminhoProjeto.style.display = 'block';
-  } else {
-    campoCaminhoProjeto.style.display = 'none';
-  }
+function toggleAprovadoPor() {
+    const aprovadoCheckbox = document.getElementById('aprovado');
+    const campoAprovadoPor = document.getElementById('campo-aprovado-por');
+    const aprovadoPorInput = document.getElementById('aprovado_por');
+
+    if (aprovadoCheckbox && campoAprovadoPor && aprovadoPorInput) {
+        if (aprovadoCheckbox.checked) {
+            campoAprovadoPor.style.display = 'block';
+            aprovadoPorInput.setAttribute('required', 'required');
+        } else {
+            campoAprovadoPor.style.display = 'none';
+            aprovadoPorInput.removeAttribute('required');
+            aprovadoPorInput.value = ''; // Limpa o campo se desmarcado
+        }
+    }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    toggleCamposCondicionais(); // Chamada inicial para configurar a visibilidade
+    toggleAprovadoPor();      // Chamada inicial para o campo 'Aprovado Por'
+
+    const sistemaSelect = document.getElementById('sistema');
+    const linguagemInput = document.getElementById('linguagem');
+    const aprovadoCheckbox = document.getElementById('aprovado');
+
+    if (sistemaSelect) {
+        sistemaSelect.addEventListener('change', toggleCamposCondicionais);
+    }
+    if (linguagemInput) {
+        linguagemInput.addEventListener('input', toggleCamposCondicionais);
+    }
+    if (aprovadoCheckbox) {
+        aprovadoCheckbox.addEventListener('change', toggleAprovadoPor);
+    }
+
+});
+
+
 
 function toggleAprovadoPor() {
   const aprovado = document.getElementById('aprovado').checked;
@@ -166,132 +245,9 @@ function toggleAprovadoPor() {
   }
 }
 
-function confirmarSalvarScript() {
-  const nome = document.getElementById('nome').value.trim();
-  const sistema = document.getElementById('sistema').value;
-  const arquivoJson = document.getElementById('arquivo_json').files[0];
-  const arquivoMrd = document.getElementById('arquivo_mrd').files[0];
-  const aprovado = document.getElementById('aprovado').checked;
-  const aprovadoPor = document.getElementById('aprovado_por').value.trim();
-  const imagens = document.getElementById('imagens').files;
-  const pdfs = document.getElementById('pdfs').files;
-
-  if (!nome) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Nome inválido',
-      text: 'O nome do script é obrigatório.'
-    });
-    return;
-  if }
-
-  if (sistema === 'Laudos UX') {
-    if (arquivoJson && !arquivoJson.name.endsWith('.json')) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'O arquivo JSON deve ter a extensão .json.'
-      });
-      return;
-    });
-    if (arquivoMrd && !arquivoMrd.name.endsWith('.json')) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'O arquivo MRD para Laudos UX deve ter a extensão .json.'
-      });
-      return;
-    }
-  } else if (sistema === 'Laudos Flex' && arquivoMrd && !arquivoMrd.name.endsWith('.mrd')) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'O arquivo MRD para Laudos Flex deve ter a extensão .mrd.'
-      });
-      return;
-    }
-  }
-
-  if (aprovado && !aprovadoPor) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Aprovador inválido',
-      text: 'O nome do aprovador é obrigatório quando o script é marcado como aprovado.'
-    });
-    return;
-  }
-
-  for (let img of imagens) {
-    if (!['image/png', 'image/jpeg'].includes(img.type)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'As imagens devem ser formadas em PNG ou JPG.'
-      });
-      return;
-    }
-    if (img.size > 5 * 1024 * 1024) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Arquivo muito grande',
-        text: 'As imagens não podem exceder 5MB.'
-      });
-      return;
-    }
-  }
-
-  for (let pdf of pdfs) {
-    if (pdf.type !== 'application/pdf') {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'Os arquivos de impressão devem ser PDF.'
-      });
-      return;
-    }
-    if (pdf.size > 5 * 1024 * 1024) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Arquivo muito grande',
-        text: 'Os PDFs não podem exceder 5MB.'
-      });
-      return;
-    }
-  }
-
-  Swal.fire({
-    title: 'Salvar alterações?',
-    text: 'Deseja realmente salvar as alterações deste script?',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Sim, salvar',
-    cancelButtonText: 'Cancelar'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      document.querySelector('form').submit();
-    }
-  });
-}
-
-function confirmarExcluirArquivo(codarquivo) {
-  Swal.fire({
-    title: 'Excluir arquivo?',
-    text: 'Esta ação não pode ser desfeita.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sim, excluir',
-    cancelButtonText: 'Cancelar'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      window.location.href = `/scripts/excluir_arquivo/${codarquivo}`;
-    }
-  });
-}
-
 document.addEventListener('DOMContentLoaded', function() {
+  const sistema = document.getElementById('sistema').value;
   toggleCamposSistema();
-  toggleCampoCaminhoProjeto();
-  toggleAprovadoPor();
 });
 </script>
 {% endset %}

@@ -41,7 +41,7 @@
           <input type="file" class="form-control" id="arquivo_json" name="arquivo_json" accept=".json">
         </div>
         <div class="mb-3" id="campo-arquivo-mrd" style="display: none;">
-          <label class="form-label">Arquivo MRD </label>
+          <label class="form-label">Arquivo MRD</label>
           <input type="file" class="form-control" id="arquivo_mrd" name="arquivo_mrd" accept=".json,.mrd">
         </div>
         <div class="mb-3">
@@ -51,6 +51,14 @@
         <div class="mb-3" id="campo-caminho-projeto" style="display: none;">
           <label class="form-label">Caminho do Projeto (C#)</label>
           <input type="text" class="form-control" id="caminho_projeto" name="caminho_projeto" placeholder="Ex.: /caminho/do/projeto">
+        </div>
+        <div class="mb-3" id="campo-caminho-azure" style="display: none;">
+          <label class="form-label">Caminho do Projeto no Azure DevOps (C#)</label>
+          <input type="text" class="form-control" id="caminho_azure" name="caminho_azure" placeholder="Ex.: https://dev.azure.com/org/project/_git/repo">
+        </div>
+        <div class="mb-3" id="campo-arquivo-dll" style="display: none;">
+          <label class="form-label">Arquivo DLL (C#)</label>
+          <input type="file" class="form-control" id="arquivo_dll" name="arquivo_dll" accept=".dll">
         </div>
         <div class="mb-3">
           <label class="form-label">Descrição</label>
@@ -93,40 +101,104 @@
 </div>
 
 <script>
-function toggleCamposSistema() {
-  const sistema = document.getElementById('sistema').value;
-  const campoArquivoJson = document.getElementById('campo-arquivo-json');
-  const campoArquivoMrd = document.getElementById('campo-arquivo-mrd');
-  const arquivoJsonInput = document.getElementById('arquivo_json');
-  const arquivoMrdInput = document.getElementById('arquivo_mrd');
+function toggleCamposCondicionais() {
+    const sistemaSelect = document.getElementById('sistema');
+    const linguagemInput = document.getElementById('linguagem');
+    
+    const sistema = sistemaSelect ? sistemaSelect.value : '';
+    const linguagem = linguagemInput ? linguagemInput.value.trim().toUpperCase() : '';
 
-  if (sistema === 'Laudos UX') {
-    campoArquivoJson.style.display = 'block';
-    campoArquivoMrd.style.display = 'block';
-    arquivoJsonInput.setAttribute('required', 'required');
-    arquivoMrdInput.setAttribute('accept', '.json');
-  } else if (sistema === 'Laudos Flex') {
-    campoArquivoJson.style.display = 'none';
-    campoArquivoMrd.style.display = 'block';
-    arquivoJsonInput.removeAttribute('required');
-    arquivoMrdInput.setAttribute('accept', '.mrd');
-  } else {
-    campoArquivoJson.style.display = 'none';
-    campoArquivoMrd.style.display = 'none';
-    arquivoJsonInput.removeAttribute('required');
-    arquivoMrdInput.removeAttribute('required');
-  }
+    const campoArquivoJson = document.getElementById('campo-arquivo-json');
+    const arquivoJsonInput = document.getElementById('arquivo_json');
+    
+    const campoArquivoMrd = document.getElementById('campo-arquivo-mrd');
+    const arquivoMrdInput = document.getElementById('arquivo_mrd');
+
+    const campoCaminhoProjeto = document.getElementById('campo-caminho-projeto'); // C# Geral
+    const campoArquivoDll = document.getElementById('campo-arquivo-dll');     // C# Geral
+    const campoCaminhoAzure = document.getElementById('campo-caminho-azure'); // C# + Laudos Flex
+
+    // Visibilidade do Arquivo JSON (somente Laudos UX)
+    if (campoArquivoJson) {
+        campoArquivoJson.style.display = (sistema === 'Laudos UX') ? 'block' : 'none';
+        if (arquivoJsonInput) {
+            if (sistema === 'Laudos UX' && !arquivoJsonInput.value && !document.querySelector('input[name="codscriptlaudo"]')) { // Apenas obrigatório em novo_script
+                arquivoJsonInput.setAttribute('required', 'required');
+            } else {
+                arquivoJsonInput.removeAttribute('required');
+            }
+        }
+    }
+
+    // Visibilidade e tipo do Arquivo MRD
+    if (campoArquivoMrd) {
+        campoArquivoMrd.style.display = (sistema === 'Laudos UX' || sistema === 'Laudos Flex') ? 'block' : 'none';
+        if (arquivoMrdInput) {
+            if (sistema === 'Laudos UX') {
+                arquivoMrdInput.setAttribute('accept', '.json');
+            } else if (sistema === 'Laudos Flex') {
+                arquivoMrdInput.setAttribute('accept', '.mrd');
+            } else {
+                arquivoMrdInput.removeAttribute('accept');
+            }
+        }
+    }
+
+    // Visibilidade do Caminho do Projeto e DLL (somente C#)
+    const isCSharp = (linguagem === 'C#');
+    if (campoCaminhoProjeto) {
+        campoCaminhoProjeto.style.display = isCSharp ? 'block' : 'none';
+    }
+    if (campoArquivoDll) {
+        campoArquivoDll.style.display = isCSharp ? 'block' : 'none';
+    }
+
+    // Visibilidade do Caminho Azure DevOps (C# E Laudos Flex)
+    if (campoCaminhoAzure) {
+        campoCaminhoAzure.style.display = (isCSharp && sistema === 'Laudos Flex') ? 'block' : 'none';
+    }
 }
 
-function toggleCampoCaminhoProjeto() {
-  const linguagem = document.getElementById('linguagem').value.trim().toUpperCase();
-  const campoCaminhoProjeto = document.getElementById('campo-caminho-projeto');
-  if (linguagem === 'C#') {
-    campoCaminhoProjeto.style.display = 'block';
-  } else {
-    campoCaminhoProjeto.style.display = 'none';
-  }
+function toggleAprovadoPor() {
+    const aprovadoCheckbox = document.getElementById('aprovado');
+    const campoAprovadoPor = document.getElementById('campo-aprovado-por');
+    const aprovadoPorInput = document.getElementById('aprovado_por');
+
+    if (aprovadoCheckbox && campoAprovadoPor && aprovadoPorInput) {
+        if (aprovadoCheckbox.checked) {
+            campoAprovadoPor.style.display = 'block';
+            aprovadoPorInput.setAttribute('required', 'required');
+        } else {
+            campoAprovadoPor.style.display = 'none';
+            aprovadoPorInput.removeAttribute('required');
+            aprovadoPorInput.value = ''; // Limpa o campo se desmarcado
+        }
+    }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    toggleCamposCondicionais(); // Chamada inicial para configurar a visibilidade
+    toggleAprovadoPor();      // Chamada inicial para o campo 'Aprovado Por'
+
+    const sistemaSelect = document.getElementById('sistema');
+    const linguagemInput = document.getElementById('linguagem');
+    const aprovadoCheckbox = document.getElementById('aprovado');
+
+    if (sistemaSelect) {
+        sistemaSelect.addEventListener('change', toggleCamposCondicionais);
+    }
+    if (linguagemInput) {
+        linguagemInput.addEventListener('input', toggleCamposCondicionais);
+    }
+    if (aprovadoCheckbox) {
+        aprovadoCheckbox.addEventListener('change', toggleAprovadoPor);
+    }
+
+  
+});
+
+
 
 function toggleAprovadoPor() {
   const aprovado = document.getElementById('aprovado').checked;
@@ -145,6 +217,7 @@ function confirmarSalvarScript() {
   const sistema = document.getElementById('sistema').value;
   const arquivoJson = document.getElementById('arquivo_json').files[0];
   const arquivoMrd = document.getElementById('arquivo_mrd').files[0];
+  const arquivoDll = document.getElementById('arquivo_dll')?.files[0];
   const aprovado = document.getElementById('aprovado').checked;
   const aprovadoPor = document.getElementById('aprovado_por').value.trim();
   const imagens = document.getElementById('imagens').files;
@@ -176,7 +249,7 @@ function confirmarSalvarScript() {
       });
       return;
     }
-    if (!arquivoMrd || !arquivoMrd.name.endsWith('.json')) {
+    if (arquivoMrd && !arquivoMrd.name.endsWith('.json')) {
       Swal.fire({
         icon: 'warning',
         title: 'Formato inválido',
@@ -184,23 +257,22 @@ function confirmarSalvarScript() {
       });
       return;
     }
-  } else if (sistema === 'Laudos Flex') {
-    if (!arquivoMrd) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Arquivo MRD obrigatório',
-        text: 'Você deve selecionar um arquivo MRD para o sistema Laudos Flex.'
-      });
-      return;
-    }
-    if (!arquivoMrd.name.endsWith('.mrd')) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'O arquivo MRD para Laudos Flex deve ter a extensão .mrd.'
-      });
-      return;
-    }
+  } else if (sistema === 'Laudos Flex' && arquivoMrd && !arquivoMrd.name.endsWith('.mrd')) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Formato inválido',
+      text: 'O arquivo MRD para Laudos Flex deve ter a extensão .mrd.'
+    });
+    return;
+  }
+
+  if (arquivoDll && !arquivoDll.name.endsWith('.dll')) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Formato inválido',
+      text: 'O arquivo DLL deve ter a extensão .dll.'
+    });
+    return;
   }
 
   if (aprovado && !aprovadoPor) {

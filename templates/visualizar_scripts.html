@@ -260,15 +260,27 @@
                         <i class="bi bi-info-circle-fill"></i> Detalhes
                     </button>
                     <div class="btn-group">
-                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-tooltip="tooltip" title="Mais Ações">
-                        <i class="bi bi-gear-fill"></i> Ações
-                        </button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                      data-bs-toggle="dropdown" aria-expanded="false" 
+                      {# data-bs-tooltip="tooltip" title="Mais Ações" #} {# Temporariamente comentado #}
+                      title="Mais Ações"> 
+                  <i class="bi bi-gear-fill"></i> Ações
+              </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="{{ url_for('scripts.vincular_variaveis', codscriptlaudo=item.script[0]) }}"><i class="bi bi-link-45deg me-2"></i>Vincular Variáveis</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('scripts.editar_script', codscriptlaudo=item.script[0]) }}"><i class="bi bi-pencil-fill me-2"></i>Editar</a></li>
                         {% if item.script[5] == 'Laudos UX' and item.tem_arquivo_json %}
                             <li><a class="dropdown-item" href="{{ url_for('scripts.exportar_json', codscriptlaudo=item.script[0]) }}"><i class="bi bi-file-earmark-arrow-down-fill me-2"></i>Exportar JSON</a></li>
                         {% endif %}
+                        {% if item.script[5] == 'Laudos Flex' and item.script[12] %} {# item.script[5] é SISTEMA, item.script[12] é CAMINHO_AZURE #}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <a class="dropdown-item" href="{{ url_for('scripts.baixar_projeto_azure', codscriptlaudo=item.script[0]) }}" target="_blank" title="Baixar o código fonte do projeto do Azure DevOps">
+                            <i class="bi bi-cloud-download-fill me-2"></i>Baixar Projeto Azure
+                          </a>
+                        </li>
+                      {% endif %}
+
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#" onclick="toggleAprovacao({{ item.script[0] }}, {{ item.script[6] }}); return false;">
                             <i class="bi bi-{% if item.script[6] %}hand-thumbs-down-fill text-danger{% else %}hand-thumbs-up-fill text-success{% endif %} me-2"></i> {{ 'Desaprovar' if item.script[6] else 'Aprovar' }}
@@ -470,6 +482,8 @@
     transform: translateY(-4px);
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
     border-color: var(--bs-primary); /* Cor da borda no hover - usando a cor primária do Bootstrap */
+    position: relative;
+    z-index: 1; /* Valor baixo para os cards */
 
   }
 

@@ -118,7 +118,7 @@ Equipe Laudos
         <div class="header">
             <img src="cid:logo" alt="Laudos Logo" class="logo">
         </div>
-        <div class="content">
+                <div class="content">
             <h2>Olá,</h2>
             <p>Estamos felizes em compartilhar com você as imagens do script <strong>{script_name}</strong>, desenvolvido para otimizar e agilizar seus laudos médicos com precisão e eficiência.</p>
             <p>Em anexo, você encontrará capturas de tela que demonstram a interface e os recursos do script. Acreditamos que essas ferramentas podem transformar sua prática clínica, economizando tempo e melhorando a qualidade dos diagnósticos.</p>
@@ -200,11 +200,14 @@ def novo_script():
         descricao = request.form['descricao'].strip() or None
         linguagem = request.form['linguagem'].strip() or None
         caminho_projeto = request.form['caminho_projeto'].strip() or None
+        caminho_azure = request.form['caminho_azure'].strip() or None
         sistema = request.form['sistema'].strip() or None
         aprovado = 1 if 'aprovado' in request.form else 0
         aprovado_por = request.form['aprovado_por'].strip() or None if aprovado else None
         ativo = 1 if 'ativo' in request.form else 0
         arquivo_json = request.files.get('arquivo_json')
+        arquivo_mrd = request.files.get('arquivo_mrd')
+        arquivo_dll = request.files.get('arquivo_dll')
         imagens = request.files.getlist('imagens[]')
         pdfs = request.files.getlist('pdfs[]')
 
@@ -231,6 +234,23 @@ def novo_script():
                 return redirect(request.url)
             arquivo_json_blob = arquivo_json.read()
 
+        arquivo_mrd_blob = None
+        if arquivo_mrd:
+            if sistema == 'Laudos UX' and not arquivo_mrd.filename.endswith('.json'):
+                flash("O arquivo MRD para Laudos UX deve ser no formato JSON.", "error")
+                return redirect(request.url)
+            if sistema == 'Laudos Flex' and not arquivo_mrd.filename.endswith('.mrd'):
+                flash("O arquivo MRD para Laudos Flex deve ser no formato .mrd.", "error")
+                return redirect(request.url)
+            arquivo_mrd_blob = arquivo_mrd.read()
+
+        arquivo_dll_blob = None
+        if arquivo_dll and linguagem.upper() == 'C#':
+            if not arquivo_dll.filename.endswith('.dll'):
+                flash("O arquivo DLL deve ser no formato .dll.", "error")
+                return redirect(request.url)
+            arquivo_dll_blob = arquivo_dll.read()
+
         if linguagem and linguagem.upper() == 'C#' and not caminho_projeto:
             flash("O caminho do projeto é recomendado para scripts C#.", "warning")
 
@@ -240,11 +260,11 @@ def novo_script():
 
         try:
             cur.execute("""
-                INSERT INTO SCRIPTLAUDO (NOME, CODPACOTE, DESCRICAO, LINGUAGEM, CAMINHO_PROJETO, SISTEMA, APROVADO, DATA_VERIFICACAO, APROVADO_POR, ATIVO, ARQUIVO_JSON)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO SCRIPTLAUDO (NOME, CODPACOTE, DESCRICAO, LINGUAGEM, CAMINHO_PROJETO, CAMINHO_AZURE, SISTEMA, APROVADO, DATA_VERIFICACAO, APROVADO_POR, ATIVO, ARQUIVO_JSON, MRD, DLL)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING CODSCRIPTLAUDO
-            """, (nome, codpacote, descricao, linguagem, caminho_projeto, sistema, aprovado,
-                  datetime.now() if aprovado else None, aprovado_por, ativo, arquivo_json_blob))
+            """, (nome, codpacote, descricao, linguagem, caminho_projeto, caminho_azure, sistema, aprovado,
+                  datetime.now() if aprovado else None, aprovado_por, ativo, arquivo_json_blob, arquivo_mrd_blob, arquivo_dll_blob))
             codscriptlaudo = cur.fetchone()[0]
 
             # Salvar imagens
@@ -270,7 +290,7 @@ def novo_script():
             conn.commit()
             current_app.logger.info(f"Script CODSCRIPTLAUDO={codscriptlaudo} cadastrado com sucesso.")
             flash("Script cadastrado com sucesso!", "success")
-            return redirect(url_for('variaveis.home'))
+            return redirect(url_for('scripts.novo_script'))
         except Exception as e:
             conn.rollback()
             current_app.logger.error(f"Erro ao cadastrar script: {str(e)}")
@@ -297,11 +317,14 @@ def editar_script(codscriptlaudo):
         descricao = request.form['descricao'].strip() or None
         linguagem = request.form['linguagem'].strip() or None
         caminho_projeto = request.form['caminho_projeto'].strip() or None
+        caminho_azure = request.form['caminho_azure'].strip() or None
         sistema = request.form['sistema'].strip() or None
         aprovado = 1 if 'aprovado' in request.form else 0
         aprovado_por = request.form['aprovado_por'].strip() or None if aprovado else None
         ativo = 1 if 'ativo' in request.form else 0
         arquivo_json = request.files.get('arquivo_json')
+        arquivo_mrd = request.files.get('arquivo_mrd')
+        arquivo_dll = request.files.get('arquivo_dll')
         imagens = request.files.getlist('imagens[]')
         pdfs = request.files.getlist('pdfs[]')
 
@@ -321,9 +344,26 @@ def editar_script(codscriptlaudo):
         arquivo_json_blob = None
         if sistema == 'Laudos UX' and arquivo_json and arquivo_json.filename:
             if not arquivo_json.filename.endswith('.json'):
-                flash("O arquivo deve ser no formato JSON.", "error")
+                flash("O arquivo JSON deve ser no formato JSON.", "error")
                 return redirect(request.url)
             arquivo_json_blob = arquivo_json.read()
+
+        arquivo_mrd_blob = None
+        if arquivo_mrd and arquivo_mrd.filename:
+            if sistema == 'Laudos UX' and not arquivo_mrd.filename.endswith('.json'):
+                flash("O arquivo MRD para Laudos UX deve ser no formato JSON.", "error")
+                return redirect(request.url)
+            if sistema == 'Laudos Flex' and not arquivo_mrd.filename.endswith('.mrd'):
+                flash("O arquivo MRD para Laudos Flex deve ser no formato .mrd.", "error")
+                return redirect(request.url)
+            arquivo_mrd_blob = arquivo_mrd.read()
+
+        arquivo_dll_blob = None
+        if arquivo_dll and arquivo_dll.filename and linguagem.upper() == 'C#':
+            if not arquivo_dll.filename.endswith('.dll'):
+                flash("O arquivo DLL deve ser no formato .dll.", "error")
+                return redirect(request.url)
+            arquivo_dll_blob = arquivo_dll.read()    
 
         if linguagem and linguagem.upper() == 'C#' and not caminho_projeto:
             flash("O caminho do projeto é recomendado para scripts C#.", "warning")
@@ -335,16 +375,15 @@ def editar_script(codscriptlaudo):
         try:
             cur.execute("""
                 UPDATE SCRIPTLAUDO
-                SET NOME = ?, CODPACOTE = ?, DESCRICAO = ?, LINGUAGEM = ?, CAMINHO_PROJETO = ?, 
+                SET NOME = ?, CODPACOTE = ?, DESCRICAO = ?, LINGUAGEM = ?, CAMINHO_PROJETO = ?, CAMINHO_AZURE = ?,  
                     SISTEMA = ?, APROVADO = ?, DATA_VERIFICACAO = CASE WHEN ? = 1 THEN COALESCE(DATA_VERIFICACAO, CURRENT_TIMESTAMP) ELSE NULL END,
-                    APROVADO_POR = ?, ATIVO = ?, ARQUIVO_JSON = COALESCE(?, ARQUIVO_JSON)
+                    APROVADO_POR = CASE WHEN ? = 1 THEN ? ELSE NULL END, ATIVO = ?, ARQUIVO_JSON = COALESCE(?, ARQUIVO_JSON), MRD = COALESCE(?, MRD), DLL = COALESCE(?, DLL)
                 WHERE CODSCRIPTLAUDO = ?
-            """, (nome, codpacote, descricao, linguagem, caminho_projeto, sistema, aprovado, aprovado, aprovado_por, ativo, arquivo_json_blob, codscriptlaudo))
+            """, (nome, codpacote, descricao, linguagem, caminho_projeto, caminho_azure, sistema, aprovado, aprovado, aprovado, aprovado_por, ativo, arquivo_json_blob, arquivo_mrd_blob, arquivo_dll_blob, codscriptlaudo))
             if cur.rowcount == 0:
                 flash("Script não encontrado.", "error")
                 return redirect(url_for('scripts.visualizar_scripts'))
 
-            # Salvar novas imagens
             for imagem in imagens:
                 if imagem and imagem.filename:
                     caminho, nome_arquivo = save_file(imagem, 'static/uploads/interfaces', f"interface_{codscriptlaudo}")
@@ -354,7 +393,6 @@ def editar_script(codscriptlaudo):
                             VALUES (?, 'IMAGEM', ?, ?, ?, CURRENT_TIMESTAMP)
                         """, (codscriptlaudo, caminho, nome_arquivo, codusuario))
 
-            # Salvar novos PDFs
             for pdf in pdfs:
                 if pdf and pdf.filename:
                     caminho, nome_arquivo = save_file(pdf, 'static/uploads/impressoes', f"impressao_{codscriptlaudo}")
@@ -376,8 +414,11 @@ def editar_script(codscriptlaudo):
 
     try:
         cur.execute("""
-            SELECT NOME, DESCRICAO, LINGUAGEM, CAMINHO_PROJETO, SISTEMA, CODPACOTE, APROVADO, DATA_VERIFICACAO, ATIVO,
-                   CASE WHEN ARQUIVO_JSON IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_JSON, APROVADO_POR
+            SELECT NOME, DESCRICAO, LINGUAGEM, CAMINHO_PROJETO, CAMINHO_AZURE, SISTEMA, CODPACOTE, APROVADO, DATA_VERIFICACAO, ATIVO,
+                   CASE WHEN ARQUIVO_JSON IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_JSON,
+                   CASE WHEN MRD IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_MRD,
+                   CASE WHEN DLL IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_DLL,
+                   APROVADO_POR
             FROM SCRIPTLAUDO
             WHERE CODSCRIPTLAUDO = ?
         """, (codscriptlaudo,))
@@ -387,7 +428,6 @@ def editar_script(codscriptlaudo):
             flash("Script não encontrado.", "error")
             return redirect(url_for('scripts.visualizar_scripts'))
 
-        # Buscar arquivos
         cur.execute("""
             SELECT CODARQUIVO, TIPO, CAMINHO, NOME_ARQUIVO
             FROM SCRIPT_ARQUIVOS
@@ -403,13 +443,16 @@ def editar_script(codscriptlaudo):
             'descricao': script[1] or '',
             'linguagem': script[2] or '',
             'caminho_projeto': script[3] or '',
-            'sistema': script[4] or '',
-            'codpacote': script[5],
-            'aprovado': bool(script[6]),
-            'data_verificacao': script[7],
-            'ativo': bool(script[8]),
-            'tem_arquivo_json': bool(script[9]),
-            'aprovado_por': script[10],
+            'caminho_azure': script[4] or '',
+            'sistema': script[5] or '',
+            'codpacote': script[6],
+            'aprovado': bool(script[7]),
+            'data_verificacao': script[8],
+            'ativo': bool(script[9]),
+            'tem_arquivo_json': bool(script[10]),
+            'tem_arquivo_mrd': bool(script[11]),
+            'tem_arquivo_dll': bool(script[12]),
+            'aprovado_por': script[13] if script[13] is not None else '',
             'imagens': imagens,
             'pdfs': pdfs
         }
@@ -429,33 +472,34 @@ def visualizar_scripts():
         return redirect(url_for('auth.login'))
 
     conn, cur = get_db()
+    # ... (lógica de paginação e filtros existente) ...
     itens_por_pagina = 10
     pagina = request.args.get('page', 1, type=int)
     offset = (pagina - 1) * itens_por_pagina
 
     nome = request.args.get('nome', '').strip()
-    sistema = request.args.get('sistema', '').strip()
-    pacote = request.args.get('pacote', '').strip()
-    aprovado = request.args.get('aprovado', '').strip()
-    ativo = request.args.get('ativo', '').strip()
+    sistema_filtro = request.args.get('sistema', '').strip() # Renomeado para evitar conflito com s.SISTEMA
+    pacote_filtro = request.args.get('pacote', '').strip()   # Renomeado
+    aprovado_filtro = request.args.get('aprovado', '').strip() # Renomeado
+    ativo_filtro = request.args.get('ativo', '').strip()     # Renomeado
 
     where_clauses = []
     params = []
     if nome:
         where_clauses.append("UPPER(s.NOME) LIKE UPPER(?)")
         params.append(f"%{nome}%")
-    if sistema in ('Laudos UX', 'Laudos Flex'):
+    if sistema_filtro in ('Laudos UX', 'Laudos Flex'): # Usar a variável de filtro
         where_clauses.append("s.SISTEMA = ?")
-        params.append(sistema)
-    if pacote:
+        params.append(sistema_filtro)
+    if pacote_filtro: # Usar a variável de filtro
         where_clauses.append("s.CODPACOTE = ?")
-        params.append(pacote)
-    if aprovado in ('0', '1'):
+        params.append(pacote_filtro)
+    if aprovado_filtro in ('0', '1'): # Usar a variável de filtro
         where_clauses.append("s.APROVADO = ?")
-        params.append(aprovado)
-    if ativo in ('0', '1'):
+        params.append(aprovado_filtro)
+    if ativo_filtro in ('0', '1'): # Usar a variável de filtro
         where_clauses.append("s.ATIVO = ?")
-        params.append(ativo)
+        params.append(ativo_filtro)
 
     where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
 
@@ -464,27 +508,31 @@ def visualizar_scripts():
         FROM SCRIPTLAUDO s
         {where_sql}
     """, params)
-    total_scripts = cur.fetchone()[0]
-    total_paginas = (total_scripts + itens_por_pagina - 1) // itens_por_pagina
+    total_scripts_result = cur.fetchone()
+    total_scripts = total_scripts_result[0] if total_scripts_result else 0
+    total_paginas = (total_scripts + itens_por_pagina - 1) // itens_por_pagina if total_scripts > 0 else 0
 
+
+    # AJUSTE: Adicionar s.CAMINHO_AZURE à consulta
     query = f"""
         SELECT FIRST {itens_por_pagina} SKIP {offset}
             s.CODSCRIPTLAUDO, s.NOME, s.DESCRICAO, s.LINGUAGEM, s.CAMINHO_PROJETO, s.SISTEMA,
             s.APROVADO, s.DATA_VERIFICACAO, s.ATIVO,
             CASE WHEN s.ARQUIVO_JSON IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_JSON,
-            s.APROVADO_POR, p.NOME
+            s.APROVADO_POR, p.NOME AS NOME_PACOTE, s.CAMINHO_AZURE 
+          
         FROM SCRIPTLAUDO s
         LEFT JOIN PACOTES p ON s.CODPACOTE = p.CODPACOTE
         {where_sql}
         ORDER BY s.NOME
     """
     cur.execute(query, params)
-    scripts = cur.fetchall()
+    scripts_list = cur.fetchall() # Renomeado para scripts_list
 
     scripts_detalhes = []
-    for script in scripts:
-        codscriptlaudo = script[0]
-        # Buscar variáveis vinculadas
+    for script_tuple in scripts_list: # Renomeado para script_tuple
+        codscriptlaudo = script_tuple[0]
+        # ... (lógica existente para buscar variáveis, imagens, pdfs) ...
         cur.execute("""
             SELECT v.VARIAVEL, v.NOME
             FROM SCRIPTLAUDO_VARIAVEL sv
@@ -494,7 +542,6 @@ def visualizar_scripts():
         """, (codscriptlaudo,))
         variaveis = cur.fetchall()
 
-        # Buscar arquivos de imagem e PDF
         cur.execute("""
             SELECT TIPO, CAMINHO, NOME_ARQUIVO
             FROM SCRIPT_ARQUIVOS
@@ -506,12 +553,13 @@ def visualizar_scripts():
         pdfs = [{'caminho': row[1], 'nome': row[2]} for row in arquivos if row[0] == 'PDF']
 
         scripts_detalhes.append({
-            'script': script,
+            'script': script_tuple, # Passa a tupla inteira
             'variaveis': variaveis,
-            'tem_arquivo_json': bool(script[9]),
-            'pacote_nome': script[11],
+            'tem_arquivo_json': bool(script_tuple[9]), # Correto, baseado na consulta
+            'pacote_nome': script_tuple[11], # Correto, baseado na consulta
             'imagens': imagens,
             'pdfs': pdfs
+            # O CAMINHO_AZURE estará em script_tuple[12]
         })
 
     cur.execute("SELECT CODPACOTE, NOME, DESCRICAO FROM PACOTES ORDER BY NOME")
@@ -521,11 +569,12 @@ def visualizar_scripts():
                            scripts_detalhes=scripts_detalhes,
                            pagina=pagina,
                            total_paginas=total_paginas,
-                           nome=nome,
-                           sistema=sistema,
-                           pacote=pacote,
-                           aprovado=aprovado,
-                           ativo=ativo,
+                           total_scripts=total_scripts, # Passando total_scripts
+                           nome=nome, # Filtro de nome
+                           sistema=sistema_filtro, # Filtro de sistema
+                           pacote=pacote_filtro,   # Filtro de pacote
+                           aprovado=aprovado_filtro, # Filtro de aprovado
+                           ativo=ativo_filtro,     # Filtro de ativo
                            pacotes=pacotes)
 
 @scripts_bp.route('/exportar_json/<int:codscriptlaudo>')
@@ -842,4 +891,29 @@ def excluir_arquivo(codarquivo):
         return redirect(url_for('scripts.visualizar_scripts'))
     
 
+@scripts_bp.route('/baixar_projeto_azure/<int:codscriptlaudo>')
+def baixar_projeto_azure(codscriptlaudo):
+    if 'usuario' not in session:
+        flash("Acesso negado.", "error")
+        return redirect(url_for('auth.login'))
 
+    conn, cur = get_db()
+    cur.execute("SELECT CAMINHO_AZURE, NOME, SISTEMA FROM SCRIPTLAUDO WHERE CODSCRIPTLAUDO = ?", (codscriptlaudo,))
+    script = cur.fetchone()
+
+    if not script:
+        flash("Script não encontrado.", "error")
+        return redirect(url_for('scripts.visualizar_scripts'))
+
+    caminho_azure, nome_script, sistema = script
+
+    if sistema != 'Laudos Flex' or not caminho_azure:
+        flash("Download de projeto Azure não aplicável ou caminho não configurado para este script.", "warning")
+        return redirect(url_for('scripts.visualizar_scripts'))
+
+    if caminho_azure.startswith('http://') or caminho_azure.startswith('https://'):
+        flash(f"Você será redirecionado para o repositório '{nome_script}' no Azure DevOps.", "info")
+        return redirect(caminho_azure)
+    
+    flash("Caminho do projeto Azure DevOps configurado não é uma URL válida.", "error")
+    return redirect(url_for('scripts.visualizar_scripts'))

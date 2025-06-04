@@ -1,98 +1,140 @@
 {% extends 'layout.html' %}
 
+{% block title %}Cadastrar Novo Script{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-plus-circle me-2"></i> Cadastrar Novo Script
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-file-earmark-plus-fill me-2 icon-gradient"></i> Cadastrar Novo Script
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
 <div class="container">
   <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0 text-primary">Informações do Novo Script</h5>
+    </div>
     <div class="card-body">
-      <form method="POST" enctype="multipart/form-data">
-        <h5 class="text-primary">Informações do Script</h5>
-        <div class="mb-3">
-          <label class="form-label">Nome do Script *</label>
-          <input type="text" class="form-control" id="nome" name="nome" required>
+      {# Adicionado needs-validation e novalidate para controle customizado de validação Bootstrap #}
+      <form method="POST" enctype="multipart/form-data" id="novoScriptForm" class="needs-validation" novalidate>
+        
+        <div class="row g-3">
+            <div class="col-md-6">
+              <label for="nome" class="form-label">Nome do Script <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="nome" name="nome" placeholder="Nome descritivo e único para o script" required>
+              <div class="invalid-feedback">Nome do script é obrigatório.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="codpacote" class="form-label">Pacote</label>
+              <select name="codpacote" id="codpacote" class="form-select">
+                <option value="">Nenhum</option>
+                {% for pacote_item in pacotes %}
+                  <option value="{{ pacote_item[0] }}">{{ pacote_item[1] }}{% if pacote_item[2] %}  {{ '' }}{% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label for="sistema" class="form-label">Sistema <span class="text-danger">*</span></label>
+              <select name="sistema" id="sistema" class="form-select" required>
+                <option value="" selected disabled>Selecione um sistema...</option>
+                <option value="Laudos UX">Laudos UX</option>
+                <option value="Laudos Flex">Laudos Flex</option>
+              </select>
+              <div class="invalid-feedback">Sistema é obrigatório.</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label for="linguagem" class="form-label">Linguagem</label>
+              <input type="text" class="form-control" id="linguagem" name="linguagem" placeholder="Ex.: C#, HTML, Texto Livre">
+            </div>
+
+            {# Campos Condicionais #}
+            <div class="col-md-12" id="campo-arquivo-json" style="display: none;">
+              <label for="arquivo_json" class="form-label">Arquivo JSON (Laudos UX) <span class="text-danger">*</span></label>
+              <input type="file" class="form-control" id="arquivo_json" name="arquivo_json" accept=".json">
+              <div class="invalid-feedback">Arquivo JSON é obrigatório e deve ser .json para Laudos UX.</div>
+            </div>
+            
+            <div class="col-md-12" id="campo-arquivo-mrd" style="display: none;">
+              <label for="arquivo_mrd" class="form-label">Arquivo MRD (Opcional)</label>
+              <input type="file" class="form-control" id="arquivo_mrd" name="arquivo_mrd"> {# Accept será definido por JS #}
+              <small class="form-text text-muted">Para Laudos UX, deve ser .json. Para Laudos Flex, deve ser .mrd.</small>
+              <div class="invalid-feedback">Formato de arquivo MRD inválido para o sistema selecionado.</div>
+            </div>
+
+            <div class="col-md-12" id="campo-caminho-projeto" style="display: none;">
+              <label for="caminho_projeto" class="form-label">Caminho do Projeto (C# - Opcional)</label>
+              <input type="text" class="form-control" id="caminho_projeto" name="caminho_projeto" placeholder="Ex.: C:\\Projetos\\MeuScript ou \\\\servidor\\share\\projeto">
+              <small class="form-text text-muted">Caminho local ou de rede para o projeto C# (se aplicável, não Azure).</small>
+            </div>
+
+            <div class="col-md-12" id="campo-arquivo-dll" style="display: none;">
+              <label for="arquivo_dll" class="form-label">Arquivo DLL (Opcional para C#)</label>
+              <input type="file" class="form-control" id="arquivo_dll" name="arquivo_dll" accept=".dll">
+              <small class="form-text text-muted">Selecione o arquivo .dll compilado do projeto C#.</small>
+              <div class="invalid-feedback">Arquivo DLL deve ter a extensão .dll.</div>
+            </div>
+            
+            <div class="col-md-12" id="campo-caminho-azure" style="display: none;">
+              <label for="caminho_azure" class="form-label">Caminho do Projeto no Azure DevOps (Opcional)</label>
+              <input type="url" class="form-control" id="caminho_azure" name="caminho_azure" placeholder="Ex: https://dev.azure.com/suaorg/seuprojeto/_git/seurepo">
+              <small class="form-text text-muted">URL do repositório Git no Azure DevOps (para scripts C# no Laudos Flex).</small>
+            </div>
+
+            <div class="col-12">
+              <label for="descricao" class="form-label">Descrição</label>
+              <textarea class="form-control" id="descricao" name="descricao" rows="3" maxlength="500" placeholder="Descreva a funcionalidade ou propósito do script"></textarea>
+              <small class="form-text text-muted">Máximo de 500 caracteres. <span id="charCountDescricao">0/500</span></small>
+            </div>
+
+            <div class="col-md-6">
+              <label for="imagens" class="form-label">Imagens da Interface (PNG, JPG - Opcional)</label>
+              <input type="file" class="form-control" id="imagens" name="imagens[]" accept=".png,.jpg,.jpeg" multiple>
+              <small class="form-text text-muted">Máx. 5MB por imagem.</small>
+            </div>
+
+            <div class="col-md-6">
+              <label for="pdfs" class="form-label">Impressões (PDF - Opcional)</label>
+              <input type="file" class="form-control" id="pdfs" name="pdfs[]" accept=".pdf" multiple>
+              <small class="form-text text-muted">Máx. 5MB por PDF.</small>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-check form-switch mt-4">
+                    <input type="checkbox" class="form-check-input" id="aprovado" name="aprovado">
+                    <label class="form-check-label" for="aprovado">Script Aprovado</label>
+                </div>
+            </div>
+            <div class="col-md-6" id="campo-aprovado-por" style="display: none;">
+              <label for="aprovado_por" class="form-label">Aprovado Por <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="aprovado_por" name="aprovado_por" placeholder="Nome de quem aprovou">
+              <div class="invalid-feedback">Campo obrigatório se o script estiver aprovado.</div>
+            </div>
+            
+            <div class="col-md-12">
+                <div class="form-check form-switch">
+                    <input type="checkbox" class="form-check-input" id="ativo" name="ativo" checked>
+                    <label class="form-check-label" for="ativo">Script Ativo</label>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Pacote</label>
-          <select name="codpacote" id="codpacote" class="form-select">
-            <option value="">Nenhum</option>
-            {% for pacote in pacotes %}
-              <option value="{{ pacote[0] }}">{{ pacote[1] }}{% if pacote[2] %} - {{ pacote[2] }}{% endif %}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Sistema</label>
-          <select name="sistema" id="sistema" class="form-select" onchange="toggleCamposSistema()">
-            <option value="">Nenhum</option>
-            <option value="Laudos UX">Laudos UX</option>
-            <option value="Laudos Flex">Laudos Flex</option>
-          </select>
-        </div>
-        <div class="mb-3" id="campo-arquivo-json" style="display: none;">
-          <label class="form-label">Arquivo JSON (Laudos UX) *</label>
-          <input type="file" class="form-control" id="arquivo_json" name="arquivo_json" accept=".json">
-        </div>
-        <div class="mb-3" id="campo-arquivo-mrd" style="display: none;">
-          <label class="form-label">Arquivo MRD</label>
-          <input type="file" class="form-control" id="arquivo_mrd" name="arquivo_mrd" accept=".json,.mrd">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Linguagem</label>
-          <input type="text" class="form-control" id="linguagem" name="linguagem" placeholder="Ex.: C#, HTML" oninput="toggleCampoCaminhoProjeto()">
-        </div>
-        <div class="mb-3" id="campo-caminho-projeto" style="display: none;">
-          <label class="form-label">Caminho do Projeto (C#)</label>
-          <input type="text" class="form-control" id="caminho_projeto" name="caminho_projeto" placeholder="Ex.: /caminho/do/projeto">
-        </div>
-        <div class="mb-3" id="campo-caminho-azure" style="display: none;">
-          <label class="form-label">Caminho do Projeto no Azure DevOps (C#)</label>
-          <input type="text" class="form-control" id="caminho_azure" name="caminho_azure" placeholder="Ex.: https://dev.azure.com/org/project/_git/repo">
-        </div>
-        <div class="mb-3" id="campo-arquivo-dll" style="display: none;">
-          <label class="form-label">Arquivo DLL (C#)</label>
-          <input type="file" class="form-control" id="arquivo_dll" name="arquivo_dll" accept=".dll">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Descrição</label>
-          <textarea class="form-control" id="descricao" name="descricao" rows="5" maxlength="500" placeholder="Descreva a funcionalidade ou propósito do script"></textarea>
-          <small class="form-text text-muted">Máximo de 500 caracteres.</small>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Imagens da Interface (PNG, JPG)</label>
-          <input type="file" class="form-control" id="imagens" name="imagens[]" accept=".png,.jpg,.jpeg" multiple>
-          <small class="form-text text-muted">Selecione uma ou mais imagens (máximo 5MB cada).</small>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Impressões (PDF)</label>
-          <input type="file" class="form-control" id="pdfs" name="pdfs[]" accept=".pdf" multiple>
-          <small class="form-text text-muted">Selecione um ou mais PDFs (máximo 5MB cada).</small>
-        </div>
-        <div class="mb-3 form-check">
-          <input type="checkbox" class="form-check-input" id="aprovado" name="aprovado" onchange="toggleAprovadoPor()">
-          <label class="form-check-label" for="aprovado">Aprovado</label>
-        </div>
-        <div class="mb-3" id="campo-aprovado-por" style="display: none;">
-          <label class="form-label">Aprovado Por *</label>
-          <input type="text" class="form-control" id="aprovado_por" name="aprovado_por" placeholder="Ex.: Dr. João Silva ou Clínica São Paulo">
-        </div>
-        <div class="mb-3 form-check">
-          <input type="checkbox" class="form-check-input" id="ativo" name="ativo" checked>
-          <label class="form-check-label" for="ativo">Ativo</label>
-        </div>
-        <div class="text-end">
-          <button type="button" class="btn btn-success" onclick="confirmarSalvarScript()">
-            <i class="bi bi-save"></i> Salvar
+
+        <div class="text-end mt-4 pt-3 border-top">
+          <button type="button" class="btn btn-success btn-lg" onclick="confirmarSalvarScript()">
+            <i class="bi bi-save-fill me-1"></i> Salvar Script
           </button>
-          <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
+          <a href="{{ url_for('scripts.visualizar_scripts') }}" class="btn btn-outline-secondary"> {# Ajustado para voltar para a lista de scripts #}
+            <i class="bi bi-x-circle me-1"></i> Cancelar
           </a>
         </div>
       </form>
@@ -114,37 +156,37 @@ function toggleCamposCondicionais() {
     const campoArquivoMrd = document.getElementById('campo-arquivo-mrd');
     const arquivoMrdInput = document.getElementById('arquivo_mrd');
 
-    const campoCaminhoProjeto = document.getElementById('campo-caminho-projeto'); // C# Geral
-    const campoArquivoDll = document.getElementById('campo-arquivo-dll');     // C# Geral
-    const campoCaminhoAzure = document.getElementById('campo-caminho-azure'); // C# + Laudos Flex
+    const campoCaminhoProjeto = document.getElementById('campo-caminho-projeto');
+    const campoArquivoDll = document.getElementById('campo-arquivo-dll');
+    const campoCaminhoAzure = document.getElementById('campo-caminho-azure');
 
-    // Visibilidade do Arquivo JSON (somente Laudos UX)
-    if (campoArquivoJson) {
+    if (campoArquivoJson && arquivoJsonInput) {
         campoArquivoJson.style.display = (sistema === 'Laudos UX') ? 'block' : 'none';
-        if (arquivoJsonInput) {
-            if (sistema === 'Laudos UX' && !arquivoJsonInput.value && !document.querySelector('input[name="codscriptlaudo"]')) { // Apenas obrigatório em novo_script
+        if (sistema === 'Laudos UX') {
+            // Verifica se é um novo script. Em editar, o 'required' pode ser diferente.
+            // Assumindo que um formulário de novo script não terá um input 'codscriptlaudo'
+            if (!document.querySelector('input[name="codscriptlaudo"]')) { 
                 arquivoJsonInput.setAttribute('required', 'required');
             } else {
-                arquivoJsonInput.removeAttribute('required');
+                 arquivoJsonInput.removeAttribute('required'); // Não é obrigatório se já existir um ao editar
             }
+        } else {
+            arquivoJsonInput.removeAttribute('required');
         }
     }
 
-    // Visibilidade e tipo do Arquivo MRD
-    if (campoArquivoMrd) {
+    if (campoArquivoMrd && arquivoMrdInput) {
         campoArquivoMrd.style.display = (sistema === 'Laudos UX' || sistema === 'Laudos Flex') ? 'block' : 'none';
-        if (arquivoMrdInput) {
-            if (sistema === 'Laudos UX') {
-                arquivoMrdInput.setAttribute('accept', '.json');
-            } else if (sistema === 'Laudos Flex') {
-                arquivoMrdInput.setAttribute('accept', '.mrd');
-            } else {
-                arquivoMrdInput.removeAttribute('accept');
-            }
+        if (sistema === 'Laudos UX') {
+            arquivoMrdInput.setAttribute('accept', '.json');
+        } else if (sistema === 'Laudos Flex') {
+            arquivoMrdInput.setAttribute('accept', '.mrd');
+        } else {
+            arquivoMrdInput.removeAttribute('accept');
         }
+        arquivoMrdInput.removeAttribute('required'); // MRD não é obrigatório
     }
 
-    // Visibilidade do Caminho do Projeto e DLL (somente C#)
     const isCSharp = (linguagem === 'C#');
     if (campoCaminhoProjeto) {
         campoCaminhoProjeto.style.display = isCSharp ? 'block' : 'none';
@@ -152,8 +194,6 @@ function toggleCamposCondicionais() {
     if (campoArquivoDll) {
         campoArquivoDll.style.display = isCSharp ? 'block' : 'none';
     }
-
-    // Visibilidade do Caminho Azure DevOps (C# E Laudos Flex)
     if (campoCaminhoAzure) {
         campoCaminhoAzure.style.display = (isCSharp && sistema === 'Laudos Flex') ? 'block' : 'none';
     }
@@ -164,26 +204,27 @@ function toggleAprovadoPor() {
     const campoAprovadoPor = document.getElementById('campo-aprovado-por');
     const aprovadoPorInput = document.getElementById('aprovado_por');
 
-    if (aprovadoCheckbox && campoAprovadoPor && aprovadoPorInput) {
-        if (aprovadoCheckbox.checked) {
-            campoAprovadoPor.style.display = 'block';
-            aprovadoPorInput.setAttribute('required', 'required');
-        } else {
-            campoAprovadoPor.style.display = 'none';
-            aprovadoPorInput.removeAttribute('required');
-            aprovadoPorInput.value = ''; // Limpa o campo se desmarcado
-        }
+    if (!aprovadoCheckbox || !campoAprovadoPor || !aprovadoPorInput) return;
+
+    if (aprovadoCheckbox.checked) {
+        campoAprovadoPor.style.display = 'block';
+        aprovadoPorInput.setAttribute('required', 'required');
+    } else {
+        campoAprovadoPor.style.display = 'none';
+        aprovadoPorInput.removeAttribute('required');
+        aprovadoPorInput.value = ''; 
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    
-    toggleCamposCondicionais(); // Chamada inicial para configurar a visibilidade
-    toggleAprovadoPor();      // Chamada inicial para o campo 'Aprovado Por'
+    toggleCamposCondicionais(); 
+    toggleAprovadoPor();      
 
     const sistemaSelect = document.getElementById('sistema');
     const linguagemInput = document.getElementById('linguagem');
     const aprovadoCheckbox = document.getElementById('aprovado');
+    const descricaoTextarea = document.getElementById('descricao');
+    const charCountDescricao = document.getElementById('charCountDescricao');
 
     if (sistemaSelect) {
         sistemaSelect.addEventListener('change', toggleCamposCondicionais);
@@ -194,146 +235,168 @@ document.addEventListener('DOMContentLoaded', function() {
     if (aprovadoCheckbox) {
         aprovadoCheckbox.addEventListener('change', toggleAprovadoPor);
     }
+    if (descricaoTextarea && charCountDescricao) {
+        function updateCharCount() {
+            const currentLength = descricaoTextarea.value.length;
+            const maxLength = descricaoTextarea.getAttribute('maxlength');
+            charCountDescricao.textContent = `${currentLength}/${maxLength}`;
+        }
+        descricaoTextarea.addEventListener('input', updateCharCount);
+        updateCharCount(); // Initial count
+    }
 
-  
+    const form = document.getElementById('novoScriptForm');
+    if(form){ // Adicionada verificação para o formulário
+        form.addEventListener('submit', function(event) {
+            // A função confirmarSalvarScript agora será chamada pelo onclick do botão Salvar
+            // e fará a validação e o e.preventDefault() se necessário.
+            // A validação do Bootstrap é mais para feedback visual instantâneo.
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    }
 });
 
-
-
-function toggleAprovadoPor() {
-  const aprovado = document.getElementById('aprovado').checked;
-  const campoAprovadoPor = document.getElementById('campo-aprovado-por');
-  if (aprovado) {
-    campoAprovadoPor.style.display = 'block';
-    document.getElementById('aprovado_por').setAttribute('required', 'required');
-  } else {
-    campoAprovadoPor.style.display = 'none';
-    document.getElementById('aprovado_por').removeAttribute('required');
-  }
-}
-
 function confirmarSalvarScript() {
-  const nome = document.getElementById('nome').value.trim();
-  const sistema = document.getElementById('sistema').value;
-  const arquivoJson = document.getElementById('arquivo_json').files[0];
-  const arquivoMrd = document.getElementById('arquivo_mrd').files[0];
-  const arquivoDll = document.getElementById('arquivo_dll')?.files[0];
-  const aprovado = document.getElementById('aprovado').checked;
-  const aprovadoPor = document.getElementById('aprovado_por').value.trim();
-  const imagens = document.getElementById('imagens').files;
-  const pdfs = document.getElementById('pdfs').files;
+  const form = document.getElementById('novoScriptForm');
+  const nomeInput = document.getElementById('nome');
+  const sistemaSelect = document.getElementById('sistema');
+  const linguagemInput = document.getElementById('linguagem');
+  
+  // Referências aos DIVs para checar visibilidade
+  const campoArquivoJsonDiv = document.getElementById('campo-arquivo-json');
+  const campoArquivoMrdDiv = document.getElementById('campo-arquivo-mrd');
+  const campoArquivoDllDiv = document.getElementById('campo-arquivo-dll');
 
-  if (!nome) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Nome inválido',
-      text: 'O nome do script é obrigatório.'
-    });
-    return;
+  // Referências aos INPUTs de arquivo
+  const arquivoJsonInput = document.getElementById('arquivo_json');
+  const arquivoMrdInput = document.getElementById('arquivo_mrd');
+  const arquivoDllInput = document.getElementById('arquivo_dll');
+  
+  const aprovadoCheckbox = document.getElementById('aprovado');
+  const aprovadoPorInput = document.getElementById('aprovado_por');
+  const imagensInput = document.getElementById('imagens');
+  const pdfsInput = document.getElementById('pdfs');
+
+  // Resetar validações visuais customizadas do Bootstrap para novo ciclo
+  form.classList.remove('was-validated');
+  Array.from(form.elements).forEach(el => {
+      el.classList.remove('is-invalid');
+      el.classList.remove('is-valid');
+  });
+
+  // Aciona a validação padrão do Bootstrap e atualiza classes visuais
+  if (!form.checkValidity()) {
+    form.classList.add('was-validated');
+    Swal.fire({ icon: 'error', title: 'Campos Incompletos', text: 'Por favor, preencha todos os campos obrigatórios (*).', customClass: { popup: 'swal2-zindex-high' } });
+    return; // Interrompe se a validação básica do Bootstrap (ex: required) falhar
   }
+  // Adiciona 'was-validated' se passou na checagem inicial, para manter o feedback visual de 'valid'
+  form.classList.add('was-validated');
 
-  if (sistema === 'Laudos UX') {
-    if (!arquivoJson) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Arquivo JSON obrigatório',
-        text: 'Você deve selecionar um arquivo JSON para o sistema Laudos UX.'
-      });
+
+  // Validações específicas com SweetAlert
+  const nome = nomeInput.value.trim(); // Nome é validado pelo 'required' do Bootstrap
+  const sistema = sistemaSelect.value;
+  const linguagem = linguagemInput ? linguagemInput.value.trim().toUpperCase() : '';
+  const arquivoJson = arquivoJsonInput ? arquivoJsonInput.files[0] : null;
+  const arquivoMrd = arquivoMrdInput ? arquivoMrdInput.files[0] : null;
+  const arquivoDll = arquivoDllInput ? arquivoDllInput.files[0] : null;
+  const aprovado = aprovadoCheckbox.checked;
+  const aprovadoPor = aprovadoPorInput.value.trim();
+  const imagens = imagensInput ? imagensInput.files : [];
+  const pdfs = pdfsInput ? pdfsInput.files : [];
+
+  // Validação do arquivo JSON se Laudos UX e campo visível (required já deve ter pego)
+  if (sistema === 'Laudos UX' && campoArquivoJsonDiv && campoArquivoJsonDiv.style.display === 'block') {
+    if (arquivoJson && !arquivoJson.name.toLowerCase().endsWith('.json')) {
+      if(arquivoJsonInput) arquivoJsonInput.classList.add('is-invalid');
+      Swal.fire({ icon: 'warning', title: 'Formato Inválido', text: 'O arquivo principal para Laudos UX deve ter a extensão .json.', customClass: { popup: 'swal2-zindex-high' } });
       return;
     }
-    if (!arquivoJson.name.endsWith('.json')) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'O arquivo JSON deve ter a extensão .json.'
-      });
+  }
+  if (arquivoJsonInput) arquivoJsonInput.classList.remove('is-invalid'); // Limpa se passou
+
+
+  // Validação do arquivo MRD se o campo estiver visível e um arquivo for selecionado
+  if (campoArquivoMrdDiv && campoArquivoMrdDiv.style.display === 'block' && arquivoMrd) {
+    if (sistema === 'Laudos UX' && !arquivoMrd.name.toLowerCase().endsWith('.json')) {
+      if(arquivoMrdInput) arquivoMrdInput.classList.add('is-invalid');
+      Swal.fire({ icon: 'warning', title: 'Formato Inválido', text: 'O arquivo MRD para Laudos UX deve ter a extensão .json.', customClass: { popup: 'swal2-zindex-high' } });
       return;
     }
-    if (arquivoMrd && !arquivoMrd.name.endsWith('.json')) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'O arquivo MRD para Laudos UX deve ter a extensão .json.'
-      });
+    if (sistema === 'Laudos Flex' && !arquivoMrd.name.toLowerCase().endsWith('.mrd')) {
+      if(arquivoMrdInput) arquivoMrdInput.classList.add('is-invalid');
+      Swal.fire({ icon: 'warning', title: 'Formato Inválido', text: 'O arquivo MRD para Laudos Flex deve ter a extensão .mrd.', customClass: { popup: 'swal2-zindex-high' } });
       return;
     }
-  } else if (sistema === 'Laudos Flex' && arquivoMrd && !arquivoMrd.name.endsWith('.mrd')) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Formato inválido',
-      text: 'O arquivo MRD para Laudos Flex deve ter a extensão .mrd.'
-    });
+  }
+  if (arquivoMrdInput) arquivoMrdInput.classList.remove('is-invalid');
+
+  // Validação do arquivo DLL se o campo estiver visível e um arquivo for selecionado
+  if (campoArquivoDllDiv && campoArquivoDllDiv.style.display === 'block' && arquivoDll) {
+    if (!arquivoDll.name.toLowerCase().endsWith('.dll')) {
+        if(arquivoDllInput) arquivoDllInput.classList.add('is-invalid');
+        Swal.fire({ icon: 'warning', title: 'Formato Inválido', text: 'O arquivo DLL deve ter a extensão .dll.', customClass: { popup: 'swal2-zindex-high' }});
+        return;
+    }
+  }
+  if (arquivoDllInput) arquivoDllInput.classList.remove('is-invalid');
+
+  // Validação do Aprovado Por (required já deve ter pego se visível)
+  if (aprovado && !aprovadoPor && campoAprovadoPor.style.display === 'block') {
+    if(aprovadoPorInput) aprovadoPorInput.classList.add('is-invalid');
+    Swal.fire({ icon: 'warning', title: 'Campo Obrigatório', text: 'O nome do aprovador é obrigatório quando o script é marcado como aprovado.', customClass: { popup: 'swal2-zindex-high' } });
     return;
   }
+  if(aprovadoPorInput) aprovadoPorInput.classList.remove('is-invalid');
 
-  if (arquivoDll && !arquivoDll.name.endsWith('.dll')) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Formato inválido',
-      text: 'O arquivo DLL deve ter a extensão .dll.'
-    });
-    return;
-  }
-
-  if (aprovado && !aprovadoPor) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Aprovador inválido',
-      text: 'O nome do aprovador é obrigatório quando o script é marcado como aprovado.'
-    });
-    return;
-  }
-
-  for (let img of imagens) {
-    if (!['image/png', 'image/jpeg'].includes(img.type)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'As imagens devem ser PNG ou JPG.'
-      });
+  for (let i = 0; i < imagens.length; i++) {
+    let img = imagens[i];
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(img.type.toLowerCase())) {
+      Swal.fire({ icon: 'warning', title: 'Formato de Imagem Inválido', text: `O arquivo '${img.name}' não é PNG ou JPG.`, customClass: { popup: 'swal2-zindex-high' } });
       return;
     }
     if (img.size > 5 * 1024 * 1024) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Arquivo muito grande',
-        text: 'As imagens não podem exceder 5MB.'
-      });
+      Swal.fire({ icon: 'warning', title: 'Arquivo Muito Grande', text: `A imagem '${img.name}' excede 5MB.`, customClass: { popup: 'swal2-zindex-high' } });
       return;
     }
   }
 
-  for (let pdf of pdfs) {
+  for (let i = 0; i < pdfs.length; i++) {
+    let pdf = pdfs[i];
     if (pdf.type !== 'application/pdf') {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Formato inválido',
-        text: 'Os arquivos de impressão devem ser PDF.'
-      });
+      Swal.fire({ icon: 'warning', title: 'Formato de PDF Inválido', text: `O arquivo '${pdf.name}' não é PDF.`, customClass: { popup: 'swal2-zindex-high' } });
       return;
     }
     if (pdf.size > 5 * 1024 * 1024) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Arquivo muito grande',
-        text: 'Os PDFs não podem exceder 5MB.'
-      });
+      Swal.fire({ icon: 'warning', title: 'Arquivo Muito Grande', text: `O PDF '${pdf.name}' excede 5MB.`, customClass: { popup: 'swal2-zindex-high' } });
       return;
     }
   }
 
   Swal.fire({
-    title: 'Salvar script?',
-    text: 'Deseja realmente salvar esse script?',
+    title: 'Salvar Script?',
+    text: 'Deseja realmente salvar este script com as informações fornecidas?',
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: 'Sim, salvar',
-    cancelButtonText: 'Cancelar'
+    confirmButtonColor: '#198754',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '<i class="bi bi-check-lg"></i> Sim, Salvar',
+    cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+    customClass: { popup: 'swal2-zindex-high' }
   }).then((result) => {
     if (result.isConfirmed) {
-      document.querySelector('form').submit();
+      form.submit();
     }
   });
 }
+
+const styleSwal = document.createElement('style');
+styleSwal.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwal);
 </script>
 {% endset %}

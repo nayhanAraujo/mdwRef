@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% set content %}
-{# Novo Cabeçalho da Página Padronizado #}
+{# Cabeçalho da Página Padronizado #}
 <div class="page-header mb-4">
   <div class="d-flex justify-content-between align-items-center">
     <div>
@@ -24,21 +24,12 @@
       <div class="row justify-content-center">
         <div class="col-md-5 mb-3">
           <div class="system-card card h-100 p-4" onclick="selectSystem('Laudos UX')">
-            <div class="card-body">
-              <i class="bi bi-pc-display-horizontal fs-1 text-primary"></i>
-              <h5 class="mt-3">Laudos UX</h5>
-              <p class="text-muted small">Sistema moderno de laudos</p>
-            </div>
+            <div class="card-body"><i class="bi bi-pc-display-horizontal fs-1 text-primary"></i><h5 class="mt-3">Laudos UX</h5><p class="text-muted small">Sistema moderno de laudos</p></div>
           </div>
         </div>
-        
         <div class="col-md-5 mb-3">
           <div class="system-card card h-100 p-4" onclick="selectSystem('Laudos Flex')">
-            <div class="card-body">
-              <i class="bi bi-laptop fs-1 text-info"></i>
-              <h5 class="mt-3">Laudos Flex</h5>
-              <p class="text-muted small">Sistema tradicional de laudos</p>
-            </div>
+            <div class="card-body"><i class="bi bi-laptop fs-1 text-info"></i><h5 class="mt-3">Laudos Flex</h5><p class="text-muted small">Sistema tradicional de laudos</p></div>
           </div>
         </div>
       </div>
@@ -50,66 +41,30 @@
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="card-title fw-bold mb-0">Escolha o Pacote</h5>
-        <button class="btn btn-outline-secondary btn-sm" onclick="backToSystemSelection()">
-          <i class="bi bi-arrow-left"></i> Voltar
-        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="backToSystemSelection()"><i class="bi bi-arrow-left"></i> Voltar</button>
       </div>
-      
       <div class="input-group mb-3">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
         <input type="text" id="packageSearch" class="form-control" placeholder="Buscar pacote..." oninput="filterPackages()">
       </div>
-      
       <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="packageList">
         {% for pacote in pacotes %}
           {% set pacote_nome_lower = pacote[1]|lower %}
-          {% set icon_class = 'bi-box-seam-fill' %}
-          {% set icon_color_class = 'text-secondary' %}
-          {% set card_border_class = '' %}
-
-          {% if 'angiologia' in pacote_nome_lower or 'vascular' in pacote_nome_lower %}
-            {% set icon_class = 'bi-activity' %}
-            {% set icon_color_class = 'text-danger-emphasis' %} 
-            {% set card_border_class = 'package-card-angiologia' %}
-          {% elif 'cardiologia' in pacote_nome_lower %}
-            {% set icon_class = 'bi-heart-fill' %}
-            {% set icon_color_class = 'text-danger' %}
-            {% set card_border_class = 'package-card-cardiologia' %}
-          {% elif 'consulta' in pacote_nome_lower %}
-            {% set icon_class = 'bi-clipboard2-pulse-fill' %}
-            {% set icon_color_class = 'text-primary' %}
-            {% set card_border_class = 'package-card-consulta' %}
-          {% elif 'ultrassonografia' in pacote_nome_lower %}
-            {% set icon_class = 'bi-soundwave' %}
-            {% set icon_color_class = 'text-info' %}
-            {% set card_border_class = 'package-card-ultrassonografia' %}
+          {% set icon_class = 'bi-box-seam-fill' %}{% set icon_color_class = 'text-secondary' %}{% set card_border_class = '' %}
+          {% if 'angiologia' in pacote_nome_lower or 'vascular' in pacote_nome_lower %}{% set icon_class = 'bi-activity' %}{% set icon_color_class = 'text-danger-emphasis' %}{% set card_border_class = 'package-card-angiologia' %}
+          {% elif 'cardiologia' in pacote_nome_lower %}{% set icon_class = 'bi-heart-fill' %}{% set icon_color_class = 'text-danger' %}{% set card_border_class = 'package-card-cardiologia' %}
+          {% elif 'consulta' in pacote_nome_lower %}{% set icon_class = 'bi-clipboard2-pulse-fill' %}{% set icon_color_class = 'text-primary' %}{% set card_border_class = 'package-card-consulta' %}
+          {% elif 'ultrassonografia' in pacote_nome_lower %}{% set icon_class = 'bi-soundwave' %}{% set icon_color_class = 'text-info' %}{% set card_border_class = 'package-card-ultrassonografia' %}
           {% endif %}
-
           <div class="col">
             <div class="card package-card h-100 {{ card_border_class }}" onclick="selectPackage('{{ pacote[0] }}')">
               <div class="card-body text-center d-flex flex-column align-items-center justify-content-center">
-                <i class="bi {{ icon_class }} {{ icon_color_class }} fs-1 mb-3"></i>
-                <h6 class="card-title mb-1">{{ pacote[1] }}</h6>
-                {% if pacote[2] %}
-                  <p class="card-text text-muted small mt-1">{{ pacote[2] }}</p>
-                {% endif %}
-              </div>
-            </div>
-          </div>
+                <i class="bi {{ icon_class }} {{ icon_color_class }} fs-1 mb-3"></i><h6 class="card-title mb-1">{{ pacote[1] }}</h6>
+                {% if pacote[2] %}<p class="card-text text-muted small mt-1">{{ pacote[2] }}</p>{% endif %}
+              </div></div></div>
         {% endfor %}
-        {# Div para mensagem de "nenhum pacote encontrado" no filtro #}
-        <div id="noPackagesFoundMsg" class="col-12 text-center text-muted mt-3" style="display: none;">
-            <p><i class="bi bi-search fs-3"></i></p><p>Nenhum pacote encontrado com este termo.</p>
-        </div>
-        {# Div para mensagem se a lista inicial de pacotes for vazia #}
-        {% if not pacotes %}
-            <div class="col-12">
-                <div class="alert alert-light text-center" role="alert">
-                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                    Nenhum pacote disponível no momento.
-                </div>
-            </div>
-        {% endif %}
+        <div id="noPackagesFoundMsg" class="col-12 text-center text-muted mt-3" style="display: none;"><p><i class="bi bi-search fs-3"></i></p><p>Nenhum pacote encontrado.</p></div>
+        {% if not pacotes %}<div class="col-12"><div class="alert alert-light text-center" role="alert"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhum pacote disponível.</div></div>{% endif %}
       </div>
     </div>
   </div>
@@ -127,7 +82,7 @@
       </nav>
 
       <div class="row mb-3 sticky-top bg-white py-2 align-items-center">
-        <div class="col-md-6">
+         <div class="col-md-6">
           <div class="input-group">
             <input type="text" id="quick-search" class="form-control" placeholder="Buscar por nome..." value="{{ request.args.get('nome', '') }}" oninput="filterScripts()">
             <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()" title="Limpar busca">
@@ -185,7 +140,6 @@
           </div>
         </div>
       </div>
-
       <div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -212,11 +166,27 @@
           </div>
         </div>
       </div>
+      
+      <div class="actions-legend mb-3 p-3 border rounded bg-light-subtle small">
+        <h6 class="fw-bold mb-2"><i class="bi bi-key-fill me-1"></i>Legenda das Ações:</h6>
+        <div class="d-flex flex-wrap">
+          <span class="me-3 mb-1"><i class="bi bi-info-circle-fill text-info"></i> Detalhes</span>
+          <span class="me-3 mb-1"><i class="bi bi-link-45deg text-dark"></i> Vincular Variáveis</span>
+          <span class="me-3 mb-1"><i class="bi bi-pencil-fill text-secondary"></i> Editar</span>
+          <span class="me-3 mb-1"><i class="bi bi-file-earmark-arrow-down-fill text-success"></i> Exportar JSON</span>
+          <span class="me-3 mb-1"><i class="bi bi-git text-primary"></i> Projeto Azure</span>
+          <span class="me-3 mb-1"><i class="bi bi-file-earmark-code-fill text-dark"></i> Exportar DLL</span>
+          <span class="me-3 mb-1"><i class="bi bi-hand-thumbs-up-fill text-success"></i> Aprovar</span> / <i class="bi bi-hand-thumbs-down-fill text-danger"></i> Desaprovar</span>
+          <span class="me-3 mb-1"><i class="bi bi-toggle-on text-success"></i> Ativar</span> / <i class="bi bi-toggle-off text-secondary"></i> Desativar</span>
+          <span class="me-3 mb-1"><i class="bi bi-envelope-fill text-primary"></i> Enviar Imagens</span>
+        </div>
+      </div>
+
 
       <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="script-list">
         {% for item in scripts_detalhes %}
           <div class="col">
-            <div class="card h-100 shadow-sm border-0 script-display-card">
+            <div class="card h-100 shadow-sm script-display-card">
               {% if item.imagens %}
                 <img src="{{ item.imagens[0].caminho }}" class="card-img-top" alt="{{ item.imagens[0].nome }}" style="height: 180px; object-fit: cover; border-top-left-radius: .375rem; border-top-right-radius: .375rem;">
               {% else %}
@@ -230,8 +200,11 @@
                   {% if item.pacote_nome %}
                     <span class="badge bg-primary me-1"><i class="bi bi-archive-fill me-1"></i>{{ item.pacote_nome }}</span>
                   {% endif %}
-                  {% if item.script[5] %}
-                    <span class="badge bg-info"><i class="bi bi-display me-1"></i>{{ item.script[5] }}</span>
+                  {% if item.script[5] %} {# Sistema #}
+                    <span class="badge bg-info me-1"><i class="bi bi-display me-1"></i>{{ item.script[5] }}</span>
+                  {% endif %}
+                  {% if item.script[13] %} {# TEM_ARQUIVO_DLL - Índice 13 #}
+                    <span class="badge bg-dark"><i class="bi bi-file-earmark-binary-fill me-1"></i>Possui DLL</span>
                   {% endif %}
                 </div>
                 <p class="card-text text-muted small mb-3">
@@ -260,38 +233,39 @@
                         <i class="bi bi-info-circle-fill"></i> Detalhes
                     </button>
                     <div class="btn-group">
-                      <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                      data-bs-toggle="dropdown" aria-expanded="false" 
-                      {# data-bs-tooltip="tooltip" title="Mais Ações" #} {# Temporariamente comentado #}
-                      title="Mais Ações"> 
-                  <i class="bi bi-gear-fill"></i> Ações
-              </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-tooltip="tooltip" title="Mais Ações">
+                        <i class="bi bi-gear-fill"></i> Ações
+                        </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('scripts.vincular_variaveis', codscriptlaudo=item.script[0]) }}"><i class="bi bi-link-45deg me-2"></i>Vincular Variáveis</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('scripts.editar_script', codscriptlaudo=item.script[0]) }}"><i class="bi bi-pencil-fill me-2"></i>Editar</a></li>
-                        {% if item.script[5] == 'Laudos UX' and item.tem_arquivo_json %}
-                            <li><a class="dropdown-item" href="{{ url_for('scripts.exportar_json', codscriptlaudo=item.script[0]) }}"><i class="bi bi-file-earmark-arrow-down-fill me-2"></i>Exportar JSON</a></li>
-                        {% endif %}
-                        {% if item.script[5] == 'Laudos Flex' and item.script[12] %} {# item.script[5] é SISTEMA, item.script[12] é CAMINHO_AZURE #}
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                          <a class="dropdown-item" href="{{ url_for('scripts.baixar_projeto_azure', codscriptlaudo=item.script[0]) }}" target="_blank" title="Baixar o código fonte do projeto do Azure DevOps">
-                            <i class="bi bi-cloud-download-fill me-2"></i>Baixar Projeto Azure
-                          </a>
-                        </li>
-                      {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('scripts.vincular_variaveis', codscriptlaudo=item.script[0]) }}"><i class="bi bi-link-45deg me-2"></i>Vincular Variáveis</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('scripts.editar_script', codscriptlaudo=item.script[0]) }}"><i class="bi bi-pencil-fill me-2"></i>Editar</a></li>
+                            {% if item.script[5] == 'Laudos UX' and item.script[9] %} {# SISTEMA (5), TEM_ARQUIVO_JSON (9) #}
+                                <li><a class="dropdown-item" href="{{ url_for('scripts.exportar_json', codscriptlaudo=item.script[0]) }}"><i class="bi bi-file-earmark-arrow-down-fill me-2"></i>Exportar JSON</a></li>
+                            {% endif %}
+                            
+                            {% if item.script[5] == 'Laudos Flex' and item.script[12] %} {# SISTEMA (5), CAMINHO_AZURE (12) #}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('scripts.baixar_projeto_azure', codscriptlaudo=item.script[0]) }}" target="_blank" title="Acessar o repositório do projeto no Azure DevOps"><i class="bi bi-git me-2"></i>Projeto Azure</a></li>
+                            {% endif %}
 
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="toggleAprovacao({{ item.script[0] }}, {{ item.script[6] }}); return false;">
-                            <i class="bi bi-{% if item.script[6] %}hand-thumbs-down-fill text-danger{% else %}hand-thumbs-up-fill text-success{% endif %} me-2"></i> {{ 'Desaprovar' if item.script[6] else 'Aprovar' }}
-                        </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="toggleAtivo({{ item.script[0] }}, {{ item.script[8] }}); return false;">
-                            <i class="bi bi-toggle-{% if item.script[8] %}off text-secondary{% else %}on text-success{% endif %} me-2"></i> {{ 'Desativar' if item.script[8] else 'Ativar' }}
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="openEmailModal({{ item.script[0] }}, '{{ item.script[5]|e }}'); return false;">
-                            <i class="bi bi-envelope-fill me-2"></i>Enviar Imagens
-                        </a></li>
+                            {% if item.script[5] == 'Laudos Flex' and item.script[13] %} {# SISTEMA (5), TEM_ARQUIVO_DLL (13) #}
+                                {% if not (item.script[5] == 'Laudos Flex' and item.script[12]) %} 
+                                    <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{{ url_for('scripts.exportar_dll', codscriptlaudo=item.script[0]) }}" title="Baixar arquivo DLL do script"><i class="bi bi-file-earmark-code-fill me-2"></i>Exportar DLL</a></li>
+                            {% endif %}
+
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="toggleAprovacao({{ item.script[0] }}, {{ item.script[6] }}); return false;">
+                                <i class="bi bi-{% if item.script[6] %}hand-thumbs-down-fill text-danger{% else %}hand-thumbs-up-fill text-success{% endif %} me-2"></i> {{ 'Desaprovar' if item.script[6] else 'Aprovar' }}
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="toggleAtivo({{ item.script[0] }}, {{ item.script[8] }}); return false;">
+                                <i class="bi bi-toggle-{% if item.script[8] %}off text-secondary{% else %}on text-success{% endif %} me-2"></i> {{ 'Desativar' if item.script[8] else 'Ativar' }}
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="openEmailModal({{ item.script[0] }}, '{{ item.script[5]|e }}'); return false;">
+                              <i class="bi bi-envelope-fill me-2"></i>Enviar Imagens
+                            </a></li>
                         </ul>
                     </div>
                     </div>
@@ -301,7 +275,7 @@
           </div>
 
           <div class="modal fade" id="detailsModal-{{ item.script[0] }}" tabindex="-1" aria-labelledby="detailsModalLabel-{{ item.script[0] }}" aria-hidden="true">
-            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+             <div class="modal-dialog modal-xl modal-dialog-scrollable">
               <div class="modal-content">
                 <div class="modal-header">
                   <h5 class="modal-title" id="detailsModalLabel-{{ item.script[0] }}"><i class="bi bi-clipboard-data-fill me-2"></i>Detalhes do Script: {{ item.script[1] }}</h5>
@@ -315,9 +289,11 @@
                       <p><strong>Sistema:</strong> {{ item.script[5] or '-' }}</p>
                       <p><strong>Linguagem:</strong> {{ item.script[3] or '-' }}</p>
                        {% if item.script[3] and item.script[3]|lower == 'c#' and item.script[4] %}
-                        <p><strong>Caminho do Projeto:</strong> <code>{{ item.script[4] }}</code></p>
+                        <p><strong>Caminho do Projeto (Local/Outro):</strong> <code>{{ item.script[4] }}</code></p>
                        {% endif %}
-                      {# CORREÇÃO APLICADA AQUI #}
+                       {% if item.script[5] == 'Laudos Flex' and item.script[12] %} {# CAMINHO_AZURE #}
+                        <p><strong>Caminho Projeto Azure:</strong> <a href="{{ item.script[12] }}" target="_blank" title="Abrir link do Azure DevOps"><code>{{ item.script[12] }}</code> <i class="bi bi-box-arrow-up-right"></i></a></p>
+                       {% endif %}
                       <p><strong>Descrição:</strong> <span class="preserve-newlines">{{ item.script[2] or '-' }}</span></p>
                     </div>
                     <div class="col-md-6">
@@ -325,8 +301,11 @@
                       <p><strong>Data de Verificação:</strong> {{ item.script[7]|datetimeformat('%d/%m/%Y %H:%M') if item.script[7] else '-' }}</p>
                       <p><strong>Aprovado Por:</strong> {{ item.script[10] or '-' }}</p>
                       <p><strong>Ativo:</strong> {% if item.script[8] %}Ativo{% else %}Inativo{% endif %}</p>
-                       {% if item.script[5] == 'Laudos UX' and item.tem_arquivo_json %}
+                       {% if item.script[5] == 'Laudos UX' and item.script[9] %} {# TEM_ARQUIVO_JSON #}
                         <p><a class="btn btn-sm btn-outline-success mt-2" href="{{ url_for('scripts.exportar_json', codscriptlaudo=item.script[0]) }}"><i class="bi bi-file-earmark-arrow-down-fill me-2"></i>Baixar Arquivo JSON</a></p>
+                       {% endif %}
+                       {% if item.script[5] == 'Laudos Flex' and item.script[13] %} {# TEM_ARQUIVO_DLL #}
+                        <p><a class="btn btn-sm btn-outline-dark mt-2" href="{{ url_for('scripts.exportar_dll', codscriptlaudo=item.script[0]) }}"><i class="bi bi-file-earmark-code-fill me-2"></i>Baixar Arquivo DLL</a></p>
                        {% endif %}
                     </div>
                   </div>
@@ -408,7 +387,7 @@
         {% endfor %}
       </div>
 
-      {% if total_paginas > 0 %}
+      {% if total_paginas is defined and total_paginas > 0 %}
       <nav aria-label="Paginação de Scripts" class="mt-4" {% if not scripts_detalhes %}style="display: none;"{% endif %}>
         <ul class="pagination justify-content-center">
           {% if pagina > 1 %}
@@ -419,38 +398,13 @@
             <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span></li>
           {% endif %}
           
-          {% set delta = 2 %}
-          {% set left = pagina - delta %}
-          {% set right = pagina + delta + 1 %}
-          {% set range_ = [] %}
-          {% set range_with_dots = [] %}
-          {% set l = 0 %}
-
-          {% for i in range(1, total_paginas + 1) %}
-            {% if i == 1 or i == total_paginas or (i >= left and i < right) %}
-              {% if range_.append(i) %}{% endif %}
-            {% endif %}
-          {% endfor %}
-
-          {% for i in range_ %}
-            {% if l %}
-              {% if i - l == 2 %}
-                {% if range_with_dots.append(l + 1) %}{% endif %}
-              {% elif i - l != 1 %}
-                {% if range_with_dots.append('...') %}{% endif %}
-              {% endif %}
-            {% endif %}
-            {% if range_with_dots.append(i) %}{% endif %}
-            {% set l = i %}
-          {% endfor %}
-
+          {% set delta = 2 %}{% set left = pagina - delta %}{% set right = pagina + delta + 1 %}{% set range_ = [] %}{% set range_with_dots = [] %}{% set l = 0 %}
+          {% for i in range(1, total_paginas + 1) %}{% if i == 1 or i == total_paginas or (i >= left and i < right) %}{% if range_.append(i) %}{% endif %}{% endif %}{% endfor %}
+          {% for i in range_ %}{% if l %}{% if i - l == 2 %}{% if range_with_dots.append(l + 1) %}{% endif %}{% elif i - l != 1 %}{% if range_with_dots.append('...') %}{% endif %}{% endif %}{% endif %}{% if range_with_dots.append(i) %}{% endif %}{% set l = i %}{% endfor %}
           {% for i in range_with_dots %}
-            {% if i == '...' %}
-              <li class="page-item disabled"><span class="page-link">...</span></li>
-            {% elif i == pagina %}
-              <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
-            {% else %}
-              <li class="page-item"><a class="page-link" href="{{ url_for('scripts.visualizar_scripts', page=i, nome=request.args.get('nome', ''), sistema=request.args.get('sistema', ''), pacote=request.args.get('pacote', ''), aprovado=request.args.get('aprovado', ''), ativo=request.args.get('ativo', '')) }}">{{ i }}</a></li>
+            {% if i == '...' %}<li class="page-item disabled"><span class="page-link">...</span></li>
+            {% elif i == pagina %}<li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+            {% else %}<li class="page-item"><a class="page-link" href="{{ url_for('scripts.visualizar_scripts', page=i, nome=request.args.get('nome', ''), sistema=request.args.get('sistema', ''), pacote=request.args.get('pacote', ''), aprovado=request.args.get('aprovado', ''), ativo=request.args.get('ativo', '')) }}">{{ i }}</a></li>
             {% endif %}
           {% endfor %}
 
@@ -462,7 +416,9 @@
             <li class="page-item disabled"><span class="page-link">Próxima <i class="bi bi-chevron-right"></i></span></li>
           {% endif %}
         </ul>
+        {% if total_scripts is defined %}
         <p class="text-center text-muted small mt-2">Página {{ pagina }} de {{ total_paginas }} (Total de {{ total_scripts }} scripts)</p>
+        {% endif %}
       </nav>
       {% endif %}
 
@@ -471,22 +427,28 @@
 </div>
 
 <style>
-
-
   .script-display-card { 
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out; /* Adicionada transição para border-color */
-    border: 1px solid var(--bs-border-color-translucent); /* Borda padrão sutil e transparente do Bootstrap */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    border: 1px solid var(--bs-border-color-translucent); 
+    position: relative;
+  overflow: visible !important;
 
   }
   .script-display-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
-    border-color: var(--bs-primary); /* Cor da borda no hover - usando a cor primária do Bootstrap */
-    position: relative;
-    z-index: 1; /* Valor baixo para os cards */
-
+    border-color: var(--bs-primary); 
   }
+  /* Fix para dropdowns dentro de elementos com overflow ou contextos de empilhamento */
+  .script-display-card .btn-group.show { /* Aplica ao btn-group quando o dropdown está aberto */
+    position: relative; 
+    z-index: 20; /* Z-index mais alto que os cards vizinhos */
+  }
+  .dropdown-menu {
+  z-index: 1060 !important; /* Maior que o z-index dos cards */
+}
 
+  /* ... (Restante dos seus estilos CSS) ... */
   .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
   .page-header .icon-gradient {background: linear-gradient(45deg, var(--bs-primary), var(--bs-info)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; font-size: 1.65rem; vertical-align: middle;}
   .page-header-divider {border-top: 1px solid rgba(0, 0, 0, 0.08);}
@@ -495,7 +457,7 @@
   #emailSubmitBtn .loader {position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);}
   @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
   .btn-primary:disabled {opacity: 0.65;}
-  .sticky-top {top: 1rem; z-index: 1019; border-bottom: 1px solid #dee2e6;}
+  .sticky-top {top: 1rem; z-index: 1020; border-bottom: 1px solid #dee2e6;}
   .card { border-radius: .375rem;}
   .card-title {font-size: 1.1rem;}
   #scriptsView .card-title {font-size: 1.2rem; font-weight: 600;}
@@ -522,262 +484,330 @@
   .modal-xl { max-width: 1140px; }
 </style>
 
-<script>
-// Variável para armazenar o sistema selecionado
-let selectedSystem = null;
-
-// Enable Bootstrap tooltips
-document.addEventListener('DOMContentLoaded', function () {
-  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-tooltip="tooltip"]'));
-  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl, { container: 'body' });
-  });
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const pacoteParam = urlParams.get('pacote');
-  const sistemaParam = urlParams.get('sistema');
-
-  if (pacoteParam && sistemaParam) {
-    document.getElementById('systemSelectionStep').style.display = 'none';
-    document.getElementById('packageSelectionStep').style.display = 'none';
-    document.getElementById('scriptsView').style.display = 'block';
-    document.getElementById('filterNome').value = urlParams.get('nome') || '';
-    document.getElementById('aprovado').value = urlParams.get('aprovado') || '';
-    document.getElementById('ativo').value = urlParams.get('ativo') || '';
-  } else {
-     document.getElementById('systemSelectionStep').style.display = 'block';
-     document.getElementById('packageSelectionStep').style.display = 'none';
-     document.getElementById('scriptsView').style.display = 'none';
-  }
-});
-
-function selectSystem(sistema) {
-  selectedSystem = sistema;
-  document.getElementById('systemSelectionStep').style.display = 'none';
-  document.getElementById('packageSelectionStep').style.display = 'block';
+  <script>
+  let selectedSystem = null;
   
-  document.querySelectorAll('.system-card').forEach(card => {
-    card.classList.remove('border-primary', 'border-2');
-    if (card.querySelector('h5').textContent === sistema) {
-      card.classList.add('border-primary', 'border-2');
-    }
-  });
-  filterPackages(); 
-}
-
-function backToSystemSelection() {
-  selectedSystem = null;
-  document.getElementById('systemSelectionStep').style.display = 'block';
-  document.getElementById('packageSelectionStep').style.display = 'none';
+  document.addEventListener('DOMContentLoaded', function () {
+    // Inicializa Tooltips Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-tooltip="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl, { container: 'body' });
+    });
   
-  const packageSearchInput = document.getElementById('packageSearch');
-  if (packageSearchInput) {
-    packageSearchInput.value = '';
-  }
-  filterPackages(); 
+    // Lógica de exibição inicial dos passos
+    const urlParams = new URLSearchParams(window.location.search);
+    const pacoteParam = urlParams.get('pacote');
+    const sistemaParam = urlParams.get('sistema');
   
-  document.querySelectorAll('.system-card').forEach(card => {
-    card.classList.remove('border-primary', 'border-2');
-  });
-}
-
-function selectPackage(pacoteId) {
-  if (!selectedSystem) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Sistema não selecionado',
-        text: 'Por favor, volte e selecione um sistema primeiro.',
-        customClass: { popup: 'swal2-zindex-high' }
-      });
-      return;
-  }
-  const baseUrl = `{{ url_for('scripts.visualizar_scripts') }}`;
-  const currentParams = new URLSearchParams(window.location.search);
-  const nomeParam = currentParams.get('nome') || '';
-  const aprovadoParam = currentParams.get('aprovado') || '';
-  const ativoParam = currentParams.get('ativo') || '';
-
-  window.location.href = `${baseUrl}?pacote=${pacoteId}&sistema=${selectedSystem}&nome=${nomeParam}&aprovado=${aprovadoParam}&ativo=${ativoParam}`;
-}
-
-function filterPackages() {
-  const searchTerm = document.getElementById('packageSearch').value.toLowerCase();
-  const packageListContainer = document.getElementById('packageList');
-  const packageCols = packageListContainer.querySelectorAll('.col');
-  let visibleCount = 0;
-
-  packageCols.forEach(col => {
-    const card = col.querySelector('.package-card');
-    if (card) {
-      const name = card.querySelector('.card-title').textContent.toLowerCase();
-      const descElement = card.querySelector('.card-text');
-      const desc = descElement ? descElement.textContent.toLowerCase() : '';
-
-      if (name.includes(searchTerm) || desc.includes(searchTerm)) {
-        col.style.display = '';
-        visibleCount++;
-      } else {
-        col.style.display = 'none';
-      }
-    }
-  });
-
-  let noResultsMsg = packageListContainer.querySelector('#noPackagesFoundMsg');
-  if (visibleCount === 0 && packageCols.length > 0) {
-    if (!noResultsMsg) {
-      noResultsMsg = document.createElement('div');
-      noResultsMsg.id = 'noPackagesFoundMsg';
-      noResultsMsg.className = 'col-12 text-center text-muted mt-3';
-      noResultsMsg.innerHTML = '<p><i class="bi bi-search fs-3"></i></p><p>Nenhum pacote encontrado com este termo.</p>';
-      packageListContainer.appendChild(noResultsMsg);
+    const systemSelectionStepEl = document.getElementById('systemSelectionStep');
+    const packageSelectionStepEl = document.getElementById('packageSelectionStep');
+    const scriptsViewEl = document.getElementById('scriptsView');
+    const filterNomeEl = document.getElementById('filterNome');
+    const aprovadoEl = document.getElementById('aprovado');
+    const ativoEl = document.getElementById('ativo');
+  
+    if (pacoteParam && sistemaParam) {
+      if(systemSelectionStepEl) systemSelectionStepEl.style.display = 'none';
+      if(packageSelectionStepEl) packageSelectionStepEl.style.display = 'none';
+      if(scriptsViewEl) scriptsViewEl.style.display = 'block';
+      
+      const quickSearchEl = document.getElementById('quick-search');
+      if(quickSearchEl) quickSearchEl.value = urlParams.get('nome') || '';
+      if(filterNomeEl) filterNomeEl.value = urlParams.get('nome') || '';
+      if(aprovadoEl) aprovadoEl.value = urlParams.get('aprovado') || '';
+      if(ativoEl) ativoEl.value = urlParams.get('ativo') || '';
+  
     } else {
-      noResultsMsg.style.display = 'block';
+       if(systemSelectionStepEl) systemSelectionStepEl.style.display = 'block';
+       if(packageSelectionStepEl) packageSelectionStepEl.style.display = 'none';
+       if(scriptsViewEl) scriptsViewEl.style.display = 'none';
     }
-  } else if (noResultsMsg) {
-    noResultsMsg.style.display = 'none';
-  }
-}
-
-function resetSelection() {
-  const cleanUrl = `{{ url_for('scripts.visualizar_scripts') }}`;
-  window.location.href = cleanUrl; 
-}
-
-function filterScripts() {
-  const searchTerm = document.getElementById('quick-search').value;
-  const urlParams = new URLSearchParams(window.location.search);
-  urlParams.set('nome', searchTerm);
-  urlParams.set('page', '1'); 
   
-  const aprovado = document.getElementById('aprovado').value;
-  const ativo = document.getElementById('ativo').value;
-  if(aprovado) urlParams.set('aprovado', aprovado); else urlParams.delete('aprovado');
-  if(ativo) urlParams.set('ativo', ativo); else urlParams.delete('ativo');
-
-  window.location.search = urlParams.toString();
-}
-
-function clearSearch() {
-  const urlParams = new URLSearchParams(window.location.search);
-  urlParams.delete('nome');
-  document.getElementById('quick-search').value = ''; 
-  urlParams.set('page', '1');
-  window.location.search = urlParams.toString();
-}
-
-function toggleAprovacao(codscriptlaudo, aprovado) {
-  if (!aprovado) {
-    Swal.fire({
-      title: 'Aprovar script?',
-      text: 'Digite o nome da pessoa ou entidade que está aprovando:',
-      input: 'text',
-      inputPlaceholder: 'Ex.: Dr. João Silva ou Clínica São Paulo',
-      showCancelButton: true,
-      confirmButtonText: 'Aprovar',
-      cancelButtonText: 'Cancelar',
-      customClass: { popup: 'swal2-zindex-high' },
-      preConfirm: (aprovadoPor) => {
-        if (!aprovadoPor || aprovadoPor.trim() === '') {
-          Swal.showValidationMessage('O nome do aprovador é obrigatório.');
+    // --- INÍCIO: Correção para Dropdowns de Ações ---
+    const dropdownToggles = document.querySelectorAll('.script-display-card .dropdown-toggle');
+  
+    // Função para fechar todos os dropdowns, exceto o especificado (opcional)
+    function closeAllDropdowns(exceptThisOne = null) {
+      dropdownToggles.forEach(toggle => {
+        if (toggle === exceptThisOne) {
+          return;
         }
-        return aprovadoPor;
-      }
-    }).then((result) => {
-      if (result.isConfirmed && result.value) {
-        window.location.href = `/scripts/toggle_aprovacao/${codscriptlaudo}?aprovado_por=${encodeURIComponent(result.value.trim())}`;
-      }
-    });
-  } else {
-    Swal.fire({
-      title: 'Desaprovar script?',
-      text: 'O script será marcado como não aprovado e o aprovador será removido.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sim',
-      cancelButtonText: 'Cancelar',
-      customClass: { popup: 'swal2-zindex-high' }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        window.location.href = `/scripts/toggle_aprovacao/${codscriptlaudo}`;
-      }
-    });
-  }
-}
-
-function toggleAtivo(codscriptlaudo, ativo) {
-  Swal.fire({
-    title: ativo ? 'Desativar script?' : 'Ativar script?',
-    text: ativo ? 'O script será marcado como inativo.' : 'O script será marcado como ativo.',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Sim',
-    cancelButtonText: 'Cancelar',
-    customClass: { popup: 'swal2-zindex-high' }
-  }).then((result) => {
-    if (result.isConfirmed) {
-      window.location.href = `/scripts/toggle_ativo/${codscriptlaudo}`;
+        const dropdownInstance = bootstrap.Dropdown.getInstance(toggle);
+        if (dropdownInstance) {
+          dropdownInstance.hide();
+        }
+      });
     }
-  });
-}
-
-function openEmailModal(codscriptlaudo, sistema) {
-  document.getElementById('codscriptlaudoEmail').value = codscriptlaudo;
-  document.getElementById('sistemaEmail').value = sistema || '';
-  const modalElement = document.getElementById('emailModal');
-  const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
-  modal.show();
-}
-
-document.getElementById('emailForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const email = document.getElementById('recipientEmail').value;
-  const codscriptlaudo = document.getElementById('codscriptlaudoEmail').value;
-  const sistema = document.getElementById('sistemaEmail').value; 
-  const submitBtn = document.getElementById('emailSubmitBtn');
-  const loader = document.getElementById('emailLoader');
-
-  if (!email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Email inválido',
-      text: 'Por favor, insira um email válido.',
-      customClass: { popup: 'swal2-zindex-high' }
+  
+    // Quando um dropdown é mostrado, fecha os outros
+    dropdownToggles.forEach(toggle => {
+      toggle.addEventListener('show.bs.dropdown', function () {
+        closeAllDropdowns(this); // 'this' é o botão que disparou o evento
+      });
     });
-    return;
+  
+    // Listener global para fechar dropdowns ao clicar fora
+    document.addEventListener('click', function (event) {
+      const openDropdown = document.querySelector('.script-display-card .dropdown-toggle[aria-expanded="true"]');
+      if (openDropdown) {
+        // Verifica se o clique foi dentro do grupo de botões que contém o dropdown aberto
+        const btnGroup = openDropdown.closest('.btn-group');
+        if (btnGroup && !btnGroup.contains(event.target)) {
+          const dropdownInstance = bootstrap.Dropdown.getInstance(openDropdown);
+          if (dropdownInstance) {
+            dropdownInstance.hide();
+          }
+        } else if (!btnGroup) { // Se não estiver em um btn-group, verifica o próprio botão
+          if (!openDropdown.contains(event.target) && !openDropdown.nextElementSibling.contains(event.target)) {
+               const dropdownInstance = bootstrap.Dropdown.getInstance(openDropdown);
+              if (dropdownInstance) {
+                  dropdownInstance.hide();
+              }
+          }
+        }
+      }
+    });
+    // --- FIM: Correção para Dropdowns de Ações ---
+    
+    // Listener para o formulário de email
+    const emailForm = document.getElementById('emailForm');
+    if (emailForm) {
+      if (!emailForm.dataset.listenerAttached) { 
+        emailForm.addEventListener('submit', async function(e) {
+          console.log('Formulário de email submetido:', Date.now()); 
+          e.preventDefault();
+          const email = document.getElementById('recipientEmail').value;
+          const codscriptlaudo = document.getElementById('codscriptlaudoEmail').value;
+          const sistema = document.getElementById('sistemaEmail').value; 
+          const submitBtn = document.getElementById('emailSubmitBtn');
+          const loader = document.getElementById('emailLoader');
+  
+          if (!email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)) {
+            Swal.fire({ icon: 'error', title: 'Email inválido', text: 'Por favor, insira um email válido.', customClass: { popup: 'swal2-zindex-high' } });
+            return;
+          }
+  
+          if(submitBtn) submitBtn.disabled = true;
+          if(submitBtn) submitBtn.classList.add('disabled');
+          if(loader) loader.style.display = 'block';
+  
+          try {
+            const response = await fetch('/scripts/send_images_email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ codscriptlaudo: codscriptlaudo, email: email, sistema: sistema })
+            });
+            const data = await response.json();
+  
+            if (data.success) {
+              Swal.fire({ icon: 'success', title: 'Sucesso', text: 'Imagens enviadas por email com sucesso!', customClass: { popup: 'swal2-zindex-high' }});
+              const emailModalEl = document.getElementById('emailModal');
+              if (emailModalEl) {
+                  const emailModalInstance = bootstrap.Modal.getInstance(emailModalEl);
+                  if (emailModalInstance) emailModalInstance.hide();
+              }
+              const emailFormEl = document.getElementById('emailForm');
+              if(emailFormEl) emailFormEl.reset();
+            } else {
+              Swal.fire({ icon: 'error', title: 'Erro', text: data.message || 'Erro ao enviar email.', customClass: { popup: 'swal2-zindex-high' }});
+            }
+          } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao enviar email: ' + error.message, customClass: { popup: 'swal2-zindex-high' }});
+          } finally {
+            if(submitBtn) submitBtn.disabled = false;
+            if(submitBtn) submitBtn.classList.remove('disabled');
+            if(loader) loader.style.display = 'none';
+          }
+        });
+        emailForm.dataset.listenerAttached = 'true'; 
+      }
+    }
+  }); // Fim do DOMContentLoaded
+  
+  // Funções de seleção de sistema e pacote (mantidas como antes)
+  function selectSystem(sistema) {
+    selectedSystem = sistema;
+    const systemSelectionStepEl = document.getElementById('systemSelectionStep');
+    const packageSelectionStepEl = document.getElementById('packageSelectionStep');
+    if(systemSelectionStepEl) systemSelectionStepEl.style.display = 'none';
+    if(packageSelectionStepEl) packageSelectionStepEl.style.display = 'block';
+    
+    document.querySelectorAll('.system-card').forEach(card => {
+      card.classList.remove('border-primary', 'border-2');
+      const cardTitle = card.querySelector('h5');
+      if (cardTitle && cardTitle.textContent === sistema) {
+        card.classList.add('border-primary', 'border-2');
+      }
+    });
+    filterPackages(); 
   }
-
-  submitBtn.disabled = true;
-  submitBtn.classList.add('disabled');
-  loader.style.display = 'block';
-
-  try {
-    const response = await fetch('/scripts/send_images_email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ codscriptlaudo: codscriptlaudo, email: email, sistema: sistema })
+  
+  function backToSystemSelection() {
+    selectedSystem = null;
+    const systemSelectionStepEl = document.getElementById('systemSelectionStep');
+    const packageSelectionStepEl = document.getElementById('packageSelectionStep');
+    if(systemSelectionStepEl) systemSelectionStepEl.style.display = 'block';
+    if(packageSelectionStepEl) packageSelectionStepEl.style.display = 'none';
+    
+    const packageSearchInput = document.getElementById('packageSearch');
+    if (packageSearchInput) packageSearchInput.value = '';
+    filterPackages(); 
+    
+    document.querySelectorAll('.system-card').forEach(card => {
+      card.classList.remove('border-primary', 'border-2');
     });
-    const data = await response.json();
-
-    if (data.success) {
-      Swal.fire({ icon: 'success', title: 'Sucesso', text: 'Imagens enviadas por email com sucesso!', customClass: { popup: 'swal2-zindex-high' }});
-      const emailModalInstance = bootstrap.Modal.getInstance(document.getElementById('emailModal'));
-      if (emailModalInstance) emailModalInstance.hide();
-      document.getElementById('emailForm').reset();
+  }
+  
+  function selectPackage(pacoteId) {
+    if (!selectedSystem) {
+        Swal.fire({ icon: 'warning', title: 'Sistema não selecionado', text: 'Por favor, volte e selecione um sistema primeiro.', customClass: { popup: 'swal2-zindex-high' }});
+        return;
+    }
+    const baseUrl = `{{ url_for('scripts.visualizar_scripts') }}`;
+    const currentParams = new URLSearchParams(window.location.search);
+    const paramsToKeep = ['nome', 'aprovado', 'ativo']; 
+    const newParams = new URLSearchParams();
+    newParams.set('pacote', pacoteId);
+    newParams.set('sistema', selectedSystem);
+    paramsToKeep.forEach(paramKey => {
+        if(currentParams.has(paramKey)) newParams.set(paramKey, currentParams.get(paramKey));
+    });
+    window.location.href = `${baseUrl}?${newParams.toString()}`;
+  }
+  
+  function filterPackages() {
+    const packageSearchInput = document.getElementById('packageSearch');
+    const searchTerm = packageSearchInput ? packageSearchInput.value.toLowerCase() : "";
+    const packageListContainer = document.getElementById('packageList');
+    if(!packageListContainer) return;
+  
+    const packageCols = packageListContainer.querySelectorAll('.col');
+    let visibleCount = 0;
+  
+    packageCols.forEach(col => {
+      const card = col.querySelector('.package-card');
+      if (card) {
+        const nameElement = card.querySelector('.card-title');
+        const name = nameElement ? nameElement.textContent.toLowerCase() : "";
+        const descElement = card.querySelector('.card-text');
+        const desc = descElement ? descElement.textContent.toLowerCase() : '';
+  
+        if (name.includes(searchTerm) || desc.includes(searchTerm)) {
+          col.style.display = '';
+          visibleCount++;
+        } else {
+          col.style.display = 'none';
+        }
+      }
+    });
+  
+    let noResultsMsg = packageListContainer.querySelector('#noPackagesFoundMsg');
+    if (visibleCount === 0 && packageCols.length > 0) {
+      if (!noResultsMsg) {
+        noResultsMsg = document.createElement('div');
+        noResultsMsg.id = 'noPackagesFoundMsg';
+        noResultsMsg.className = 'col-12 text-center text-muted mt-3';
+        noResultsMsg.innerHTML = '<p><i class="bi bi-search fs-3"></i></p><p>Nenhum pacote encontrado com este termo.</p>';
+        packageListContainer.appendChild(noResultsMsg);
+      } else {
+        noResultsMsg.style.display = 'block';
+      }
+    } else if (noResultsMsg) {
+      noResultsMsg.style.display = 'none';
+    }
+  }
+  
+  function resetSelection() {
+    const cleanUrl = `{{ url_for('scripts.visualizar_scripts') }}`;
+    window.location.href = cleanUrl; 
+  }
+  
+  function filterScripts() {
+    const quickSearchEl = document.getElementById('quick-search');
+    const searchTerm = quickSearchEl ? quickSearchEl.value : "";
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('nome', searchTerm);
+    urlParams.set('page', '1'); 
+    
+    const aprovadoEl = document.getElementById('aprovado'); 
+    const ativoEl = document.getElementById('ativo');     
+    const aprovado = aprovadoEl ? aprovadoEl.value : '';
+    const ativo = ativoEl ? ativoEl.value : '';
+  
+    if(aprovado) urlParams.set('aprovado', aprovado); else urlParams.delete('aprovado');
+    if(ativo) urlParams.set('ativo', ativo); else urlParams.delete('ativo');
+  
+    window.location.search = urlParams.toString();
+  }
+  
+  function clearSearch() {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.delete('nome');
+    const quickSearchEl = document.getElementById('quick-search');
+    if(quickSearchEl) quickSearchEl.value = ''; 
+    urlParams.set('page', '1');
+    window.location.search = urlParams.toString();
+  }
+  
+  function toggleAprovacao(codscriptlaudo, aprovado) {
+    if (!aprovado) {
+      Swal.fire({
+        title: 'Aprovar script?', text: 'Digite o nome da pessoa ou entidade que está aprovando:',
+        input: 'text', inputPlaceholder: 'Ex.: Dr. João Silva ou Clínica São Paulo',
+        showCancelButton: true, confirmButtonText: 'Aprovar', cancelButtonText: 'Cancelar',
+        customClass: { popup: 'swal2-zindex-high' },
+        preConfirm: (aprovadoPor) => {
+          if (!aprovadoPor || aprovadoPor.trim() === '') { Swal.showValidationMessage('O nome do aprovador é obrigatório.'); }
+          return aprovadoPor;
+        }
+      }).then((result) => {
+        if (result.isConfirmed && result.value) {
+          window.location.href = `/scripts/toggle_aprovacao/${codscriptlaudo}?aprovado_por=${encodeURIComponent(result.value.trim())}`;
+        }
+      });
     } else {
-      Swal.fire({ icon: 'error', title: 'Erro', text: data.message || 'Erro ao enviar email.', customClass: { popup: 'swal2-zindex-high' }});
+      Swal.fire({
+        title: 'Desaprovar script?', text: 'O script será marcado como não aprovado e o aprovador será removido.',
+        icon: 'question', showCancelButton: true, confirmButtonText: 'Sim', cancelButtonText: 'Cancelar',
+        customClass: { popup: 'swal2-zindex-high' }
+      }).then((result) => { if (result.isConfirmed) { window.location.href = `/scripts/toggle_aprovacao/${codscriptlaudo}`; }});
     }
-  } catch (error) {
-    Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao enviar email: ' + error.message, customClass: { popup: 'swal2-zindex-high' }});
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.classList.remove('disabled');
-    loader.style.display = 'none';
   }
-});
+  
+  function toggleAtivo(codscriptlaudo, ativo) {
+    Swal.fire({
+      title: ativo ? 'Desativar script?' : 'Ativar script?',
+      text: ativo ? 'O script será marcado como inativo.' : 'O script será marcado como ativo.',
+      icon: 'question', showCancelButton: true, confirmButtonText: 'Sim', cancelButtonText: 'Cancelar',
+      customClass: { popup: 'swal2-zindex-high' }
+    }).then((result) => { if (result.isConfirmed) { window.location.href = `/scripts/toggle_ativo/${codscriptlaudo}`; }});
+  }
+  
+  function openEmailModal(codscriptlaudo, sistema) {
+    const codEmailInput = document.getElementById('codscriptlaudoEmail');
+    const sistemaEmailInput = document.getElementById('sistemaEmail');
+    const modalElement = document.getElementById('emailModal');
+  
+    if(codEmailInput) codEmailInput.value = codscriptlaudo;
+    if(sistemaEmailInput) sistemaEmailInput.value = sistema || '';
+    
+    if(modalElement){
+        const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+        modal.show();
+    } else {
+      console.error("Elemento do modal #emailModal não encontrado!");
+      Swal.fire({ icon: 'error', title: 'Erro de Interface', text: 'O modal de email não pôde ser carregado.', customClass: { popup: 'swal2-zindex-high' }});
+    }
+  }
+  
+  // Estilo para garantir que o modal do Swal fique na frente
+  const styleSwal = document.createElement('style');
+  styleSwal.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+  document.head.appendChild(styleSwal);
+  
 
-const styleSwal = document.createElement('style');
-styleSwal.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
-document.head.appendChild(styleSwal);
 
-</script>
+  
+  </script>
+  
 {% endset %}

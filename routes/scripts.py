@@ -154,21 +154,22 @@ Equipe Laudos
             current_app.logger.warning("Logo file not found at static/img/logo.png")
 
         # Attach images
+        # Por esta versão corrigida:
         for image in images:
             caminho, nome_arquivo = image
             filepath = os.path.join(current_app.root_path, caminho.lstrip('/'))
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as f:
-                    part = MIMEBase('application', 'octet-stream')
-                    part.set_payload(f.read())
-                encoders.encode_base64(part)
-                part.add_header(
-                    'Content-Disposition',
-                    f'attachment; filename="{nome_arquivo}"'
-                )
-                msg.attach(part)
-            else:
-                current_app.logger.warning(f"Image file not found: {filepath}")
+                    # Determina o tipo MIME com base na extensão do arquivo
+                    if nome_arquivo.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                        img = MIMEImage(f.read())
+                        img.add_header('Content-Type', 'image/' + nome_arquivo.split('.')[-1].lower())
+                    else:
+                        img = MIMEApplication(f.read())
+                    
+                    img.add_header('Content-Disposition', 'attachment', 
+                                filename=nome_arquivo)
+                    msg.attach(img)
 
         # Send email
         with smtplib.SMTP(current_app.config['SMTP_SERVER'], current_app.config['SMTP_PORT']) as server:
@@ -205,9 +206,9 @@ def novo_script():
         aprovado = 1 if 'aprovado' in request.form else 0
         aprovado_por = request.form['aprovado_por'].strip() or None if aprovado else None
         ativo = 1 if 'ativo' in request.form else 0
-        arquivo_json = request.files.get('arquivo_json')
-        arquivo_mrd = request.files.get('arquivo_mrd')
-        arquivo_dll = request.files.get('arquivo_dll')
+        arquivo_json = request.files.get('arquivo_json') or None
+        arquivo_mrd = request.files.get('arquivo_mrd') or None
+        arquivo_dll = request.files.get('arquivo_dll') or None
         imagens = request.files.getlist('imagens[]')
         pdfs = request.files.getlist('pdfs[]')
 
@@ -251,9 +252,7 @@ def novo_script():
                 return redirect(request.url)
             arquivo_dll_blob = arquivo_dll.read()
 
-        if linguagem and linguagem.upper() == 'C#' and not caminho_projeto:
-            flash("O caminho do projeto é recomendado para scripts C#.", "warning")
-
+        
         if aprovado and not aprovado_por:
             flash("O nome do aprovador é obrigatório quando o script é aprovado.", "error")
             return redirect(request.url)
@@ -261,10 +260,10 @@ def novo_script():
         try:
             cur.execute("""
                 INSERT INTO SCRIPTLAUDO (NOME, CODPACOTE, DESCRICAO, LINGUAGEM, CAMINHO_PROJETO, CAMINHO_AZURE, SISTEMA, APROVADO, DATA_VERIFICACAO, APROVADO_POR, ATIVO, ARQUIVO_JSON, MRD, DLL)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING CODSCRIPTLAUDO
-            """, (nome, codpacote, descricao, linguagem, caminho_projeto, caminho_azure, sistema, aprovado,
-                  datetime.now() if aprovado else None, aprovado_por, ativo, arquivo_json_blob, arquivo_mrd_blob, arquivo_dll_blob))
+            """, (nome, codpacote, descricao, linguagem, caminho_projeto ,  caminho_azure  , sistema, aprovado,
+                  datetime.now() if aprovado else None, aprovado_por, ativo, arquivo_json_blob, arquivo_mrd_blob, arquivo_dll_blob ))
             codscriptlaudo = cur.fetchone()[0]
 
             # Salvar imagens
@@ -365,9 +364,7 @@ def editar_script(codscriptlaudo):
                 return redirect(request.url)
             arquivo_dll_blob = arquivo_dll.read()    
 
-        if linguagem and linguagem.upper() == 'C#' and not caminho_projeto:
-            flash("O caminho do projeto é recomendado para scripts C#.", "warning")
-
+       
         if aprovado and not aprovado_por:
             flash("O nome do aprovador é obrigatório quando o script é aprovado.", "error")
             return redirect(request.url)
@@ -472,32 +469,31 @@ def visualizar_scripts():
         return redirect(url_for('auth.login'))
 
     conn, cur = get_db()
-    # ... (lógica de paginação e filtros existente) ...
     itens_por_pagina = 10
     pagina = request.args.get('page', 1, type=int)
     offset = (pagina - 1) * itens_por_pagina
 
     nome = request.args.get('nome', '').strip()
-    sistema_filtro = request.args.get('sistema', '').strip() # Renomeado para evitar conflito com s.SISTEMA
-    pacote_filtro = request.args.get('pacote', '').strip()   # Renomeado
-    aprovado_filtro = request.args.get('aprovado', '').strip() # Renomeado
-    ativo_filtro = request.args.get('ativo', '').strip()     # Renomeado
+    sistema_filtro = request.args.get('sistema', '').strip()
+    pacote_filtro = request.args.get('pacote', '').strip()
+    aprovado_filtro = request.args.get('aprovado', '').strip()
+    ativo_filtro = request.args.get('ativo', '').strip()
 
     where_clauses = []
     params = []
     if nome:
         where_clauses.append("UPPER(s.NOME) LIKE UPPER(?)")
         params.append(f"%{nome}%")
-    if sistema_filtro in ('Laudos UX', 'Laudos Flex'): # Usar a variável de filtro
+    if sistema_filtro in ('Laudos UX', 'Laudos Flex'):
         where_clauses.append("s.SISTEMA = ?")
         params.append(sistema_filtro)
-    if pacote_filtro: # Usar a variável de filtro
+    if pacote_filtro:
         where_clauses.append("s.CODPACOTE = ?")
         params.append(pacote_filtro)
-    if aprovado_filtro in ('0', '1'): # Usar a variável de filtro
+    if aprovado_filtro in ('0', '1'):
         where_clauses.append("s.APROVADO = ?")
         params.append(aprovado_filtro)
-    if ativo_filtro in ('0', '1'): # Usar a variável de filtro
+    if ativo_filtro in ('0', '1'):
         where_clauses.append("s.ATIVO = ?")
         params.append(ativo_filtro)
 
@@ -512,14 +508,14 @@ def visualizar_scripts():
     total_scripts = total_scripts_result[0] if total_scripts_result else 0
     total_paginas = (total_scripts + itens_por_pagina - 1) // itens_por_pagina if total_scripts > 0 else 0
 
-
-    # AJUSTE: Adicionar s.CAMINHO_AZURE à consulta
+    # Ajuste na query para incluir CAMINHO_AZURE e TEM_ARQUIVO_DLL
     query = f"""
         SELECT FIRST {itens_por_pagina} SKIP {offset}
             s.CODSCRIPTLAUDO, s.NOME, s.DESCRICAO, s.LINGUAGEM, s.CAMINHO_PROJETO, s.SISTEMA,
             s.APROVADO, s.DATA_VERIFICACAO, s.ATIVO,
             CASE WHEN s.ARQUIVO_JSON IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_JSON,
-            s.APROVADO_POR, p.NOME AS NOME_PACOTE, s.CAMINHO_AZURE 
+            s.APROVADO_POR, p.NOME AS NOME_PACOTE, s.CAMINHO_AZURE,
+            CASE WHEN s.DLL IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_DLL 
           
         FROM SCRIPTLAUDO s
         LEFT JOIN PACOTES p ON s.CODPACOTE = p.CODPACOTE
@@ -527,12 +523,11 @@ def visualizar_scripts():
         ORDER BY s.NOME
     """
     cur.execute(query, params)
-    scripts_list = cur.fetchall() # Renomeado para scripts_list
+    scripts_list = cur.fetchall()
 
     scripts_detalhes = []
-    for script_tuple in scripts_list: # Renomeado para script_tuple
+    for script_tuple in scripts_list:
         codscriptlaudo = script_tuple[0]
-        # ... (lógica existente para buscar variáveis, imagens, pdfs) ...
         cur.execute("""
             SELECT v.VARIAVEL, v.NOME
             FROM SCRIPTLAUDO_VARIAVEL sv
@@ -553,13 +548,14 @@ def visualizar_scripts():
         pdfs = [{'caminho': row[1], 'nome': row[2]} for row in arquivos if row[0] == 'PDF']
 
         scripts_detalhes.append({
-            'script': script_tuple, # Passa a tupla inteira
+            'script': script_tuple, 
             'variaveis': variaveis,
-            'tem_arquivo_json': bool(script_tuple[9]), # Correto, baseado na consulta
-            'pacote_nome': script_tuple[11], # Correto, baseado na consulta
+            'tem_arquivo_json': bool(script_tuple[9]), 
+            'pacote_nome': script_tuple[11], 
             'imagens': imagens,
             'pdfs': pdfs
-            # O CAMINHO_AZURE estará em script_tuple[12]
+            # CAMINHO_AZURE está em script_tuple[12]
+            # TEM_ARQUIVO_DLL está em script_tuple[13]
         })
 
     cur.execute("SELECT CODPACOTE, NOME, DESCRICAO FROM PACOTES ORDER BY NOME")
@@ -569,12 +565,12 @@ def visualizar_scripts():
                            scripts_detalhes=scripts_detalhes,
                            pagina=pagina,
                            total_paginas=total_paginas,
-                           total_scripts=total_scripts, # Passando total_scripts
-                           nome=nome, # Filtro de nome
-                           sistema=sistema_filtro, # Filtro de sistema
-                           pacote=pacote_filtro,   # Filtro de pacote
-                           aprovado=aprovado_filtro, # Filtro de aprovado
-                           ativo=ativo_filtro,     # Filtro de ativo
+                           total_scripts=total_scripts,
+                           nome=nome,
+                           sistema=sistema_filtro,
+                           pacote=pacote_filtro,
+                           aprovado=aprovado_filtro,
+                           ativo=ativo_filtro,
                            pacotes=pacotes)
 
 @scripts_bp.route('/exportar_json/<int:codscriptlaudo>')
@@ -917,3 +913,59 @@ def baixar_projeto_azure(codscriptlaudo):
     
     flash("Caminho do projeto Azure DevOps configurado não é uma URL válida.", "error")
     return redirect(url_for('scripts.visualizar_scripts'))
+
+
+@scripts_bp.route('/exportar_dll/<int:codscriptlaudo>')
+def exportar_dll(codscriptlaudo):
+    if 'usuario' not in session:
+        flash("Acesso negado. Por favor, faça login.", "error")
+        return redirect(url_for('auth.login'))
+
+    conn, cur = get_db()
+    try:
+        cur.execute("""
+            SELECT DLL, NOME, SISTEMA
+            FROM SCRIPTLAUDO
+            WHERE CODSCRIPTLAUDO = ?
+        """, (codscriptlaudo,)) # A verificação de SISTEMA e DLL IS NOT NULL pode ser feita aqui também
+        script_info = cur.fetchone()
+
+        if not script_info:
+            flash("Script não encontrado.", "error")
+            return redirect(url_for('scripts.visualizar_scripts'))
+
+        arquivo_dll_blob_reader, nome_script, sistema = script_info # Renomeado para clareza
+
+        # Verificação de segurança e lógica de negócios
+        if sistema != 'Laudos Flex':
+            flash("Exportação de DLL aplicável apenas para scripts do sistema Laudos Flex.", "warning")
+            return redirect(url_for('scripts.visualizar_scripts'))
+
+        if not arquivo_dll_blob_reader: # Verifica se o campo DLL do banco é NULL
+            flash("Arquivo DLL não disponível para este script.", "warning")
+            return redirect(url_for('scripts.visualizar_scripts'))
+
+        # Ler os bytes do objeto BlobReader
+        try:
+            dll_bytes = arquivo_dll_blob_reader.read()
+        except Exception as e:
+            current_app.logger.error(f"Erro ao ler dados do Blob para CODSCRIPTLAUDO={codscriptlaudo}: {str(e)}", exc_info=True)
+            flash(f"Erro ao processar o arquivo DLL: {str(e)}", "error")
+            return redirect(url_for('scripts.visualizar_scripts'))
+        
+        # Sanitizar nome_script para uso em nome de arquivo
+        sane_nome_script = "".join(c if c.isalnum() or c in (' ', '_', '-') else '_' for c in nome_script).rstrip()
+        sane_nome_script = sane_nome_script.replace(' ', '_')
+        
+        download_name = f"script_{sane_nome_script}_{codscriptlaudo}.dll"
+
+        return send_file(
+            io.BytesIO(dll_bytes), # Agora passando os bytes lidos
+            mimetype='application/octet-stream', # Tipo MIME genérico para DLLs
+            as_attachment=True,
+            download_name=download_name
+        )
+    except Exception as e:
+        current_app.logger.error(f"Erro ao exportar DLL para CODSCRIPTLAUDO={codscriptlaudo}: {str(e)}", exc_info=True)
+        flash(f"Erro ao tentar exportar o arquivo DLL: {str(e)}", "error")
+        return redirect(url_for('scripts.visualizar_scripts'))

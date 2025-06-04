@@ -75,53 +75,54 @@ def visualizar_modelos():
     filtro_nome = request.args.get('nome', '').strip()
 
     # Consulta para modelos com filtro
-    query = """
+    # A query base para selecionar os campos que serão paginados
+    query_base_modelos = """
         SELECT CODMODELO, NOME
         FROM MODELO_MODO_TEXTO
         WHERE CODUSUARIO = ?
     """
-    params = [codusuario]
+    params_base = [codusuario]
+    
+    # Adiciona o filtro de nome à query base e aos parâmetros
     if filtro_nome:
-        query += " AND UPPER(NOME) LIKE UPPER(?)"
-        params.append(f"%{filtro_nome}%")
-    query += " ORDER BY NOME"
+        query_base_modelos += " AND UPPER(NOME) LIKE UPPER(?)"
+        params_base.append(f"%{filtro_nome}%")
+    
+    # A ordenação deve ser aplicada antes da paginação (geralmente)
+    # No entanto, com FIRST/SKIP do Firebird, a subconsulta pode ser necessária para garantir a ordem correta
+    # ou aplicar a ordenação na query mais externa.
 
-    # Contagem total
-    count_query = """
-        SELECT COUNT(*)
-        FROM MODELO_MODO_TEXTO
-        WHERE CODUSUARIO = ?
-    """
-    count_params = [codusuario]
-    if filtro_nome:
-        count_query += " AND UPPER(NOME) LIKE UPPER(?)"
-        count_params.append(f"%{filtro_nome}%")
+    # Contagem total com base nos filtros aplicados
+    count_query = "SELECT COUNT(*) FROM (" + query_base_modelos + ")" # Conta sobre a query filtrada
+    # Para count_params, usamos os mesmos params_base
+    count_params = list(params_base) # Cria uma cópia para evitar modificação acidental
 
     try:
         current_app.logger.info(f"Executando contagem: {count_query} com params: {count_params}")
         cur.execute(count_query, count_params)
-        total_modelos = cur.fetchone()[0]
-        total_paginas = (total_modelos + itens_por_pagina - 1) // itens_por_pagina
-
+        total_modelos_result = cur.fetchone() # Adicionado _result
+        total_modelos = total_modelos_result[0] if total_modelos_result else 0
+        total_paginas = (total_modelos + itens_por_pagina - 1) // itens_por_pagina if total_modelos > 0 else 0
+        
         # Consulta paginada
+        # A ordenação principal (ORDER BY NOME) deve estar na query mais externa ou na subquery
+        # para que FIRST e SKIP funcionem corretamente sobre o conjunto ordenado.
+        # O Firebird aplica o ORDER BY *antes* de FIRST/SKIP se estiver na mesma query.
+        
         paginated_query = f"""
             SELECT FIRST {itens_por_pagina} SKIP {offset}
-                   CODMODELO, NOME
-            FROM MODELO_MODO_TEXTO
-            WHERE CODUSUARIO = ?
-        """
-        if filtro_nome:
-            paginated_query += " AND UPPER(NOME) LIKE UPPER(?)"
-        paginated_query += " ORDER BY NOME"
-
-        current_app.logger.info(f"Executando consulta paginada: {paginated_query} com params: {params}")
-        cur.execute(paginated_query, params)
+                   sub.CODMODELO, sub.NOME
+            FROM ({query_base_modelos} ORDER BY NOME) sub 
+        """ 
+        # params_base já contém codusuario e filtro_nome (se houver)
+        
+        current_app.logger.info(f"Executando consulta paginada: {paginated_query} com params: {params_base}")
+        cur.execute(paginated_query, params_base)
         modelos = cur.fetchall()
 
-        # Carregar seções para cada modelo
         modelos_detalhes = []
-        for modelo in modelos:
-            codmodelo = modelo[0]
+        for modelo_tuple in modelos: # Renomeado para evitar conflito com o nome do blueprint/módulo
+            codmodelo = modelo_tuple[0]
             cur.execute("""
                 SELECT CODSECAO, NOME
                 FROM SECAO_MODO_TEXTO
@@ -130,19 +131,22 @@ def visualizar_modelos():
             """, (codmodelo,))
             secoes = cur.fetchall()
             modelos_detalhes.append({
-                'modelo': modelo,
+                'modelo': modelo_tuple, # Passa a tupla inteira
                 'secoes': secoes
+                # 'codmodelo': codmodelo # Removido, já que modelo[0] pode ser usado no template
             })
 
         return render_template('visualizar_modelos.html',
                                modelos_detalhes=modelos_detalhes,
                                pagina=pagina,
                                total_paginas=total_paginas,
+                               total_modelos=total_modelos, # Adicionando total_modelos
                                filtro_nome=filtro_nome)
     except Exception as e:
-        current_app.logger.error(f"Erro ao executar consulta: {str(e)}")
+        current_app.logger.error(f"Erro ao executar consulta em visualizar_modelos: {str(e)}", exc_info=True)
         flash(f"Erro ao carregar modelos: {str(e)}", "error")
-        return redirect(url_for('variaveis.home'))
+        # Redirecionar para uma página mais genérica em caso de erro
+        return redirect(url_for('bibliotecas.biblioteca')) 
 
 
 @modelos_bp.route('/excluir_modelo/<int:codmodelo>', methods=['POST'])

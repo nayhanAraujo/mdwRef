@@ -1,191 +1,85 @@
 {% extends 'layout.html' %}
 
-{% set content %}
+{% block title %}Biblioteca de Recursos{% endblock %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h3 class="fw-bold text-primary mb-0">
-      <i class="bi bi-collection-fill me-2"></i>Biblioteca de Recursos
-    </h3>
-    <p class="text-muted mb-0">Central de ferramentas e configurações do sistema</p>
-  </div>
-  <div class="text-end">
-    <div class="text-muted small">Bem-vindo, <strong class="text-dark">{{ session['usuario']['nome'] }}</strong></div>
-    <div class="badge bg-light text-dark small">
-      <i class="bi bi-clock-history me-1"></i>
-      <span id="currentDateTime"></span>
+{% set content %}
+{# Cabeçalho da Página Padronizado #}
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        {# Ícone pode ser o mesmo ou um mais genérico para 'Biblioteca'/'Painel' #}
+        <i class="bi bi-bookshelf me-2 icon-gradient"></i> Biblioteca de Recursos 
+      </h2>
+      <p class="text-muted small mb-0 ms-1">Central de ferramentas e configurações do sistema.</p> {# Subtítulo opcional #}
+    </div>
+    <div class="text-end">
+        <div class="text-muted small">Bem-vindo(a), <strong class="text-dark">{{ session['usuario']['nome'] }}</strong>!</div>
+        <div class="badge bg-light text-dark-emphasis border small mt-1"> {# Ajuste no estilo do badge de data/hora #}
+          <i class="bi bi-clock-history me-1"></i>
+          <span id="currentDateTime"></span>
+        </div>
     </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
-<style>
-  .module-card {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e0e0e0;
-    padding: 25px;
-    height: 100%;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .module-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    border-color: #0d6efd;
-  }
-  
-  .module-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: #0d6efd;
-    transition: all 0.3s ease;
-    opacity: 0;
-  }
-  
-  .module-card:hover::before {
-    opacity: 1;
-  }
-  
-  .module-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    font-size: 1.75rem;
-    color: white;
-  }
-  
-  .module-title {
-    font-weight: 600;
-    margin-bottom: 10px;
-    color: #333;
-  }
-  
-  .module-desc {
-    color: #666;
-    font-size: 0.9rem;
-    margin-bottom: 15px;
-    flex-grow: 1;
-  }
-  
-  .module-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  
-  .module-action {
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    background: #f8f9fa;
-    color: #0d6efd;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    border: 1px solid #e0e0e0;
-  }
-  
-  .module-action:hover {
-    background: #0d6efd;
-    color: white;
-  }
-  
-  .section-title {
-    font-weight: 600;
-    color: #495057;
-    margin: 30px 0 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .quick-access {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 30px;
-  }
-  
-  .quick-access-title {
-    font-weight: 600;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-  }
-  
-  .quick-access-title i {
-    margin-right: 10px;
-    color: #0d6efd;
-  }
-</style>
+<link rel="stylesheet" href="/static/css/biblioteca.css">
 
-<div class="container-fluid px-4">
-  <!-- Seção de Acesso Rápido -->
+
+
+<div class="container-fluid px-lg-4 px-md-3 px-sm-2"> {# Ajustado padding responsivo #}
   <div class="quick-access">
     <h5 class="quick-access-title"><i class="bi bi-lightning-charge-fill"></i>Acesso Rápido</h5>
     <div class="row g-3">
-      <div class="col-md-2 col-6">
-        <a href="{{ url_for('variaveis.nova_variavel') }}" class="module-action d-block text-center">
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6"> {# Colunas mais responsivas #}
+        <a href="{{ url_for('variaveis.nova_variavel') }}" class="module-action d-block text-center py-2">
           <i class="bi bi-plus-circle me-1"></i>Nova Variável
         </a>
       </div>
-      <div class="col-md-2 col-6">
-        <a href="{{ url_for('formulas.nova_formula') }}" class="module-action d-block text-center">
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+        <a href="{{ url_for('formulas.nova_formula') }}" class="module-action d-block text-center py-2">
           <i class="bi bi-plus-square me-1"></i>Nova Fórmula
         </a>
       </div>
-      <div class="col-md-2 col-6">
-        <a href="{{ url_for('referencias.nova_referencia') }}" class="module-action d-block text-center">
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+        <a href="{{ url_for('referencias.nova_referencia') }}" class="module-action d-block text-center py-2">
           <i class="bi bi-journal-plus me-1"></i>Nova Referência
         </a>
       </div>
-      <div class="col-md-2 col-6">
-        <a href="{{ url_for('modelos.novo_modelo') }}" class="module-action d-block text-center">
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+        <a href="{{ url_for('modelos.novo_modelo') }}" class="module-action d-block text-center py-2">
           <i class="bi bi-file-earmark-plus me-1"></i>Novo Modelo
         </a>
       </div>
-      <div class="col-md-2 col-6">
-        <a href="{{ url_for('uploads.uploaddll') }}" class="module-action d-block text-center">
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+        <a href="{{ url_for('uploads.uploaddll') }}" class="module-action d-block text-center py-2">
           <i class="bi bi-upload me-1"></i>Importar JSON
         </a>
       </div>
-      <div class="col-md-2 col-6">
-        <a href="{{ url_for('scripts.novo_script') }}" class="module-action d-block text-center">
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+        <a href="{{ url_for('scripts.novo_script') }}" class="module-action d-block text-center py-2">
           <i class="bi bi-code-slash me-1"></i>Novo Script
         </a>
       </div>
-      <div class="col-md-2 col-6">
-        <a href="{{ url_for('pacotes.novo_pacote') }}" class="module-action d-block text-center">
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+        <a href="{{ url_for('pacotes.novo_pacote') }}" class="module-action d-block text-center py-2">
           <i class="bi bi-box-fill me-1"></i>Novo Pacote
         </a>
       </div>
+      {# Adicione mais botões de acesso rápido se necessário, ajustando as classes de coluna #}
     </div>
   </div>
 
-  <!-- Seção de Módulos -->
-  <h5 class="section-title"><i class="bi bi-puzzle-fill me-2"></i>Módulos do Sistema</h5>
+  <h4 class="section-title"><i class="bi bi-grid-1x2-fill me-2"></i>Módulos do Sistema</h4>
   
   <div class="row g-4">
-    <!-- Variáveis e Fórmulas -->
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon bg-primary">
-          <i class="bi bi-file-bar-graph-fill"></i>
-        </div>
+        <div class="module-icon bg-primary"> <i class="bi bi-calculator-fill"></i> </div>
         <h5 class="module-title">Variáveis e Fórmulas</h5>
         <p class="module-desc">Gerencie todas as variáveis e fórmulas utilizadas nos cálculos do sistema.</p>
-        <div class="module-actions">
+        <div class="mt-auto module-actions"> {# mt-auto para alinhar ações na base se descrições variarem #}
           <a href="{{ url_for('variaveis.nova_variavel') }}" class="module-action">Nova Variável</a>
           <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="module-action">Listar Variáveis</a>
           <a href="{{ url_for('formulas.nova_formula') }}" class="module-action">Nova Fórmula</a>
@@ -194,61 +88,49 @@
       </div>
     </div>
     
-    <!-- Referências -->
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon bg-success">
-          <i class="bi bi-journal-bookmark-fill"></i>
-        </div>
+        <div class="module-icon bg-success"> <i class="bi bi-journal-bookmark-fill"></i> </div>
         <h5 class="module-title">Referências</h5>
         <p class="module-desc">Armazene e gerencie referências bibliográficas e documentos de apoio.</p>
-        <div class="module-actions">
+        <div class="mt-auto module-actions">
           <a href="{{ url_for('referencias.nova_referencia') }}" class="module-action">Nova Referência</a>
           <a href="{{ url_for('referencias.visualizar_referencias') }}" class="module-action">Listar Referências</a>
-          <a href="{{ url_for('referencias.visualizar_referencias') }}" class="module-action">Anexos</a>
+          {# <a href="{{ url_for('referencias.visualizar_anexos_geral') }}" class="module-action">Ver Todos Anexos</a> #}
         </div>
       </div>
     </div>
     
-    <!-- Modo Texto -->
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon bg-info">
-          <i class="bi bi-text-paragraph"></i>
-        </div>
-        <h5 class="module-title">Modo Texto</h5>
-        <p class="module-desc">Crie e gerencie modelos de texto para relatórios e documentações.</p>
-        <div class="module-actions">
+        <div class="module-icon bg-info text-dark"> <i class="bi bi-textarea-t"></i> </div>
+        <h5 class="module-title">Modelos de Texto</h5>
+        <p class="module-desc">Crie e gerencie modelos para laudos e relatórios em modo texto.</p>
+        <div class="mt-auto module-actions">
           <a href="{{ url_for('modelos.novo_modelo') }}" class="module-action">Novo Modelo</a>
-          <a href="{{ url_for('modelos.visualizar_modelos') }}" class="module-action">Modelos Cadastrados</a>
+          <a href="{{ url_for('modelos.visualizar_modelos') }}" class="module-action">Listar Modelos</a>
         </div>
       </div>
     </div>
     
-    <!-- Importações -->
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon bg-warning">
-          <i class="bi bi-download"></i>
-        </div>
+        <div class="module-icon bg-warning text-dark"> <i class="bi bi-upload"></i> </div>
         <h5 class="module-title">Importações</h5>
-        <p class="module-desc">Importe variáveis e dados de diferentes formatos para o sistema.</p>
-        <div class="module-actions">
-          <a href="{{ url_for('uploads.uploaddll') }}" class="module-action">Importar JSON</a>
-          <a href="{{ url_for('variaveis.importar_variaveis') }}" class="module-action">Importar .CS</a>
+        <p class="module-desc">Importe dados de variáveis de arquivos .json ou .cs para o sistema.</p>
+        <div class="mt-auto module-actions">
+          <a href="{{ url_for('uploads.uploaddll') }}" class="module-action">Importar JSON (Variáveis)</a>
+          <a href="{{ url_for('variaveis.importar_variaveis') }}" class="module-action">Importar .CS (Variáveis)</a>
         </div>
       </div>
     </div>
     
-    <!-- Configurações -->
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon bg-danger">
-          <i class="bi bi-gear-fill"></i>
-        </div>
-        <h5 class="module-title">Configurações</h5>
-        <p class="module-desc">Configure unidades, especialidades e outros parâmetros do sistema.</p>
-        <div class="module-actions">
+        <div class="module-icon bg-danger"> <i class="bi bi-sliders"></i> </div>
+        <h5 class="module-title">Configurações Gerais</h5>
+        <p class="module-desc">Ajuste unidades de medida, especialidades e tipos de linguagem.</p>
+        <div class="mt-auto module-actions">
           <a href="{{ url_for('unidades.visualizar_unidades') }}" class="module-action">Unidades</a>
           <a href="{{ url_for('especialidades.visualizar_especialidades') }}" class="module-action">Especialidades</a>
           <a href="{{ url_for('linguagens.visualizar_linguagens') }}" class="module-action">Linguagens</a>
@@ -256,30 +138,24 @@
       </div>
     </div>
     
-    <!-- Administração -->
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon bg-dark">
-          <i class="bi bi-shield-lock-fill"></i>
-        </div>
+        <div class="module-icon text-bg-dark"> <i class="bi bi-shield-shaded"></i> </div> {# Usando text-bg-dark #}
         <h5 class="module-title">Administração</h5>
-        <p class="module-desc">Gerencie usuários e configurações avançadas do sistema.</p>
-        <div class="module-actions">
-          <a href="{{ url_for('users.usuarios') }}" class="module-action">Usuários</a>
+        <p class="module-desc">Gerencie usuários e permissões do sistema.</p>
+        <div class="mt-auto module-actions">
+          <a href="{{ url_for('users.usuarios') }}" class="module-action">Listar Usuários</a>
           <a href="{{ url_for('users.novo_usuario') }}" class="module-action">Novo Usuário</a>
         </div>
       </div>
     </div>
     
-    <!-- Pacotes e Scripts -->
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon bg-secondary">
-          <i class="bi bi-box-fill"></i>
-        </div>
+        <div class="module-icon text-bg-secondary"> <i class="bi bi-collection-play-fill"></i> </div> {# Usando text-bg-secondary #}
         <h5 class="module-title">Pacotes e Scripts</h5>
-        <p class="module-desc">Organize pacotes de scripts e gerencie scripts de laudo.</p>
-        <div class="module-actions">
+        <p class="module-desc">Crie pacotes, gerencie scripts de laudo e suas configurações.</p>
+        <div class="mt-auto module-actions">
           <a href="{{ url_for('pacotes.novo_pacote') }}" class="module-action">Novo Pacote</a>
           <a href="{{ url_for('pacotes.visualizar_pacotes') }}" class="module-action">Listar Pacotes</a>
           <a href="{{ url_for('scripts.novo_script') }}" class="module-action">Novo Script</a>
@@ -288,17 +164,14 @@
       </div>
     </div>
     
-    <!-- DICOM -->
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon bg-dark">
-          <i class="bi bi-diagram-3-fill"></i>
-        </div>
-        <h5 class="module-title">DICOM</h5>
-        <p class="module-desc">Gerencie códigos universais e vincule dados DICOM ao sistema.</p>
-        <div class="module-actions">
-          <a href="{{ url_for('codigos_universais.visualizar_codigos_universais') }}" class="module-action">Códigos</a>
-          <a href="{{ url_for('variaveis.vincular_codigo_universal') }}" class="module-action">Vincular DICOM</a>
+        <div class="module-icon" style="background-color: #6f42c1;"> <i class="bi bi-diagram-3-fill"></i> </div> {# Cor roxa customizada #}
+        <h5 class="module-title">Códigos Universais e DICOM</h5>
+        <p class="module-desc">Gerencie códigos universais (ex: LOINC, SNOMED) e vincule-os a variáveis.</p>
+        <div class="mt-auto module-actions">
+          <a href="{{ url_for('codigos_universais.visualizar_codigos_universais') }}" class="module-action">Ver Códigos</a>
+          <a href="{{ url_for('variaveis.vincular_codigo_universal') }}" class="module-action">Vincular a Variáveis</a>
         </div>
       </div>
     </div>
@@ -309,20 +182,16 @@
   // Atualiza a data e hora em tempo real
   function updateDateTime() {
     const now = new Date();
-    const options = { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false
-    };
-    document.getElementById('currentDateTime').textContent = now.toLocaleDateString('pt-BR', options);
+    const optionsDate = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+    const dateString = now.toLocaleDateString('pt-BR', optionsDate);
+    const timeString = now.toLocaleTimeString('pt-BR', optionsTime);
+    document.getElementById('currentDateTime').textContent = `${dateString} ${timeString}`;
   }
   
-  // Atualiza imediatamente e depois a cada minuto
+  // Atualiza imediatamente e depois a cada segundo
   updateDateTime();
-  setInterval(updateDateTime, 60000);
+  setInterval(updateDateTime, 1000); // Atualiza a cada segundo para ver os segundos mudando
 </script>
 
 {% endset %}

@@ -1,229 +1,322 @@
 {% extends 'layout.html' %}
 
+{% block title %}Seções do Modelo: {{ nome_modelo }}{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-list me-2"></i> Seções Cadastradas (Modelo: {{ nome_modelo }})
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-list-nested me-2 icon-gradient"></i> Seções do Modelo
+      </h2>
+      <p class="text-muted small mb-0 ms-1">Modelo: <strong>{{ nome_modelo }}</strong> (Cód: {{ codmodelo }})</p>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
-<div class="container">
+<div class="container-fluid">
   <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <form id="ordenarForm" method="POST" action="{{ url_for('secoes.ordenar_secoes', codmodelo=codmodelo) }}">
-        <table class="table table-hover table-bordered align-middle" id="secoesTable">
-          <thead class="table-primary text-center">
-            <tr>
-              <th>Nome da Seção</th>
-              <th>Variáveis Associadas</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="sortable">
-            {% if secoes_detalhes %}
-              {% for item in secoes_detalhes %}
-                <tr data-id="{{ item.secao[0] }}">
-                  <td>{{ item.secao[1] }}</td>
-                  <td>
-                    {% if item.variaveis %}
-                      <ul class="list-unstyled mb-0">
-                        {% for variavel in item.variaveis %}
-                          <li>{{ variavel[1] }} ({{ variavel[2] }})</li>
-                        {% endfor %}
-                      </ul>
-                    {% else %}
-                      Nenhuma variável associada.
-                    {% endif %}
-                  </td>
-                  <td class="text-center">
-                    <a href="{{ url_for('secoes.editar_secao', codsecao=item.secao[0]) }}" class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-pencil"></i> Editar
-                    </a>
-                    <form action="{{ url_for('secoes.excluir_secao', codsecao=item.secao[0]) }}" method="POST" class="d-inline excluir-secao-form">
-                      <button type="submit" class="btn btn-sm btn-outline-danger">
-                        <i class="bi bi-trash"></i> Excluir
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              {% endfor %}
-            {% else %}
-              <tr>
-                <td colspan="3" class="text-center">Nenhuma seção encontrada.</td>
-              </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </form>
-
-      <!-- Paginação -->
-      <nav aria-label="Paginação">
-        <ul class="pagination justify-content-center">
-          {% if pagina > 1 %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo, page=pagina-1) }}">Anterior</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">Anterior</span>
-            </li>
-          {% endif %}
-          <li class="page-item disabled">
-            <span class="page-link">Página {{ pagina }} de {{ total_paginas }}</span>
-          </li>
-          {% if pagina < total_paginas %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo, page=pagina+1) }}">Próxima</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">Próxima</span>
-            </li>
-          {% endif %}
-        </ul>
-      </nav>
-
-      <!-- Botões de Ação -->
-      <div class="d-flex justify-content-between">
+    <div class="card-header bg-light py-3">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h5 class="mb-0 text-primary">Gerenciar Seções</h5>
         <div>
-          <a href="{{ url_for('secoes.nova_secao', codmodelo=codmodelo) }}" class="btn btn-success">
-            <i class="bi bi-plus-circle"></i> Nova Seção
+          <a href="{{ url_for('secoes.nova_secao', codmodelo=codmodelo) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle-fill me-1"></i> Nova Seção
           </a>
-          <button onclick="salvarOrdem()" class="btn btn-primary">
-            <i class="bi bi-sort-down"></i> Salvar Ordem
-          </button>
-          <a href="{{ url_for('variaveis.gerar_modo_texto', codmodelo=codmodelo) }}" class="btn btn-primary">
-            <i class="bi bi-download"></i> Gerar Modo Texto
-          </a>
-          <button type="button" class="btn btn-outline-warning edit-modelo-btn" 
-                  data-codmodelo="{{ codmodelo }}" data-nome="{{ nome_modelo }}">
-            <i class="bi bi-pencil-square"></i> Editar Modelo
+          <button onclick="salvarOrdem()" class="btn btn-success btn-sm">
+            <i class="bi bi-save-fill me-1"></i> Salvar Ordem das Seções
           </button>
         </div>
-        <a href="{{ url_for('modelos.visualizar_modelos') }}" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left"></i> Voltar
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="text-info small"><i class="bi bi-info-circle-fill me-1"></i>Arraste e solte as linhas da tabela para reordenar as seções. Clique em "Salvar Ordem" para aplicar.</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form id="ordenarForm" method="POST" action="{{ url_for('secoes.ordenar_secoes', codmodelo=codmodelo) }}">
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered align-middle" id="secoesTable">
+            <thead class="table-light">
+              <tr class="text-center">
+                <th style="width: 5%;"><i class="bi bi-grip-vertical" title="Ordenar"></i></th>
+                <th class="text-start">Nome da Seção</th>
+                <th class="text-start">Variáveis Associadas (Siglas)</th>
+                <th style="width: 20%;">Ações da Seção</th>
+              </tr>
+            </thead>
+            <tbody id="sortable">
+              {% if secoes_detalhes %}
+                {% for item in secoes_detalhes %}
+                  <tr data-id="{{ item.secao[0] }}">
+                    <td class="text-center" style="cursor: move;"><i class="bi bi-grip-vertical"></i></td>
+                    <td class="fw-medium">{{ item.secao[1] }}</td>
+                    <td>
+                      {% if item.variaveis %}
+                        <div class="d-flex flex-wrap gap-1">
+                          {% for variavel in item.variaveis %}
+                            <span class="badge bg-secondary"><code>{{ variavel[2] }}</code></span> {# variavel[2] é a SIGLA #}
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        <span class="text-muted fst-italic small">Nenhuma variável associada.</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group btn-group-sm">
+                        <a href="{{ url_for('secoes.editar_secao', codsecao=item.secao[0]) }}" class="btn btn-outline-secondary" title="Editar Seção e Variáveis">
+                          <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+                        <form action="{{ url_for('secoes.excluir_secao', codsecao=item.secao[0]) }}" method="POST" class="d-inline excluir-secao-form">
+                          <button type="submit" class="btn btn-outline-danger" title="Excluir Seção">
+                            <i class="bi bi-trash-fill"></i> Excluir
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted fst-italic">Nenhuma seção cadastrada para este modelo. <a href="{{ url_for('secoes.nova_secao', codmodelo=codmodelo) }}">Adicione uma nova seção</a>.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </form>
+
+      {% if total_paginas is defined and total_paginas > 0 %}
+        <nav aria-label="Paginação de Seções" class="mt-4">
+          <ul class="pagination justify-content-center">
+            {% if pagina > 1 %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo, page=pagina-1) }}"><i class="bi bi-chevron-left"></i> Anterior</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span></li>
+            {% endif %}
+            
+            {% set delta = 2 %}{% set left = pagina - delta %}{% set right = pagina + delta + 1 %}{% set range_ = [] %}{% set range_with_dots = [] %}{% set l = 0 %}
+            {% for i in range(1, total_paginas + 1) %}{% if i == 1 or i == total_paginas or (i >= left and i < right) %}{% if range_.append(i) %}{% endif %}{% endif %}{% endfor %}
+            {% for i in range_ %}{% if l %}{% if i - l == 2 %}{% if range_with_dots.append(l + 1) %}{% endif %}{% elif i - l != 1 %}{% if range_with_dots.append('...') %}{% endif %}{% endif %}{% endif %}{% if range_with_dots.append(i) %}{% endif %}{% set l = i %}{% endfor %}
+            {% for i in range_with_dots %}
+              {% if i == '...' %}<li class="page-item disabled"><span class="page-link">...</span></li>
+              {% elif i == pagina %}<li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+              {% else %}<li class="page-item"><a class="page-link" href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo, page=i) }}">{{ i }}</a></li>
+              {% endif %}
+            {% endfor %}
+
+            {% if pagina < total_paginas %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo, page=pagina+1) }}">Próxima <i class="bi bi-chevron-right"></i></a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">Próxima <i class="bi bi-chevron-right"></i></span></li>
+            {% endif %}
+          </ul>
+          {# Assumindo que você passa total_secoes para o template #}
+          {% if total_secoes is defined %} 
+              <p class="text-center text-muted small mt-2">Página {{ pagina }} de {{ total_paginas }} (Total de {{ total_secoes }} seções)</p>
+          {% endif %}
+        </nav>
+      {% elif secoes_detalhes %}
+          <p class="text-center text-muted small mt-2">Total de {{ secoes_detalhes|length }} seções</p>
+      {% endif %}
+      
+      <hr class="my-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <a href="{{ url_for('variaveis.gerar_modo_texto', codmodelo=codmodelo) }}" class="btn btn-info me-2" title="Baixar a representação em modo texto deste modelo">
+              <i class="bi bi-file-earmark-text-fill"></i> Gerar Modo Texto
+            </a>
+            <button type="button" class="btn btn-outline-warning edit-modelo-btn" 
+                    data-codmodelo="{{ codmodelo }}" data-nome="{{ nome_modelo | escape }}" title="Editar o nome do modelo pai">
+              <i class="bi bi-pencil-square"></i> Editar Nome do Modelo
+            </button>
+        </div>
+        <a href="{{ url_for('modelos.visualizar_modelos') }}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left-circle me-1"></i> Voltar para Modelos
         </a>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Incluir jQuery e jQuery UI para drag-and-drop -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+<style>
+  /* Estilos do Page Header (se não estiverem globais) */
+  .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
+  .page-header .icon-gradient {background: linear-gradient(45deg, var(--bs-primary), var(--bs-info)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; font-size: 1.65rem; vertical-align: middle;}
+  .page-header-divider {border-top: 1px solid rgba(0, 0, 0, 0.08);}
+  
+  #sortable tr { cursor: move; }
+  .ui-state-highlight { height: 3.5em; line-height: 3.2em; background: #f0f8ff; border: 1px dashed #ccc; }
+</style>
+
 <script>
   $(document).ready(function() {
     $("#sortable").sortable({
       placeholder: "ui-state-highlight",
-      update: function(event, ui) {
-        // Atualizar a ordem visualmente (não necessária para o backend, apenas para UX)
+      axis: "y", // Permite apenas ordenação vertical
+      opacity: 0.7,
+      helper: function(e, ui) { // Mantém a largura das colunas ao arrastar
+        ui.children().each(function() {
+          $(this).width($(this).width());
+        });
+        return ui;
       }
-    });
-    $("#sortable").disableSelection();
-
-    // Debugging: Log variables to check for undefined
-    console.log('Template variables:', {
-      codmodelo: '{{ codmodelo }}',
-      nome_modelo: '{{ nome_modelo }}',
-      pagina: '{{ pagina }}',
-      total_paginas: '{{ total_paginas }}'
-    });
+    }).disableSelection();
   });
 
   function salvarOrdem() {
     var ordem = [];
-    $("#sortable tr").each(function() {
+    $("#sortable tr").each(function(index) {
       var id = $(this).data("id");
       if (id) {
         ordem.push(id);
       }
     });
-    // Adicionar campos ocultos dinamicamente ao formulário
+    
     var form = $("#ordenarForm");
-    form.find("input[name='ordem[]']").remove(); // Limpar campos anteriores
+    form.find("input[name='ordem[]']").remove(); 
     ordem.forEach(function(id) {
-      form.append('<input type="hidden" name="ordem[]" value="' + id + '">');
+      form.append($('<input>').attr({ type: 'hidden', name: 'ordem[]', value: id }));
     });
-    form.submit();
+
+    // Adicionar SweetAlert para confirmação
+    const swalMixinSalvarOrdem = Swal.mixin({
+        customClass: { confirmButton: 'btn btn-success mx-1', cancelButton: 'btn btn-secondary mx-1' },
+        buttonsStyling: false,
+        popup: 'swal2-zindex-high'
+    });
+    swalMixinSalvarOrdem.fire({
+        title: 'Salvar Nova Ordem?',
+        text: "A ordem das seções será atualizada.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-check-lg"></i> Sim, Salvar Ordem',
+        cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
   }
 
-  document.querySelectorAll('.excluir-secao-form').forEach(form => {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      Swal.fire({
-        title: 'Confirmar Exclusão',
-        text: 'Tem certeza que deseja excluir esta seção?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Excluir',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          form.submit();
-        }
-      });
+  // Funções SweetAlert para editar e excluir (já existentes, com mixin aplicado)
+  document.addEventListener('DOMContentLoaded', function() { // Executa após o jQuery UI
+    const swalMixin = Swal.mixin({
+        customClass: {
+            confirmButton: 'btn btn-success mx-1',
+            cancelButton: 'btn btn-danger mx-1' // Vermelho para cancelar em exclusão
+        },
+        buttonsStyling: false,
+        popup: 'swal2-zindex-high' 
+    });
+    
+    const swalConfirmDeleteMixin = Swal.mixin({ // Mixin específico para botões de exclusão
+        customClass: {
+            confirmButton: 'btn btn-danger mx-1', // Vermelho para confirmar exclusão
+            cancelButton: 'btn btn-secondary mx-1'
+        },
+        buttonsStyling: false,
+        popup: 'swal2-zindex-high'
+    });
+
+    function escapeJSString(unsafe) {
+        if (unsafe === null || typeof unsafe === 'undefined') return '';
+        return String(unsafe).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    document.querySelectorAll('.edit-modelo-btn').forEach(button => {
+        button.addEventListener('click', function() {
+        const codmodelo = this.dataset.codmodelo;
+        const nomeAtual = this.dataset.nome;
+        swalMixin.fire({
+            title: 'Editar Nome do Modelo',
+            html: `<label for="swal-nome-modelo" class="form-label mt-2" style="display:block; text-align:left;">Novo nome do modelo:</label>
+                   <input type="text" id="swal-nome-modelo" class="form-control" value="${escapeJSString(nomeAtual)}" placeholder="Digite o novo nome do modelo">`,
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-check-lg"></i> Salvar',
+            cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+            focusConfirm: false,
+            preConfirm: () => {
+            const novoNome = document.getElementById('swal-nome-modelo').value.trim();
+            if (!novoNome) {
+                Swal.showValidationMessage('O nome do modelo é obrigatório.');
+                return false;
+            }
+            return { codmodelo: codmodelo, nome: novoNome };
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+            fetch("{{ url_for('secoes.editar_nome_modelo') }}", { // Usar url_for para a rota
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(result.value)
+            })
+            .then(response => {
+                if (!response.ok) {
+                return response.json().then(errData => { throw new Error(errData.error || `HTTP error! Status: ${response.status}`); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                swalMixin.fire({title: 'Sucesso!', text: data.message || 'Nome do modelo atualizado.', icon: 'success', timer: 2000, showConfirmButton: false})
+                .then(() => { window.location.reload(); });
+                } else {
+                swalMixin.fire({title: 'Erro!', text: data.error || 'Erro ao atualizar nome do modelo.', icon: 'error'});
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição Fetch:', error);
+                swalMixin.fire({title: 'Erro de Rede!', text: 'Não foi possível atualizar o nome do modelo: ' + error.message, icon: 'error'});
+            });
+            }
+        });
+        });
+    });
+
+    document.querySelectorAll('.excluir-secao-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        swalConfirmDeleteMixin.fire({ // Usando o mixin específico para exclusão
+            title: 'Confirmar Exclusão',
+            text: 'Tem certeza que deseja excluir esta seção e todas as variáveis associadas a ela?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir!',
+            cancelButtonText: '<i class="bi bi-x-lg me-1"></i> Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+            form.submit();
+            }
+        });
+        });
     });
   });
 
-  document.querySelectorAll('.edit-modelo-btn').forEach(button => {
-    button.addEventListener('click', function() {
-      console.log('Botão Editar Modelo clicado:', this.dataset); // Depuração
-      const codmodelo = this.dataset.codmodelo;
-      const nomeAtual = this.dataset.nome;
-
-      Swal.fire({
-        title: 'Editar Nome do Modelo',
-        html: `
-          <input type="text" id="nome-modelo" class="swal2-input" value="${nomeAtual}" placeholder="Digite o novo nome">
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Salvar',
-        cancelButtonText: 'Cancelar',
-        preConfirm: () => {
-          const novoNome = document.getElementById('nome-modelo').value.trim();
-          if (!novoNome) {
-            Swal.showValidationMessage('O nome do modelo é obrigatório');
-            return false;
-          }
-          return { codmodelo: codmodelo, nome: novoNome };
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          fetch('/secoes/editar_nome_modelo', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(result.value)
-          })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            if (data.success) {
-              Swal.fire('Sucesso', 'Nome do modelo atualizado com sucesso!', 'success')
-                .then(() => {
-                  window.location.reload(); // Recarregar a página para refletir o novo nome
-                });
-            } else {
-              Swal.fire('Erro', data.error || 'Falha ao atualizar o nome do modelo.', 'error');
-            }
-          })
-          .catch(error => {
-            console.error('Erro ao atualizar nome do modelo:', error);
-            Swal.fire('Erro', 'Erro ao atualizar o nome do modelo: ' + error.message, 'error');
-          });
-        }
-      });
-    });
-  });
+  const styleSwalZIndexVisualizarSecoes = document.createElement('style');
+  styleSwalZIndexVisualizarSecoes.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+  document.head.appendChild(styleSwalZIndexVisualizarSecoes);
 </script>
 {% endset %}

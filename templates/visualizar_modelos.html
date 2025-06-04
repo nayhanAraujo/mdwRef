@@ -1,195 +1,244 @@
 {% extends 'layout.html' %}
 
+{% block title %}Modelos de Modo Texto{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-list me-2"></i> Modelos Cadastrados
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-layout-text-window-reverse me-2 icon-gradient"></i> Modelos Cadastrados
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
-<div class="container">
+<div class="container-fluid">
   <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary">Listagem de Modelos de Modo Texto</h5>
+        <a href="{{ url_for('modelos.novo_modelo') }}" class="btn btn-primary">
+          <i class="bi bi-plus-circle-fill me-1"></i> Novo Modelo
+        </a>
+      </div>
+    </div>
     <div class="card-body">
-      <!-- Formulário de Filtros -->
-      <form method="GET" action="{{ url_for('modelos.visualizar_modelos') }}" class="mb-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label">Nome do Modelo</label>
-            <input type="text" name="nome" class="form-control" value="{{ filtro_nome }}" placeholder="Ex.: Modelo Cardíaco">
+      <div class="p-3 border rounded bg-light-subtle mb-4">
+        <form method="GET" action="{{ url_for('modelos.visualizar_modelos') }}">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label for="filtro_nome_modelo" class="form-label">Nome do Modelo</label>
+              <input type="text" id="filtro_nome_modelo" name="nome" class="form-control form-control-sm" value="{{ filtro_nome }}" placeholder="Pesquisar por nome...">
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-search"></i> Filtrar
+              </button>
+            </div>
+            <div class="col-md-2">
+              <a href="{{ url_for('modelos.visualizar_modelos') }}" class="btn btn-outline-secondary btn-sm w-100" title="Limpar Filtros">
+                <i class="bi bi-eraser"></i> Limpar
+              </a>
+            </div>
           </div>
-          <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="bi bi-search"></i> Filtrar
-            </button>
-          </div>
-        </div>
-      </form>
+        </form>
+      </div>
 
-      <!-- Mensagem de Erro -->
-      {% if get_flashed_messages() %}
-        <div class="alert alert-danger mb-3">
-          {% for category, message in get_flashed_messages(with_categories=true) %}
-            {{ message }}
-          {% endfor %}
-        </div>
-      {% endif %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-      <!-- Tabela de Modelos -->
       <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle">
-          <thead class="table-primary">
+          <thead class="table-light">
             <tr>
-              <th>Nome do Modelo</th>
-              <th>Seções</th>
-              <th>Ações</th>
+              <th class="text-start" style="width: 35%;">Nome do Modelo</th>
+              <th class="text-start">Seções (Prévia)</th>
+              <th class="text-center" style="width: 30%;">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% if modelos_detalhes %}
               {% for item in modelos_detalhes %}
                 <tr>
-                  <td>{{ item['modelo'][1] }}</td>
+                  <td class="fw-medium">{{ item.modelo[1] }}</td> {# Nome do modelo #}
                   <td>
-                    {% if item['secoes'] %}
-                      <ul class="list-unstyled mb-0">
-                        {% for secao in item['secoes'] %}
-                          <li>{{ secao[1] }}</li>
+                    {% if item.secoes %}
+                      <ul class="list-unstyled mb-0 small">
+                        {% for secao in item.secoes[:3] %} {# Mostra apenas as 3 primeiras seções como prévia #}
+                          <li><i class="bi bi-card-text me-1 text-muted"></i>{{ secao[1] }}</li>
                         {% endfor %}
+                        {% if item.secoes|length > 3 %}
+                          <li><small class="text-muted fst-italic">... e mais {{ item.secoes|length - 3 }}</small></li>
+                        {% endif %}
                       </ul>
                     {% else %}
-                      Nenhuma seção cadastrada.
+                      <span class="text-muted fst-italic">Nenhuma seção cadastrada.</span>
                     {% endif %}
                   </td>
                   <td class="text-center">
-                    <a href="{{ url_for('secoes.visualizar_secoes', codmodelo=item['modelo'][0]) }}" class="btn btn-primary btn-sm">
-                      <i class="bi bi-eye"></i> Visualizar
-                    </a>
-                    <a href="{{ url_for('secoes.nova_secao', codmodelo=item['modelo'][0]) }}" class="btn btn-success btn-sm">
-                      <i class="bi bi-plus-circle"></i> Nova Seção
-                    </a>
-                    <button type="button" class="btn btn-outline-warning btn-sm edit-modelo-btn" 
-                            data-codmodelo="{{ item['modelo'][0] }}" data-nome="{{ item['modelo'][1] }}">
-                      <i class="bi bi-pencil-square"></i> Editar
-                    </button>
-                    <form action="{{ url_for('modelos.excluir_modelo', codmodelo=item['modelo'][0]) }}" method="POST" class="d-inline excluir-modelo-form">
-                      <button type="submit" class="btn btn-sm btn-outline-danger">
-                        <i class="bi bi-trash"></i> Excluir
+                    <div class="btn-group btn-group-sm" role="group">
+                      <a href="{{ url_for('secoes.visualizar_secoes', codmodelo=item.modelo[0]) }}" class="btn btn-outline-primary" title="Visualizar/Gerenciar Seções">
+                        <i class="bi bi-list-task"></i> Seções
+                      </a>
+                      <a href="{{ url_for('secoes.nova_secao', codmodelo=item.modelo[0]) }}" class="btn btn-outline-success" title="Adicionar Nova Seção">
+                        <i class="bi bi-plus-circle-dotted"></i> Nova Seção
+                      </a>
+                      <button type="button" class="btn btn-outline-secondary edit-modelo-btn" 
+                              data-codmodelo="{{ item.modelo[0] }}" data-nome="{{ item.modelo[1] | escape }}" title="Editar Nome do Modelo">
+                        <i class="bi bi-pencil-square"></i> Editar Nome
                       </button>
-                    </form>
+                      <form action="{{ url_for('modelos.excluir_modelo', codmodelo=item.modelo[0]) }}" method="POST" class="d-inline excluir-modelo-form">
+                        <button type="submit" class="btn btn-outline-danger" title="Excluir Modelo e todas as suas seções">
+                          <i class="bi bi-trash-fill"></i> Excluir
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="3" class="text-center">Nenhum modelo encontrado.</td>
+                <td colspan="3" class="text-center text-muted fst-italic">Nenhum modelo encontrado. <a href="{{ url_for('modelos.novo_modelo') }}">Crie um novo modelo</a>.</td>
               </tr>
             {% endif %}
           </tbody>
         </table>
       </div>
 
-      <!-- Paginação -->
-      <nav aria-label="Paginação">
-        <ul class="pagination justify-content-center">
-          {% if pagina > 1 %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('modelos.visualizar_modelos', page=pagina-1, nome=filtro_nome) }}">Anterior</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">Anterior</span>
-            </li>
-          {% endif %}
-          <li class="page-item disabled">
-            <span class="page-link">Página {{ pagina }} de {{ total_paginas }}</span>
-          </li>
-          {% if pagina < total_paginas %}
-            <li class="page-item">
-              <a class="page-link" href="{{ url_for('modelos.visualizar_modelos', page=pagina+1, nome=filtro_nome) }}">Próxima</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">Próxima</span>
-            </li>
-          {% endif %}
-        </ul>
-      </nav>
+      {% if total_paginas is defined and total_paginas > 0 %}
+        <nav aria-label="Paginação de Modelos" class="mt-4">
+          <ul class="pagination justify-content-center">
+            {% if pagina > 1 %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('modelos.visualizar_modelos', page=pagina-1, nome=filtro_nome) }}"><i class="bi bi-chevron-left"></i> Anterior</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span></li>
+            {% endif %}
+            
+            {% set delta = 2 %}{% set left = pagina - delta %}{% set right = pagina + delta + 1 %}{% set range_ = [] %}{% set range_with_dots = [] %}{% set l = 0 %}
+            {% for i in range(1, total_paginas + 1) %}{% if i == 1 or i == total_paginas or (i >= left and i < right) %}{% if range_.append(i) %}{% endif %}{% endif %}{% endfor %}
+            {% for i in range_ %}{% if l %}{% if i - l == 2 %}{% if range_with_dots.append(l + 1) %}{% endif %}{% elif i - l != 1 %}{% if range_with_dots.append('...') %}{% endif %}{% endif %}{% endif %}{% if range_with_dots.append(i) %}{% endif %}{% set l = i %}{% endfor %}
+            {% for i in range_with_dots %}
+              {% if i == '...' %}<li class="page-item disabled"><span class="page-link">...</span></li>
+              {% elif i == pagina %}<li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+              {% else %}<li class="page-item"><a class="page-link" href="{{ url_for('modelos.visualizar_modelos', page=i, nome=filtro_nome) }}">{{ i }}</a></li>
+              {% endif %}
+            {% endfor %}
 
-      <!-- Botões de Ação -->
-      <div class="d-flex justify-content-between">
-        <a href="{{ url_for('modelos.novo_modelo') }}" class="btn btn-success">
-          <i class="bi bi-plus-circle"></i> Novo Modelo
+            {% if pagina < total_paginas %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('modelos.visualizar_modelos', page=pagina+1, nome=filtro_nome) }}">Próxima <i class="bi bi-chevron-right"></i></a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">Próxima <i class="bi bi-chevron-right"></i></span></li>
+            {% endif %}
+          </ul>
+          {% if total_modelos is defined %}
+              <p class="text-center text-muted small mt-2">Página {{ pagina }} de {{ total_paginas }} (Total de {{ total_modelos }} modelos)</p>
+          {% endif %}
+        </nav>
+      {% elif modelos_detalhes %}
+          <p class="text-center text-muted small mt-2">Total de {{ modelos_detalhes|length }} modelos</p>
+      {% endif %}
+
+      <div class="mt-4 text-end">
+        <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-secondary"> {# Alterado para btn-secondary para consistência #}
+          <i class="bi bi-arrow-left-circle me-1"></i> Voltar para Biblioteca
         </a>
       </div>
     </div>
   </div>
 </div>
 
+<style>
+  /* Estilos do Page Header (se não estiverem globais) */
+  .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
+  .page-header .icon-gradient {background: linear-gradient(45deg, var(--bs-primary), var(--bs-info)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; font-size: 1.65rem; vertical-align: middle;}
+  .page-header-divider {border-top: 1px solid rgba(0, 0, 0, 0.08);}
+</style>
+
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  const swalMixin = Swal.mixin({
+    customClass: {
+      confirmButton: 'btn btn-success mx-1', // Botão de confirmação verde
+      cancelButton: 'btn btn-danger mx-1'   // Botão de cancelar vermelho
+    },
+    buttonsStyling: false,
+    popup: 'swal2-zindex-high' 
+  });
+
+  function escapeJSString(unsafe) { // Função para escapar strings para uso em HTML/JS
+    if (unsafe === null || typeof unsafe === 'undefined') return '';
+    return String(unsafe)
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+  }
+
   document.querySelectorAll('.edit-modelo-btn').forEach(button => {
     button.addEventListener('click', function() {
-      console.log('Botão Editar Modelo clicado:', this.dataset); // Depuração
       const codmodelo = this.dataset.codmodelo;
       const nomeAtual = this.dataset.nome;
 
-      Swal.fire({
+      swalMixin.fire({
         title: 'Editar Nome do Modelo',
         html: `
-          <input type="text" id="nome-modelo" class="swal2-input" value="${nomeAtual}" placeholder="Digite o novo nome">
-        `,
+          <label for="swal-nome-modelo" class="form-label mt-2" style="display:block; text-align:left;">Novo nome do modelo:</label>
+          <input type="text" id="swal-nome-modelo" class="form-control" value="${escapeJSString(nomeAtual)}" placeholder="Digite o novo nome">
+        `, // Usando form-control do Bootstrap
         showCancelButton: true,
-        confirmButtonText: 'Salvar',
-        cancelButtonText: 'Cancelar',
+        confirmButtonText: '<i class="bi bi-check-lg"></i> Salvar',
+        cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+        focusConfirm: false,
         preConfirm: () => {
-          const novoNome = document.getElementById('nome-modelo').value.trim();
+          const novoNome = document.getElementById('swal-nome-modelo').value.trim();
           if (!novoNome) {
-            Swal.showValidationMessage('O nome do modelo é obrigatório');
+            Swal.showValidationMessage('O nome do modelo é obrigatório.');
             return false;
           }
           return { codmodelo: codmodelo, nome: novoNome };
         }
       }).then((result) => {
-        if (result.isConfirmed) {
-          fetch('/secoes/editar_nome_modelo', {
+        if (result.isConfirmed && result.value) {
+          fetch('/secoes/editar_nome_modelo', { // Certifique-se que esta rota está correta e funcionando
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(result.value)
           })
           .then(response => {
             if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json().then(errData => { throw new Error(errData.error || `HTTP error! Status: ${response.status}`); });
             }
             return response.json();
           })
           .then(data => {
             if (data.success) {
-              Swal.fire({
-                title: 'Sucesso!',
-                text: 'Nome do modelo atualizado com sucesso.',
-                icon: 'success'
-              }).then(() => {
-                window.location.reload();
-              });
+              swalMixin.fire({title: 'Sucesso!', text: data.message || 'Nome do modelo atualizado.', icon: 'success', timer: 2000, showConfirmButton: false})
+              .then(() => { window.location.reload(); });
             } else {
-              Swal.fire({
-                title: 'Erro!',
-                text: data.error || 'Erro ao atualizar nome do modelo',
-                icon: 'error'
-              });
+              swalMixin.fire({title: 'Erro!', text: data.error || 'Erro ao atualizar nome do modelo.', icon: 'error'});
             }
           })
           .catch(error => {
-            console.error('Erro ao atualizar nome do modelo:', error);
-            Swal.fire({
-              title: 'Erro!',
-              text: 'Erro ao atualizar nome do modelo: ' + error.message,
-              icon: 'error'
-            });
+            console.error('Erro na requisição Fetch:', error);
+            swalMixin.fire({title: 'Erro de Rede!', text: 'Não foi possível atualizar o nome do modelo: ' + error.message, icon: 'error'});
           });
         }
       });
@@ -199,15 +248,14 @@
   document.querySelectorAll('.excluir-modelo-form').forEach(form => {
     form.addEventListener('submit', function(e) {
       e.preventDefault();
-      Swal.fire({
+      swalMixin.fire({
         title: 'Confirmar Exclusão',
-        text: 'Tem certeza que deseja excluir este modelo e suas seções?',
+        html: "Tem certeza que deseja excluir este modelo?<br><strong>Atenção:</strong> Todas as seções e variáveis vinculadas a este modelo também serão excluídas. Esta ação não pode ser desfeita.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Excluir',
-        cancelButtonText: 'Cancelar'
+        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir!',
+        cancelButtonText: '<i class="bi bi-x-lg me-1"></i> Cancelar',
+        reverseButtons: true // Coloca o botão de confirmar à direita
       }).then((result) => {
         if (result.isConfirmed) {
           form.submit();
@@ -215,8 +263,10 @@
       });
     });
   });
+});
 
-  // Debugging: Log modelos_detalhes structure
-  console.log('Modelos detalhes:', {{ modelos_detalhes | tojson }});
+const styleSwalZIndexVisualizarModelos = document.createElement('style');
+styleSwalZIndexVisualizarModelos.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwalZIndexVisualizarModelos);
 </script>
 {% endset %}

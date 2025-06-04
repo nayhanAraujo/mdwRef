@@ -10,9 +10,13 @@
         <i class="bi bi-file-earmark-plus-fill me-2 icon-gradient"></i> Cadastrar Novo Script
       </h2>
     </div>
-    <div class="text-muted small">
-      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
-    </div>
+    <div class="text-end">
+      <div class="text-muted small">Bem-vindo(a), <strong class="text-dark">{{ session['usuario']['nome'] }}</strong>!</div>
+      <div class="badge bg-light text-dark-emphasis border small mt-1"> {# Ajuste no estilo do badge de data/hora #}
+        <i class="bi bi-clock-history me-1"></i>
+        <span id="currentDateTime"></span>
+      </div>
+  </div>
   </div>
   <hr class="mt-2 mb-0 page-header-divider">
 </div>
@@ -399,4 +403,6 @@ const styleSwal = document.createElement('style');
 styleSwal.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
 document.head.appendChild(styleSwal);
 </script>
+
+
 {% endset %}

@@ -1,46 +1,68 @@
 {% extends 'layout.html' %}
 
+{% block title %}Editar Seção: {{ nome_secao }}{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-pencil-square me-2"></i> Editar Seção
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-pencil-fill me-2 icon-gradient"></i> Editar Seção: {{ nome_secao }}
+      </h2>
+      {% if nome_modelo_pai %} {# Supondo que nome_modelo_pai é passado pela rota #}
+      <p class="text-muted small mb-0 ms-1">Modelo: <strong>{{ nome_modelo_pai }}</strong> (Cód: {{ codmodelo }})</p>
+      {% endif %}
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
 <style>
+  /* Estilos do Page Header (se não estiverem globais) */
+  .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
+  .page-header .icon-gradient {background: linear-gradient(45deg, var(--bs-primary), var(--bs-info)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; font-size: 1.65rem; vertical-align: middle;}
+  .page-header-divider {border-top: 1px solid rgba(0, 0, 0, 0.08);}
+
+  /* Estilos para a lista de variáveis (reutilizados de nova_secao.html) */
   .variavel-item {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+    border-radius: .375rem;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
     transition: background-color 0.2s ease;
   }
   .variavel-item:hover {
-    background-color: #e9ecef;
+    background-color: var(--bs-secondary-bg);
   }
   .variavel-item label {
     cursor: pointer;
     display: block;
+    width: 100%;
   }
   .variavel-item .form-check-input {
-    margin-right: 10px;
+    margin-right: 0.75rem;
+    float: left;
   }
   .variavel-item .nome-sigla {
-    font-weight: bold;
-    font-size: 1.1rem;
+    font-weight: 600;
+    font-size: 1rem;  
+    color: var(--bs-emphasis-color);
+    display: block; 
+    margin-left: 2rem; 
   }
   .variavel-item .info {
-    margin-top: 5px;
-    color: #6c757d;
-    font-size: 0.95rem;
+    margin-top: 0.25rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem; 
+    display: block;
+    margin-left: 2rem; 
   }
   .variavel-item .info span {
     display: block;
-    margin-left: 24px;
   }
   #filtroVariaveis {
     border-radius: 20px;
@@ -53,49 +75,60 @@
   .variaveis-container {
     max-height: 400px;
     overflow-y: auto;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 10px;
-    background-color: #fff;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .375rem;
+    padding: 0.75rem;
+    background-color: var(--bs-body-bg);
   }
 </style>
 
 <div class="container">
   <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0 text-primary">Detalhes da Seção</h5>
+    </div>
     <div class="card-body">
-      <form method="POST">
+      <form method="POST" id="editarSecaoForm" class="needs-validation" novalidate>
         <div class="mb-3">
-          <label class="form-label">Nome da Seção *</label>
+          <label for="nome" class="form-label">Nome da Seção <span class="text-danger">*</span></label>
           <input type="text" class="form-control" id="nome" name="nome" value="{{ nome_secao }}" required>
+          <div class="invalid-feedback">O nome da seção é obrigatório.</div>
         </div>
+        
         <div class="mb-3">
-          <label class="form-label">Variáveis Associadas</label>
-          <input type="text" class="form-control mb-2" id="filtroVariaveis" placeholder="Pesquisar por nome ou sigla...">
-          <div class="variaveis-container">
-            {% for variavel in todas_variaveis %}
-              <div class="variavel-item"
-                   data-nome="{{ variavel.nome|lower }}"
-                   data-sigla="{{ variavel.sigla|lower }}">
-                <label>
-                  <input type="checkbox" name="variaveis[]" value="{{ variavel.codvariavel }}"
-                         class="form-check-input" {% if variavel.codvariavel in variaveis_associadas %}checked{% endif %}>
-                  <span class="nome-sigla">{{ variavel.nome }} ({{ variavel.sigla }})</span>
-                  <div class="info">
-                    <span><strong>Fórmula:</strong> {{ variavel.formula }}</span>
-                    <span><strong>Normalidade:</strong> {{ variavel.normalidade }}</span>
-                  </div>
-                </label>
-              </div>
-            {% endfor %}
+          <label for="filtroVariaveis" class="form-label">Variáveis Associadas à Seção</label>
+          <input type="text" class="form-control mb-2" id="filtroVariaveis" placeholder="Pesquisar variáveis por nome ou sigla...">
+          <div class="variaveis-container p-2">
+            {% if todas_variaveis %}
+                {% for variavel in todas_variaveis %}
+                <div class="variavel-item"
+                    data-nome="{{ variavel.nome|lower }}"
+                    data-sigla="{{ variavel.sigla|lower }}">
+                    <label for="var-{{ variavel.codvariavel }}">
+                    <input type="checkbox" name="variaveis[]" value="{{ variavel.codvariavel }}" 
+                           class="form-check-input" id="var-{{ variavel.codvariavel }}"
+                           {% if variavel.codvariavel in variaveis_associadas %}checked{% endif %}>
+                    <span class="nome-sigla">{{ variavel.nome }} (<code>{{ variavel.sigla }}</code>)</span>
+                    <div class="info">
+                        <span><strong>Fórmula:</strong> {{ variavel.formula if variavel.formula else '-' }}</span>
+                        <span><strong>Normalidade:</strong> {{ variavel.normalidade if variavel.normalidade else '-' }}</span>
+                    </div>
+                    </label>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted text-center my-3">Nenhuma variável disponível para associação.</p>
+            {% endif %}
           </div>
-          <small class="form-text text-muted">Marque as caixas para selecionar variáveis.</small>
+          <small class="form-text text-muted">Marque as caixas para selecionar as variáveis que farão parte desta seção.</small>
         </div>
-        <div class="text-end">
-          <button type="submit" class="btn btn-success">
-            <i class="bi bi-save"></i> Salvar
+        
+        <div class="text-end mt-4 pt-3 border-top">
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-save-fill me-1"></i> Salvar Alterações
           </button>
           <a href="{{ url_for('secoes.visualizar_secoes', codmodelo=codmodelo) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
+            <i class="bi bi-x-circle me-1"></i> Cancelar
           </a>
         </div>
       </form>
@@ -104,19 +137,58 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
   // Filtro dinâmico para variáveis
-  document.getElementById('filtroVariaveis').addEventListener('input', function() {
-    const filtro = this.value.toLowerCase();
-    const items = document.querySelectorAll('.variavel-item');
-    items.forEach(item => {
-      const nome = item.getAttribute('data-nome');
-      const sigla = item.getAttribute('data-sigla');
-      if (nome.includes(filtro) || sigla.includes(filtro)) {
-        item.style.display = '';
-      } else {
-        item.style.display = 'none';
-      }
+  const filtroVariaveisInput = document.getElementById('filtroVariaveis');
+  if (filtroVariaveisInput) {
+    filtroVariaveisInput.addEventListener('input', function() {
+      const filtro = this.value.toLowerCase();
+      const items = document.querySelectorAll('.variavel-item');
+      items.forEach(item => {
+        const nome = item.dataset.nome; 
+        const sigla = item.dataset.sigla;
+        if (nome.includes(filtro) || sigla.includes(filtro)) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
     });
-  });
+  }
+
+  // Validação Bootstrap e Confirmação SweetAlert para o formulário
+  const form = document.getElementById('editarSecaoForm');
+  if (form) {
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      } else {
+        event.preventDefault(); 
+        Swal.fire({
+          title: 'Salvar Alterações?',
+          text: "Deseja realmente salvar as alterações nesta seção?",
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#198754',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: '<i class="bi bi-check-lg"></i> Sim, Salvar',
+          cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+          customClass: { popup: 'swal2-zindex-high' }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            form.submit(); 
+          }
+        });
+      }
+      form.classList.add('was-validated');
+    }, false);
+  }
+});
+
+// Estilo para garantir que o modal do Swal fique na frente
+const styleSwalEditarSecao = document.createElement('style');
+styleSwalEditarSecao.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwalEditarSecao);
 </script>
 {% endset %}

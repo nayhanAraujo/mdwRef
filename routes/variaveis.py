@@ -876,128 +876,162 @@ def editar_variavel(codvariavel):
         flash(f"Erro ao carregar formulário: {str(e)}", "error")
         return redirect(url_for('variaveis.visualizar_variaveis'))
 
+
+
+def sanitize_string(s):
+    if s is None:
+        return ''
+    return str(s).replace('\n', ' ').replace('\r', ' ').replace('"', '"').replace("'", "'")
+
 @variaveis_bp.route('/visualizar_variaveis')
 def visualizar_variaveis():
     if 'usuario' not in session:
         return redirect(url_for('auth.login'))
     conn, cur = get_db()
 
-    # Configurações de paginação
     itens_por_pagina = 10
     pagina = request.args.get('page', 1, type=int)
     offset = (pagina - 1) * itens_por_pagina
 
-    # Filtro de variável
-    variavel_filtro = request.args.get('variavel', '').strip()
+    filtro_geral = request.args.get('variavel', '').strip()
 
-    # Consulta com filtro
-    query = """
-        SELECT CODVARIAVEL, NOME, VARIAVEL, SIGLA, ABREVIACAO
-        FROM VARIAVEIS
-        WHERE 1=1
-    """
-    params = []
-    if variavel_filtro:
-        query += " AND UPPER(VARIAVEL) LIKE UPPER(?)"
-        params.append(f"%{variavel_filtro}%")
-    query += " ORDER BY NOME"
+    where_clauses = ["1=1"]
+    params_list = [] 
+    count_params_list = [] 
 
-    # Contagem total
-    count_query = "SELECT COUNT(*) FROM VARIAVEIS WHERE 1=1"
-    if variavel_filtro:
-        count_query += " AND UPPER(VARIAVEL) LIKE UPPER(?)"
-    cur.execute(count_query, params)
-    total_variaveis = cur.fetchone()[0]
-    total_paginas = (total_variaveis + itens_por_pagina - 1) // itens_por_pagina
+    if filtro_geral:
+        where_clauses.append("(UPPER(V.NOME) LIKE UPPER(?) OR UPPER(V.VARIAVEL) LIKE UPPER(?))") # V.NOME e V.VARIAVEL
+        # Adiciona o parâmetro para cada placeholder na cláusula WHERE
+        params_list.extend([f"%{filtro_geral}%", f"%{filtro_geral}%"])
+        count_params_list.extend([f"%{filtro_geral}%", f"%{filtro_geral}%"])
+    
+    # Para a consulta de contagem, precisamos referenciar a tabela VARIAVEIS com 'V'
+    where_sql_for_count = " AND ".join(where_clauses).replace("V.NOME", "NOME").replace("V.VARIAVEL", "VARIAVEL")
 
-    # Consulta paginada
-    paginated_query = f"""
-        SELECT FIRST {itens_por_pagina} SKIP {offset}
-            CODVARIAVEL, NOME, VARIAVEL, SIGLA, ABREVIACAO
-        FROM ({query})
-    """
-    cur.execute(paginated_query, params)
-    variaveis = cur.fetchall()
+    count_query = f"SELECT COUNT(*) FROM VARIAVEIS V WHERE {where_sql_for_count}" # Adicionado alias V aqui também
 
-    variaveis_detalhes = []
-    for variavel in variaveis:
-        codvariavel = variavel[0]
-        # Fórmula
-        cur.execute("""
-            SELECT f.FORMULA, f.CASADECIMAIS
-            FROM FORMULAS f
-            JOIN FORMULA_VARIAVEL fv ON f.CODFORMULA = fv.CODFORMULA
-            WHERE fv.CODVARIAVEL = ?
-        """, (codvariavel,))
-        formula = cur.fetchone()
+    # Para a query principal, os alias já estão lá ou serão adicionados.
+    # Reconstruindo where_sql para a query principal para garantir que os alias estejam corretos se 'V' não for o principal
+    where_sql_principal = " AND ".join(where_clauses)
 
-        # Equações
-        cur.execute("""
-            SELECT tl.DESCRICAO, el.EQUACAO, LIST(a.NOME, ', ') AS AUTORES, r.ANO
-            FROM EQUACOES_LINGUAGEM el
-            JOIN TIPOLINGUAGEM tl ON el.CODLINGUAGEM = tl.CODLINGUAGEM
-            JOIN FORMULA_VARIAVEL fv ON el.CODFORMULA = fv.CODFORMULA
-            LEFT JOIN REFERENCIA r ON el.CODREFERENCIA = r.CODREFERENCIA
-            LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
-            LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
-            WHERE fv.CODVARIAVEL = ?
-            GROUP BY tl.DESCRICAO, el.EQUACAO, r.ANO
-        """, (codvariavel,))
-        equacoes = cur.fetchall()
 
-        # Normalidade
-        cur.execute("""
-            SELECT n.SEXO, n.VALORMIN, n.VALORMAX, n.IDADE_MIN, n.IDADE_MAX, LIST(a.NOME, ', ') AS AUTORES, r.ANO
-            FROM NORMALIDADE n
-            LEFT JOIN REFERENCIA r ON n.CODREFERENCIA = r.CODREFERENCIA
-            LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
-            LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
-            WHERE n.CODVARIAVEL = ?
-            GROUP BY n.SEXO, n.VALORMIN, n.VALORMAX, n.IDADE_MIN, n.IDADE_MAX, r.ANO
-        """, (codvariavel,))
-        normalidade = cur.fetchone()
+    try:
+        current_app.logger.info(f"Executando contagem: {count_query} com params: {count_params_list}")
+        cur.execute(count_query, count_params_list)
+        total_variaveis_result = cur.fetchone()
+        total_variaveis = total_variaveis_result[0] if total_variaveis_result else 0
+        total_paginas = (total_variaveis + itens_por_pagina - 1) // itens_por_pagina if total_variaveis > 0 else 0
 
-        # Alternativas
-        cur.execute("SELECT ALTERNATIVA FROM VARIAVEIS_ALTERNATIVAS WHERE CODVARIAVEL = ? ORDER BY ALTERNATIVA", (codvariavel,))
-        alternativas = [row[0] for row in cur.fetchall()]
+        query_principal_base = f"""
+            SELECT V.CODVARIAVEL, V.NOME, V.VARIAVEL, V.SIGLA, V.ABREVIACAO
+            FROM VARIAVEIS V
+            WHERE {where_sql_principal}
+            ORDER BY V.NOME
+        """
+        
+        # Aplicar paginação (FIRST/SKIP para Firebird)
+        final_query_for_display = query_principal_base.replace(
+            "SELECT V.CODVARIAVEL", 
+            f"SELECT FIRST {itens_por_pagina} SKIP {offset} V.CODVARIAVEL"
+        )
 
-        # Scripts
-        cur.execute("""
-            SELECT s.CODSCRIPTLAUDO, s.NOME
-            FROM SCRIPTLAUDO_VARIAVEL sv
-            JOIN SCRIPTLAUDO s ON sv.CODSCRIPTLAUDO = s.CODSCRIPTLAUDO
-            WHERE sv.CODVARIAVEL = ?
-        """, (codvariavel,))
-        scripts = cur.fetchall()
+        current_app.logger.info(f"Executando consulta paginada: {final_query_for_display} com params: {params_list}")
+        cur.execute(final_query_for_display, params_list)
+        variaveis_data = cur.fetchall()
 
-        # Anexos
-        cur.execute("""
-            SELECT a.CODANEXO, a.TIPO_ANEXO, a.CAMINHO, a.LINK, a.DESCRICAO, LIST(aut.NOME, ', ') AS AUTORES, r.ANO
-            FROM ANEXO_VARIAVEL_FORMULA avf
-            JOIN ANEXOS a ON avf.COD_ANEXO = a.CODANEXO
-            LEFT JOIN REFERENCIA r ON avf.COD_REFERENCIA = r.CODREFERENCIA
-            LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
-            LEFT JOIN AUTORES aut ON ra.CODAUTOR = aut.CODAUTOR
-            WHERE avf.CODVARIAVEL = ?
-            GROUP BY a.CODANEXO, a.TIPO_ANEXO, a.CAMINHO, a.LINK, a.DESCRICAO, r.ANO
-        """, (codvariavel,))
-        anexos = [{'cod_anexo': row[0], 'tipo_anexo': row[1], 'caminho': row[2] or row[3], 'descricao': row[4], 
-                   'referencia': {'autores': row[5], 'ano': row[6]} if row[5] else None} for row in cur.fetchall()]
+        variaveis_detalhes = []
+        for variavel_tuple in variaveis_data:
+            codvariavel = variavel_tuple[0]
+            
+            cur.execute("SELECT f.FORMULA, f.CASADECIMAIS FROM FORMULAS f JOIN FORMULA_VARIAVEL fv ON f.CODFORMULA = fv.CODFORMULA WHERE fv.CODVARIAVEL = ?", (codvariavel,))
+            formula = cur.fetchone()
+            
+            cur.execute("""
+                SELECT tl.DESCRICAO, el.EQUACAO, r.TITULO AS REF_TITULO, r.ANO AS REF_ANO, LIST(a.NOME, ', ') AS REF_AUTORES
+                FROM EQUACOES_LINGUAGEM el
+                JOIN TIPOLINGUAGEM tl ON el.CODLINGUAGEM = tl.CODLINGUAGEM
+                LEFT JOIN FORMULA_VARIAVEL fv ON el.CODFORMULA = fv.CODFORMULA AND fv.CODVARIAVEL = ?
+                LEFT JOIN REFERENCIA r ON el.CODREFERENCIA = r.CODREFERENCIA
+                LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
+                LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
+                WHERE fv.CODVARIAVEL = ?
+                GROUP BY tl.DESCRICAO, el.EQUACAO, r.TITULO, r.ANO
+            """, (codvariavel, codvariavel))
+            equacoes_data = cur.fetchall()
+            equacoes_list = [{'linguagem_desc': eq[0] or '', 'equacao': eq[1] or '', 
+                            'ref_titulo': eq[2] or '', 'ref_ano': eq[3] or '', 
+                            'ref_autores': eq[4] or ''} for eq in equacoes_data]
 
-        variaveis_detalhes.append({
-            'variavel': variavel,
-            'formula': formula,
-            'equacoes': equacoes,
-            'normalidade': normalidade,
-            'alternativas': alternativas,
-            'scripts': scripts,
-            'anexos': anexos
-        })
+            cur.execute("""
+                SELECT n.SEXO, n.VALORMIN, n.VALORMAX, n.IDADE_MIN, n.IDADE_MAX, r.TITULO AS REF_TITULO, r.ANO AS REF_ANO, LIST(a.NOME, ', ') AS REF_AUTORES
+                FROM NORMALIDADE n 
+                LEFT JOIN REFERENCIA r ON n.CODREFERENCIA = r.CODREFERENCIA
+                LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
+                LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
+                WHERE n.CODVARIAVEL = ? 
+                GROUP BY n.SEXO, n.VALORMIN, n.VALORMAX, n.IDADE_MIN, n.IDADE_MAX, r.TITULO, r.ANO
+            """, (codvariavel,))
+            normalidade_data = cur.fetchall()
+            normalidade_list = [{'sexo': n[0] or '', 'valormin': n[1] if n[1] is not None else '', 
+                                'valormax': n[2] if n[2] is not None else '', 
+                                'idade_min': n[3] if n[3] is not None else '', 
+                                'idade_max': n[4] if n[4] is not None else '', 
+                                'ref_titulo': n[5] or '', 'ref_ano': n[6] or '', 
+                                'ref_autores': n[7] or ''} for n in normalidade_data]
 
-    return render_template('visualizar_variaveis.html', 
-                           variaveis_detalhes=variaveis_detalhes,
-                           pagina=pagina,
-                           total_paginas=total_paginas)
+            cur.execute("SELECT ALTERNATIVA FROM VARIAVEIS_ALTERNATIVAS WHERE CODVARIAVEL = ? ORDER BY ALTERNATIVA", (codvariavel,))
+            alternativas = [sanitize_string(row[0]) for row in cur.fetchall()]
+            
+            cur.execute("SELECT s.CODSCRIPTLAUDO, s.NOME FROM SCRIPTLAUDO_VARIAVEL sv JOIN SCRIPTLAUDO s ON sv.CODSCRIPTLAUDO = s.CODSCRIPTLAUDO WHERE sv.CODVARIAVEL = ? ORDER BY s.NOME", (codvariavel,))
+            scripts = [(row[0], sanitize_string(row[1])) for row in cur.fetchall()]
+            
+            cur.execute("""
+                SELECT a.CODANEXO, a.TIPO_ANEXO, a.CAMINHO, a.LINK, a.DESCRICAO, r.TITULO AS REF_TITULO, r.ANO AS REF_ANO, LIST(aut.NOME, ', ') AS REF_AUTORES
+                FROM ANEXO_VARIAVEL_FORMULA avf
+                JOIN ANEXOS a ON avf.COD_ANEXO = a.CODANEXO 
+                LEFT JOIN REFERENCIA r ON avf.COD_REFERENCIA = r.CODREFERENCIA
+                LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
+                LEFT JOIN AUTORES aut ON ra.CODAUTOR = aut.CODAUTOR 
+                WHERE avf.CODVARIAVEL = ? 
+                GROUP BY a.CODANEXO, a.TIPO_ANEXO, a.CAMINHO, a.LINK, a.DESCRICAO, r.TITULO, r.ANO
+            """, (codvariavel,))
+            anexos_db_data = cur.fetchall()
+            anexos_list = [{
+                'cod_anexo': row[0] or '',
+                'tipo_anexo': row[1] or '',
+                'caminho': (row[2] or row[3] or ''),
+                'descricao': row[4] or '',
+                'referencia': {
+                    'titulo': row[5] or '',
+                    'ano': row[6] or '',
+                    'autores': row[7] or ''
+                } if row[5] else None
+            } for row in anexos_db_data]
+
+            variaveis_detalhes.append({
+                'variavel': variavel_tuple,
+                'formula': formula,
+                'equacoes': equacoes_list,
+                'normalidade': normalidade_list, 
+                'alternativas': alternativas, 
+                'scripts': scripts,
+                'anexos': anexos_list
+            })
+
+        return render_template('visualizar_variaveis.html', 
+                               variaveis_detalhes=variaveis_detalhes,
+                               pagina=pagina,
+                               total_paginas=total_paginas,
+                               total_variaveis=total_variaveis,
+                               variavel_filtro=filtro_geral,
+                               _external=True, _scheme='https')
+    except Exception as e:
+        current_app.logger.error(f"Erro ao visualizar variáveis: {str(e)}", exc_info=True)
+        flash(f"Erro ao carregar variáveis: {str(e)}", "error")
+        return redirect(url_for('bibliotecas.biblioteca'))
+
+# ... (resto do seu arquivo variaveis.py)
+
 
 
 

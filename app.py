@@ -1,4 +1,4 @@
-from flask import Flask, session, redirect, url_for, request, send_from_directory, current_app
+from flask import Flask, session, redirect, url_for, request, send_from_directory, current_app,g
 from flask_session import Session
 from database import conectar
 from routes.auth import auth_bp
@@ -15,6 +15,7 @@ from routes.scripts import scripts_bp
 from routes.secoes import secoes_bp
 from routes.modelos import modelos_bp
 from routes.pacotes import pacotes_bp
+from routes.agente_referencias   import agente_bp
 from routes.codigos_universais import codigos_universais_bp  # Adicione esta linha
 from dotenv import load_dotenv  # Adicione este import
 from datetime import timedelta
@@ -25,7 +26,7 @@ import logging
 if os.path.exists('.env'):
     load_dotenv('.env')
     
-# Configurações adaptáveis para local/dev
+# Configurações adap    táveis para local/dev
 IS_LOCAL = os.environ.get('FLASK_ENV') == 'development'
 
 
@@ -80,6 +81,15 @@ def create_app():
     else:
         app.config['UPLOAD_FOLDER'] = '/app/uploads'
 
+    if is_local:
+        app.config['UPLOAD_FOLDER_DOCUMENTOS'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads_documentos_academicos')
+    else:
+        app.config['UPLOAD_FOLDER_DOCUMENTOS'] = '/app/uploads_documentos_academicos' # Exemplo para produção
+    try:
+     os.makedirs(app.config['UPLOAD_FOLDER_DOCUMENTOS'], exist_ok=True)
+    except OSError as e:
+      app.logger.error(f"Erro ao criar diretório de uploads de documentos: {e}")
+
     # Inicializar extensões
     Session(app)
 
@@ -116,6 +126,8 @@ def create_app():
         current_app.config['db_conn'] = conn
         current_app.config['db_cursor'] = cur
         app.logger.info(f"Sessão atual: {session.get('usuario', 'Nenhuma sessão')}")
+
+        
     @app.teardown_request
     def teardown_request(exception):
         conn = current_app.config.get('db_conn')
@@ -171,6 +183,8 @@ def create_app():
     ('Visualizar Especialidades', 'especialidades.visualizar_especialidades', 'briefcase'),  # Profissões → maleta
     ('Visualizar Linguagens', 'linguagens.visualizar_linguagens', 'translate'),  # Linguagens → ícone de tradução
     ('Gerenciar Classificações', 'variaveis.gerenciar_grupos_classificacoes', 'tags-fill'),  # Classificações → tags
+    ('Agente de Extração', 'agente_referencias.processar_documento', 'robot'), # Ícone 'robot' ou outro de sua preferência
+
     #('Códigos Universais', 'codigos_universais.visualizar_codigos_universais', 'qr-code-scan'),  
     ('Biblioteca', 'bibliotecas.biblioteca', 'bookshelf'),  # Biblioteca → prateleira de livros
     ('Pacote', 'pacotes.visualizar_pacotes', 'box-seam')
@@ -196,6 +210,8 @@ def create_app():
     app.register_blueprint(modelos_bp, url_prefix='/modelos')
     app.register_blueprint(codigos_universais_bp, url_prefix='/codigos_universais')  # Adicione esta linha
     app.register_blueprint(pacotes_bp,url_prefix='/pacotes')
+    app.register_blueprint(agente_bp,url_prefix='/agente')
+
 
 
     return app

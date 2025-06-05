@@ -1,58 +1,103 @@
-{% extends 'layout.html' %}
-{% block title %}Visualizar Variáveis{% endblock %}
-
+{% extends 'layout.html' %} {% block title %}Visualizar Variáveis{% endblock %}
 {% set content %}
 <div class="page-header mb-4">
   <div class="d-flex justify-content-between align-items-center">
     <div>
       <h2 class="page-title mb-0">
-        <i class="bi bi-card-list me-2 icon-gradient"></i> 
+        <i class="bi bi-card-list me-2 icon-gradient"></i>
         Visualizar Variáveis
       </h2>
     </div>
     <div class="text-muted small">
-      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+      <i class="bi bi-person-circle me-1"></i> Usuário:
+      <strong>{{ session['usuario']['nome'] }}</strong>
     </div>
   </div>
-  <hr class="mt-2 mb-0 page-header-divider">
+  <hr class="mt-2 mb-0 page-header-divider" />
 </div>
 
 <div class="card shadow-sm">
   <div class="card-body">
     <div class="row mb-4 align-items-center">
       <div class="col-md-5">
-        <form method="GET" action="{{ url_for('variaveis.visualizar_variaveis') }}">
+        <form
+          method="GET"
+          action="{{ url_for('variaveis.visualizar_variaveis') }}"
+        >
           <div class="input-group">
-            <input type="text" name="variavel" class="form-control" placeholder="Pesquisar por nome ou variável..." value="{{ request.args.get('variavel', '') }}">
-            <button type="submit" class="btn btn-primary">
+            <input
+              type="text"
+              name="variavel"
+              class="form-control"
+              placeholder="Buscar por Nome Clínico ou Código..."
+              value="{{ variavel_filtro if variavel_filtro is defined else request.args.get('variavel', '') }}"
+            />
+            <button type="submit" class="btn btn-primary" title="Pesquisar">
               <i class="bi bi-search"></i>
             </button>
+            {% if variavel_filtro %}
+            <a
+              href="{{ url_for('variaveis.visualizar_variaveis') }}"
+              class="btn btn-outline-secondary"
+              title="Limpar filtro"
+            >
+              <i class="bi bi-eraser"></i>
+            </a>
+            {% endif %}
           </div>
         </form>
       </div>
       <div class="col-md-7 text-md-end mt-3 mt-md-0">
-        <a href="{{ url_for('variaveis.nova_variavel') }}" class="btn btn-success me-1 mb-1 mb-md-0">
-          <i class="bi bi-plus-circle me-1"></i> Nova Variável
+        <a
+          href="{{ url_for('variaveis.nova_variavel') }}"
+          class="btn btn-success me-1 mb-1 mb-md-0"
+          title="Cadastrar uma nova variável no sistema"
+        >
+          <i class="bi bi-plus-circle-fill me-1"></i> Nova Variável
         </a>
-        <a href="{{ url_for('variaveis.importar_variaveis') }}" class="btn btn-info me-1 mb-1 mb-md-0">
-          <i class="bi bi-upload me-1"></i> Importar Variáveis (.cs)
+        <a
+          href="{{ url_for('variaveis.importar_variaveis') }}"
+          class="btn btn-info me-1 mb-1 mb-md-0"
+          title="Importar variáveis a partir de um arquivo .CS"
+        >
+          <i class="bi bi-upload me-1"></i> Importar (.cs)
         </a>
-        <a href="{{ url_for('variaveis.vincular_codigo_universal') }}" class="btn btn-secondary mb-1 mb-md-0">
-          <i class="bi bi-link-45deg me-1"></i> Vincular Códigos DICOM
+        <a
+          href="{{ url_for('variaveis.vincular_codigo_universal') }}"
+          class="btn btn-secondary mb-1 mb-md-0"
+          title="Vincular variáveis a códigos DICOM universais"
+        >
+          <i class="bi bi-link-45deg me-1"></i> Vincular DICOM
         </a>
       </div>
     </div>
 
     <div class="actions-legend mb-3 p-3 border rounded bg-light-subtle small">
-      <h6 class="fw-bold mb-2"><i class="bi bi-key-fill me-1"></i>Legenda das Ações na Tabela:</h6>
+      <h6 class="fw-bold mb-2">
+        <i class="bi bi-key-fill me-1"></i>Legenda das Ações na Tabela:
+      </h6>
       <div class="d-flex flex-wrap">
-        <span class="me-3 mb-1"><i class="bi bi-paperclip text-dark"></i> Vincular Anexo</span>
-        <span class="me-3 mb-1"><i class="bi bi-pencil-square text-primary"></i> Editar Variável</span>
-        <span class="me-3 mb-1"><i class="bi bi-search-heart text-info"></i> Detalhes (Normalidade, Equações)</span>
-        <span class="me-3 mb-1"><i class="bi bi-calculator text-success"></i> Ver Fórmula</span>
-        <span class="me-3 mb-1"><i class="bi bi-book text-warning"></i> Consultar Estudos</span>
-        <span class="me-3 mb-1"><i class="bi bi-qr-code-scan text-info"></i> Ver Códigos DICOM</span>
-        <span class="me-3 mb-1"><i class="bi bi-trash text-danger"></i> Excluir Variável</span>
+        <span class="me-3 mb-1"
+          ><i class="bi bi-paperclip text-dark"></i> Vincular Anexo</span
+        >
+        <span class="me-3 mb-1"
+          ><i class="bi bi-pencil-square text-primary"></i> Editar</span
+        >
+        <span class="me-3 mb-1"
+          ><i class="bi bi-search-heart text-info"></i> Detalhes</span
+        >
+        <span class="me-3 mb-1"
+          ><i class="bi bi-calculator text-success"></i> Ver Fórmula</span
+        >
+        <span class="me-3 mb-1"
+          ><i class="bi bi-book text-warning"></i> Consultar Estudos</span
+        >
+        <span class="me-3 mb-1"
+          ><i class="bi bi-qr-code-scan text-info"></i> Ver Códigos DICOM</span
+        >
+        <span class="me-3 mb-1"
+          ><i class="bi bi-trash text-danger"></i> Excluir</span
+        >
       </div>
     </div>
 
@@ -60,327 +105,750 @@
       <table class="table table-bordered table-striped table-hover">
         <thead class="table-light">
           <tr>
-            <th class="text-center align-middle" style="width: 5%;">Código</th>
+            <th class="text-center align-middle" style="width: 5%">Cód.</th>
             <th class="text-start align-middle">Nome Clínico</th>
-            <th class="text-start align-middle">Variável</th>
+            <th class="text-start align-middle">Variável (Código)</th>
             <th class="text-center align-middle">Sigla</th>
             <th class="text-center align-middle">Abreviação</th>
-            <th class="text-start align-middle">Alternativas</th>
-            <th class="text-start align-middle">Scripts Vinculados</th>
-            <th class="text-start align-middle">Anexos</th>
-            <th class="text-center align-middle" style="width: 20%;">Ações</th>
+            <th class="text-start align-middle" style="min-width: 180px">
+              Alternativas
+            </th>
+            <th class="text-start align-middle" style="min-width: 180px">
+              Scripts Vinculados
+            </th>
+            <th class="text-start align-middle" style="min-width: 200px">
+              Anexos
+            </th>
+            <th class="text-center align-middle" style="width: 18%">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {% for detalhe in variaveis_detalhes %}
-            <tr>
-              <td class="text-center align-middle">{{ detalhe.variavel[0] }}</td>
-              <td class="align-middle">{{ detalhe.variavel[1] }}</td>
-              <td class="align-middle"><code>{{ detalhe.variavel[2] }}</code></td>
-              <td class="text-center align-middle">{{ detalhe.variavel[3] }}</td>
-              <td class="text-center align-middle">{{ detalhe.variavel[4] }}</td>
-              <td class="align-middle">
-                {% if detalhe.alternativas %}
-                  <ul class="list-unstyled ps-1 mb-0">
-                    {% for alternativa in detalhe.alternativas %}
-                      <li><code>{{ alternativa }}</code></li>
-                    {% endfor %}
-                  </ul>
-                {% else %}
-                  <span class="text-muted fst-italic">-</span>
-                {% endif %}
-              </td>
-              <td class="align-middle">
-                {% if detalhe.scripts %}
-                  <ul class="list-unstyled ps-1 mb-0">
-                    {% for script in detalhe.scripts %}
-                      <li>{{ script[1] }}</li> {# Supondo que script[1] é o nome do script #}
-                    {% endfor %}
-                  </ul>
-                {% else %}
-                  <span class="text-muted fst-italic">-</span>
-                {% endif %}
-              </td>
-              <td class="align-middle">
-                {% if detalhe.anexos %}
-                  <ul class="list-unstyled ps-1 mb-0 small">
-                    {% for anexo in detalhe.anexos %}
-                      <li>
-                        <i class="bi bi-paperclip"></i> {{ anexo.descricao or anexo.tipo_anexo }}
-                        {% if anexo.referencia %}
-                          <span class="text-muted">(Ref: {{ anexo.referencia.autores|truncate(20, True) }} {{ anexo.referencia.ano }})</span>
-                        {% endif %}
-                        <a href="{% if anexo.tipo_anexo == 'URL' %}{{ anexo.caminho }}{% else %}{{ url_for('static', filename=anexo.caminho|replace('/static/', '')) }}{% endif %}" target="_blank" class="ms-1"><i class="bi bi-box-arrow-up-right"></i></a>
-                      </li>
-                    {% endfor %}
-                  </ul>
-                {% else %}
-                  <span class="text-muted fst-italic">-</span>
-                {% endif %}
-              </td>
-              <td class="text-center align-middle">
-                <div class="btn-group btn-group-sm" role="group" aria-label="Ações da Variável">
-                  <a href="{{ url_for('variaveis.vincular_anexo', codvariavel=detalhe.variavel[0]) }}" class="btn btn-outline-dark" title="Vincular Anexo">
-                    <i class="bi bi-paperclip"></i>
-                  </a>
-                  <a href="{{ url_for('variaveis.editar_variavel', codvariavel=detalhe.variavel[0]) }}" class="btn btn-outline-primary" title="Editar Variável">
-                    <i class="bi bi-pencil-square"></i>
-                  </a>
-                  <button type="button" class="btn btn-outline-info" 
-                          data-bs-toggle="modal" 
-                          data-bs-target="#detailsModal"
-                          data-codvariavel="{{ detalhe.variavel[0] }}"
-                          data-nome="{{ detalhe.variavel[1] }}"
-                          data-variavel="{{ detalhe.variavel[2] }}"
-                          title="Detalhes (Normalidade e Equações)">
-                    <i class="bi bi-search-heart"></i>
-                  </button>
-                  {% if detalhe.formula %}
-                    <button type="button" class="btn btn-outline-success" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#formulaModal"
-                            data-codvariavel="{{ detalhe.variavel[0] }}"
-                            data-variavel="{{ detalhe.variavel[2] }}"
-                            data-formula="{{ detalhe.formula[0] }}"
-                            data-casas="{{ detalhe.formula[1] }}"
-                            title="Ver Fórmula">
-                      <i class="bi bi-calculator"></i>
-                    </button>
+          {% if variaveis_detalhes %} {% for detalhe in variaveis_detalhes %}
+          <tr>
+            <td class="text-center align-middle">{{ detalhe.variavel[0] }}</td>
+            <td class="align-middle">{{ detalhe.variavel[1] }}</td>
+            <td class="align-middle"><code>{{ detalhe.variavel[2] }}</code></td>
+            <td class="text-center align-middle">{{ detalhe.variavel[3] }}</td>
+            <td class="text-center align-middle">{{ detalhe.variavel[4] }}</td>
+            <td class="align-middle">
+              {% if detalhe.alternativas and detalhe.alternativas|length > 0 %}
+                <span class="badge bg-light text-dark me-1">{{ detalhe.alternativas|length }}</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1 show-list-modal-btn"
+                  data-bs-toggle="modal" data-bs-target="#listDisplayModal"
+                  data-modal-title="Alternativas para {{ detalhe.variavel[2] | escape }}"
+                  data-list-items="{{ detalhe.alternativas | tojson | forceescape }}"
+                  data-item-type="code" title="Ver todas as alternativas">
+                  <i class="bi bi-list-ul"></i> Ver
+                </button>
+              {% else %}
+                <span class="text-muted fst-italic small">-</span>
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              {% if detalhe.scripts and detalhe.scripts|length > 0 %}
+                <span class="badge bg-light text-dark me-1">{{ detalhe.scripts|length }}</span>
+                {% set nomes_scripts = [] %}
+                {% for script in detalhe.scripts %}
+                  {% set _ = nomes_scripts.append(script[1] if script[1] is not none else "") %}
+                {% endfor %}
+                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1 show-list-modal-btn"
+                  data-bs-toggle="modal" data-bs-target="#listDisplayModal"
+                  data-modal-title="Scripts Vinculados a {{ detalhe.variavel[2] | escape }}"
+                  data-list-items="{{ nomes_scripts | tojson | forceescape }}"
+                  data-item-type="text" title="Ver todos os scripts vinculados">
+                  <i class="bi bi-list-ul"></i> Ver
+                </button>
+              {% else %}
+                <span class="text-muted fst-italic small">-</span>
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              {% if detalhe.anexos and detalhe.anexos|length > 0 %}
+              <ul class="list-unstyled ps-1 mb-0 small">
+                {% for anexo in detalhe.anexos[:2] %} {# Mostra no máximo 2
+                anexos na tabela #}
+                <li>
+                  <i class="bi bi-paperclip"></i> {{ anexo.descricao or
+                  anexo.tipo_anexo }} {% if anexo.referencia and
+                  anexo.referencia.titulo %}
+                  <span class="text-muted"
+                    >(Ref: {{ anexo.referencia.autores|truncate(15, True) if
+                    anexo.referencia.autores else 'N/A' }} {{
+                    anexo.referencia.ano or '' }})</span
+                  >
                   {% endif %}
-                  <a href="{{ url_for('variaveis.consultar_estudos', codvariavel=detalhe.variavel[0]) }}" class="btn btn-outline-warning" title="Consultar Estudos">
-                    <i class="bi bi-book"></i>
-                  </a>
-                   <button type="button" class="btn btn-outline-info ver-codigos-btn" 
-                           data-codvariavel="{{ detalhe.variavel[0] }}" 
-                           data-nome="{{ detalhe.variavel[1] }}" 
-                           title="Ver códigos DICOM vinculados">
-                     <i class="bi bi-qr-code-scan"></i>
-                   </button>
-                  <form action="{{ url_for('variaveis.excluir_variavel', codvariavel=detalhe.variavel[0]) }}" method="POST" class="d-inline excluir-variavel-form">
-                    <button type="submit" class="btn btn-outline-danger" title="Excluir Variável">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          {% endfor %}
+                  <a
+                    href="{{ anexo.caminho }}"
+                    target="_blank"
+                    class="ms-1"
+                    title="Abrir anexo"
+                    ><i class="bi bi-box-arrow-up-right"></i
+                  ></a>
+                </li>
+                {% endfor %} {% if detalhe.anexos|length > 2 %}
+                <li>
+                  <button
+                    type="button"
+                    class="btn btn-link btn-sm p-0 show-list-modal-btn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#listDisplayModal"
+                    data-modal-title="Todos os Anexos para {{ detalhe.variavel[2] | escape }}"
+                    data-list-items="{{ detalhe.anexos | tojson | safe }}"
+                    data-item-type="anexo"
+                    title="Ver todos os anexos"
+                  >
+                    ... e mais {{ detalhe.anexos|length - 2 }}
+                  </button>
+                </li>
+                {% endif %}
+              </ul>
+              {% else %}
+              <span class="text-muted fst-italic small">-</span>
+              {% endif %}
+            </td>
+            <td class="text-center align-middle">
+              <div
+                class="btn-group btn-group-sm"
+                role="group"
+                aria-label="Ações da Variável {{ detalhe.variavel[1] }}"
+              >
+                <a
+                  href="{{ url_for('variaveis.vincular_anexo', codvariavel=detalhe.variavel[0]) }}"
+                  class="btn btn-outline-dark"
+                  title="Vincular Anexo"
+                >
+                  <i class="bi bi-paperclip"></i>
+                </a>
+                <a
+                  href="{{ url_for('variaveis.editar_variavel', codvariavel=detalhe.variavel[0]) }}"
+                  class="btn btn-outline-primary"
+                  title="Editar Variável"
+                >
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-outline-info"
+                  data-bs-toggle="modal"
+                  data-bs-target="#detailsModal"
+                  data-codvariavel="{{ detalhe.variavel[0] }}"
+                  data-nome="{{ detalhe.variavel[1] | escape }}"
+                  data-variavel="{{ detalhe.variavel[2] | escape }}"
+                  title="Detalhes (Normalidade e Equações)"
+                >
+                  <i class="bi bi-search-heart"></i>
+                </button>
+                {% if detalhe.formula %}
+                <button
+                  type="button"
+                  class="btn btn-outline-success"
+                  data-bs-toggle="modal"
+                  data-bs-target="#formulaModal"
+                  data-codvariavel="{{ detalhe.variavel[0] }}"
+                  data-variavel="{{ detalhe.variavel[2] | escape }}"
+                  data-formula="{{ detalhe.formula[0] | escape }}"
+                  data-casas="{{ detalhe.formula[1] }}"
+                  title="Ver Fórmula"
+                >
+                  <i class="bi bi-calculator"></i>
+                </button>
+                {% endif %}
+                <a
+                  href="{{ url_for('variaveis.consultar_estudos', codvariavel=detalhe.variavel[0]) }}"
+                  class="btn btn-outline-warning"
+                  title="Consultar Estudos"
+                >
+                  <i class="bi bi-book"></i>
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-outline-info ver-codigos-btn"
+                  data-codvariavel="{{ detalhe.variavel[0] }}"
+                  data-nome="{{ detalhe.variavel[1] | escape }}"
+                  title="Ver códigos DICOM vinculados"
+                >
+                  <i class="bi bi-qr-code-scan"></i>
+                </button>
+                <form
+                  action="{{ url_for('variaveis.excluir_variavel', codvariavel=detalhe.variavel[0]) }}"
+                  method="POST"
+                  class="d-inline excluir-variavel-form"
+                >
+                  <button
+                    type="submit"
+                    class="btn btn-outline-danger"
+                    title="Excluir Variável"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="text-center text-muted fst-italic">
+              Nenhuma variável encontrada. {% if variavel_filtro %} Tente
+              refinar sua busca ou
+              <a href="{{ url_for('variaveis.visualizar_variaveis') }}"
+                >limpar o filtro</a
+              >. {% else %}
+              <a href="{{ url_for('variaveis.nova_variavel') }}"
+                >Cadastre uma nova variável</a
+              >. {% endif %}
+            </td>
+          </tr>
+          {% endfor %} {% endif %}
         </tbody>
       </table>
     </div>
 
-    {% if total_paginas > 0 %}
-    <nav aria-label="Page navigation" class="mt-4">
-      <ul class="pagination justify-content-between">
-        <li class="page-item align-self-center text-muted small">
-          Página {{ pagina }} de {{ total_paginas }}
+    {% if total_paginas is defined and total_paginas > 0 %}
+    <nav aria-label="Paginação de Variáveis" class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if pagina > 1 %}
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="{{ url_for('variaveis.visualizar_variaveis', page=pagina-1, variavel=variavel_filtro) }}"
+            ><i class="bi bi-chevron-left"></i> Anterior</a
+          >
         </li>
-        <li class="d-flex">
-          {% if pagina > 1 %}
-            <a class="page-link" href="{{ url_for('variaveis.visualizar_variaveis', page=pagina-1, variavel=request.args.get('variavel', '')) }}">
-              <i class="bi bi-chevron-left"></i> Anterior
-            </a>
-          {% else %}
-            <span class="page-link disabled" tabindex="-1" aria-disabled="true">
-              <i class="bi bi-chevron-left"></i> Anterior
-            </span>
-          {% endif %}
-          {% if pagina < total_paginas %}
-            <a class="page-link" href="{{ url_for('variaveis.visualizar_variaveis', page=pagina+1, variavel=request.args.get('variavel', '')) }}">
-              Próximo <i class="bi bi-chevron-right"></i>
-            </a>
-          {% else %}
-            <span class="page-link disabled" tabindex="-1" aria-disabled="true">
-              Próximo <i class="bi bi-chevron-right"></i>
-            </span>
-          {% endif %}
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"
+            ><i class="bi bi-chevron-left"></i> Anterior</span
+          >
         </li>
+        {% endif %} {% set delta = 2 %}{% set left = pagina - delta %}{% set
+        right = pagina + delta + 1 %}{% set range_ = [] %}{% set range_with_dots
+        = [] %}{% set l = 0 %} {% for i in range(1, total_paginas + 1) %}{% if i
+        == 1 or i == total_paginas or (i >= left and i < right) %}{% if
+        range_.append(i) %}{% endif %}{% endif %}{% endfor %} {% for i in range_
+        %}{% if l %}{% if i - l == 2 %}{% if range_with_dots.append(l + 1) %}{%
+        endif %}{% elif i - l != 1 %}{% if range_with_dots.append('...') %}{%
+        endif %}{% endif %}{% endif %}{% if range_with_dots.append(i) %}{% endif
+        %}{% set l = i %}{% endfor %} {% for i in range_with_dots %} {% if i ==
+        '...' %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% elif i == pagina %}
+        <li class="page-item active" aria-current="page">
+          <span class="page-link">{{ i }}</span>
+        </li>
+        {% else %}
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="{{ url_for('variaveis.visualizar_variaveis', page=i, variavel=variavel_filtro) }}"
+            >{{ i }}</a
+          >
+        </li>
+        {% endif %} {% endfor %} {% if pagina < total_paginas %}
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="{{ url_for('variaveis.visualizar_variaveis', page=pagina+1, variavel=variavel_filtro) }}"
+            >Próxima <i class="bi bi-chevron-right"></i
+          ></a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"
+            >Próxima <i class="bi bi-chevron-right"></i
+          ></span>
+        </li>
+        {% endif %}
       </ul>
+      {% if total_variaveis is defined %}
+      <p class="text-center text-muted small mt-2">
+        Página {{ pagina }} de {{ total_paginas }} (Total de {{ total_variaveis
+        }} variáveis)
+      </p>
+      {% endif %}
     </nav>
+    {% elif variaveis_detalhes %}
+    <p class="text-center text-muted small mt-2">
+      Total de {{ variaveis_detalhes|length }} variáveis
+    </p>
     {% endif %}
   </div>
 </div>
 
-<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+<div
+  class="modal fade"
+  id="listDisplayModal"
+  tabindex="-1"
+  aria-labelledby="listDisplayModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="detailsModalLabel">Detalhes da Variável</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="listDisplayModalLabel">Detalhes</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-        <p><strong>Nome Clínico:</strong> <span id="detailsModalNomeClinico"></span></p>
-        <p><strong>Variável:</strong> <code><span id="detailsModalVariavel"></span></code></p>
-        <hr>
-        <h6><i class="bi bi-rulers me-1"></i> Normalidade:</h6>
-        <div id="detailsModalNormalidade">
-          <p class="text-muted">Nenhuma informação de normalidade disponível.</p>
-        </div>
-        <hr>
-        <h6><i class="bi bi-diagram-3 me-1"></i> Equações:</h6>
-        <div id="detailsModalEquacoes">
-          <p class="text-muted">Nenhuma equação associada.</p>
-        </div>
+        <ul
+          class="list-group list-group-flush"
+          id="listDisplayModalBodyContent"
+        >
+          {# Conteúdo será injetado aqui pelo JavaScript #}
+        </ul>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i>Fechar
+        </button>
       </div>
     </div>
   </div>
 </div>
 
-<div class="modal fade" id="formulaModal" tabindex="-1" aria-labelledby="formulaModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="detailsModal"
+  tabindex="-1"
+  aria-labelledby="detailsModalLabelContent"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailsModalLabel">
+          <i class="bi bi-info-circle-fill me-2 text-info"></i>Detalhes da
+          Variável
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          <strong>Nome Clínico:</strong>
+          <span id="detailsModalNomeClinico"></span>
+        </p>
+        <p>
+          <strong>Variável (Código):</strong>
+          <code><span id="detailsModalVariavel"></span></code>
+        </p>
+        <hr />
+        <h6><i class="bi bi-rulers me-2"></i> Normalidade(s):</h6>
+        <div id="detailsModalNormalidade"></div>
+        <hr />
+        <h6><i class="bi bi-diagram-3-fill me-2"></i> Equações:</h6>
+        <div id="detailsModalEquacoes"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i>Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  id="formulaModal"
+  tabindex="-1"
+  aria-labelledby="formulaModalLabelContent"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="formulaModalLabel">Fórmula da Variável</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="formulaModalLabel">
+          <i class="bi bi-calculator-fill me-2 text-success"></i>Fórmula da
+          Variável
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
-        <p><strong>Variável:</strong> <code><span id="formulaModalVariavel"></span></code></p>
+        <p>
+          <strong>Variável (Código):</strong>
+          <code><span id="formulaModalVariavel"></span></code>
+        </p>
         <div class="mb-2">
           <strong>Fórmula:</strong>
-          <pre class="bg-light p-2 rounded"><code><span id="formulaModalFormula"></span></code></pre>
+          <pre
+            class="bg-light p-3 rounded"
+          ><code><span id="formulaModalFormula"></span></code></pre>
         </div>
-        <p><strong>Casas Decimais:</strong> <span id="formulaModalCasas"></span></p>
+        <p>
+          <strong>Casas Decimais:</strong> <span id="formulaModalCasas"></span>
+        </p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i>Fechar
+        </button>
       </div>
     </div>
   </div>
 </div>
 
+<style>
+  .page-header .page-title {
+    font-weight: 600;
+    color: #343a40;
+    font-size: 1.75rem;
+  }
+  .page-header .icon-gradient {
+    background: linear-gradient(45deg, var(--bs-primary), var(--bs-info));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+    font-size: 1.65rem;
+    vertical-align: middle;
+  }
+  .page-header-divider {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .modal-xl {
+    max-width: 900px;
+  }
+</style>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // SweetAlert2 para confirmação de exclusão
-  document.querySelectorAll('.excluir-variavel-form').forEach(form => {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      Swal.fire({
-        title: 'Confirmar Exclusão',
-        text: 'Tem certeza que deseja excluir esta variável? Esta ação não pode ser desfeita.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir',
-        cancelButtonText: '<i class="bi bi-x-circle me-1"></i> Cancelar',
-        customClass: { popup: 'swal2-zindex-high' }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          form.submit();
-        }
+  document.addEventListener("DOMContentLoaded", function () {
+    const swalConfirmDeleteMixin = Swal.mixin({
+      customClass: {
+        confirmButton: "btn btn-danger mx-1",
+        cancelButton: "btn btn-secondary mx-1",
+      },
+      buttonsStyling: false,
+      popup: "swal2-zindex-high",
+    });
+
+    document.querySelectorAll(".excluir-variavel-form").forEach((form) => {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        swalConfirmDeleteMixin
+          .fire({
+            title: "Confirmar Exclusão",
+            text: "Tem certeza que deseja excluir esta variável? Esta ação não pode ser desfeita e pode afetar outros registros vinculados.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText:
+              '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir',
+            cancelButtonText: '<i class="bi bi-x-circle me-1"></i> Cancelar',
+            reverseButtons: true,
+          })
+          .then((result) => {
+            if (result.isConfirmed) {
+              form.submit();
+            }
+          });
       });
     });
-  });
 
-  // Manipulação do Modal de Detalhes
-  const detailsModalElement = document.getElementById('detailsModal');
-  if (detailsModalElement) {
-    detailsModalElement.addEventListener('show.bs.modal', async function (event) {
-      const button = event.relatedTarget;
-      const codVariavel = button.dataset.codvariavel;
-      const nomeVariavel = button.dataset.nome;
-      const varVariavel = button.dataset.variavel;
+    const detailsModalElement = document.getElementById("detailsModal");
+    if (detailsModalElement) {
+      detailsModalElement.addEventListener(
+        "show.bs.modal",
+        async function (event) {
+          const button = event.relatedTarget;
+          const codVariavel = button.dataset.codvariavel;
+          const nomeVariavel = button.dataset.nome;
+          const varVariavel = button.dataset.variavel;
 
-      const modalTitle = detailsModalElement.querySelector('.modal-title');
-      const modalNomeClinico = detailsModalElement.querySelector('#detailsModalNomeClinico');
-      const modalVariavel = detailsModalElement.querySelector('#detailsModalVariavel');
-      const normalidadeDiv = detailsModalElement.querySelector('#detailsModalNormalidade');
-      const equacoesDiv = detailsModalElement.querySelector('#detailsModalEquacoes');
+          const modalTitle = detailsModalElement.querySelector(".modal-title");
+          const modalNomeClinico = detailsModalElement.querySelector(
+            "#detailsModalNomeClinico"
+          );
+          const modalVariavel = detailsModalElement.querySelector(
+            "#detailsModalVariavel"
+          );
+          const normalidadeDiv = detailsModalElement.querySelector(
+            "#detailsModalNormalidade"
+          );
+          const equacoesDiv = detailsModalElement.querySelector(
+            "#detailsModalEquacoes"
+          );
 
-      modalTitle.textContent = 'Detalhes da Variável: ' + nomeVariavel;
-      modalNomeClinico.textContent = nomeVariavel;
-      modalVariavel.textContent = varVariavel;
-      
-      normalidadeDiv.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Carregando...</span></div> <span class="text-muted small">Carregando normalidade...</span></div>';
-      equacoesDiv.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Carregando...</span></div> <span class="text-muted small">Carregando equações...</span></div>';
+          if (modalTitle)
+            modalTitle.textContent = "Detalhes da Variável: " + nomeVariavel;
+          if (modalNomeClinico) modalNomeClinico.textContent = nomeVariavel;
+          if (modalVariavel) modalVariavel.textContent = varVariavel;
 
-      // TODO: Implementar fetch para buscar dados de normalidade e equações via AJAX.
-      // Esta é uma simulação, substitua pelo seu fetch real.
-      setTimeout(() => {
-        normalidadeDiv.innerHTML = '<p class="text-muted fst-italic small"><i class="bi bi-info-circle me-1"></i>Dados de normalidade não disponíveis nesta visualização. Edite a variável para ver/modificar.</p>';
-        equacoesDiv.innerHTML = '<p class="text-muted fst-italic small"><i class="bi bi-info-circle me-1"></i>Equações não disponíveis nesta visualização. Edite a variável para ver/modificar.</p>';
-      }, 1000); // Simula um delay de rede
-    });
-  }
+          if (normalidadeDiv)
+            normalidadeDiv.innerHTML =
+              '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><span class="ms-2 text-muted small">Carregando normalidades...</span></div>';
+          if (equacoesDiv)
+            equacoesDiv.innerHTML =
+              '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><span class="ms-2 text-muted small">Carregando equações...</span></div>';
 
-  // Manipulação do Modal de Fórmula
-  const formulaModalElement = document.getElementById('formulaModal');
-  if (formulaModalElement) {
-    formulaModalElement.addEventListener('show.bs.modal', function (event) {
-      const button = event.relatedTarget;
-      const varVariavel = button.dataset.variavel;
-      const formula = button.dataset.formula;
-      const casas = button.dataset.casas;
-
-      const modalTitle = formulaModalElement.querySelector('.modal-title');
-      const modalVariavel = formulaModalElement.querySelector('#formulaModalVariavel');
-      const modalFormula = formulaModalElement.querySelector('#formulaModalFormula');
-      const modalCasas = formulaModalElement.querySelector('#formulaModalCasas');
-
-      modalTitle.textContent = 'Fórmula da Variável: ' + varVariavel;
-      modalVariavel.textContent = varVariavel;
-      modalFormula.textContent = formula;
-      modalCasas.textContent = casas;
-    });
-  }
-
-  // Visualizar Códigos DICOM Vinculados (SweetAlert2)
-  document.querySelectorAll('.ver-codigos-btn').forEach(button => {
-    button.addEventListener('click', async function() {
-      const codvariavel = this.dataset.codvariavel;
-      const nomeVariavel = this.dataset.nome;
-
-      Swal.fire({
-        title: 'Códigos DICOM Vinculados',
-        html: `
-          <p class="text-start mb-1"><strong>Variável:</strong> ${nomeVariavel}</p>
-          <div id="codigos-content" class="text-start mt-2">
-            <h6 class="mb-1">Códigos Vinculados:</h6>
-            <ul id="codigos-list" class="list-unstyled ps-3 small"><li><div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Carregando...</span></div> Carregando...</li></ul>
-          </div>`,
-        showCloseButton: true,
-        showConfirmButton: false, // Não precisa de botão de confirmar aqui
-        customClass: { popup: 'swal2-zindex-high swal-wide' },
-        didOpen: async () => {
           try {
-            const response = await fetch(`/variaveis/get_codigos_vinculados/${codvariavel}`);
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-            const codigos = await response.json();
-            
-            const codigosList = Swal.getHtmlContainer().querySelector('#codigos-list');
-            if (!codigosList) return;
+            // ROTA EXEMPLO - Você precisa criar esta rota no seu backend (ex: em routes/variaveis.py)
+            const response = await fetch(
+              `/variaveis/get_detalhes_completos/${codVariavel}`
+            );
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
 
-            codigosList.innerHTML = ''; // Limpa o "Carregando..."
-            if (codigos.error) {
-              codigosList.innerHTML = `<li class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Erro: ${codigos.error}</li>`;
-            } else if (codigos.length > 0) {
-              codigos.forEach(codigo => {
-                const li = document.createElement('li');
-                li.innerHTML = `<code>${codigo.codigo}</code> - ${codigo.descricaoptbr || '<span class="text-muted fst-italic">Sem descrição em PT-BR</span>'}`;
-                codigosList.appendChild(li);
-              });
-            } else {
-              codigosList.innerHTML = '<li><i class="bi bi-info-circle me-1"></i>Nenhum código DICOM vinculado.</li>';
+            if (normalidadeDiv) {
+              if (data.normalidades && data.normalidades.length > 0) {
+                let normalidadeHtml =
+                  '<ul class="list-group list-group-flush small">';
+                data.normalidades.forEach((n) => {
+                  // Assumindo que 'n' é um objeto com os campos esperados
+                  normalidadeHtml += `<li class="list-group-item">
+                                        <strong>Sexo:</strong> ${
+                                          n.sexo || "N/A"
+                                        }, 
+                                        <strong>Min:</strong> ${
+                                          n.valormin !== null ? n.valormin : "-"
+                                        }, 
+                                        <strong>Max:</strong> ${
+                                          n.valormax !== null ? n.valormax : "-"
+                                        } <br>
+                                        <small class="text-muted">(Idade: ${
+                                          n.idade_min || "N/A"
+                                        }-${n.idade_max || "N/A"}; 
+                                        Ref: ${n.ref_titulo || "N/A"} (${
+                    n.ref_ano || ""
+                  }) ${n.ref_autores || ""})</small></li>`;
+                });
+                normalidadeHtml += "</ul>";
+                normalidadeDiv.innerHTML = normalidadeHtml;
+              } else {
+                normalidadeDiv.innerHTML =
+                  '<p class="text-muted fst-italic small p-2"><i class="bi bi-info-circle me-1"></i>Nenhuma normalidade definida para esta variável.</p>';
+              }
+            }
+
+            if (equacoesDiv) {
+              if (data.equacoes && data.equacoes.length > 0) {
+                let equacoesHtml =
+                  '<ul class="list-group list-group-flush small">';
+                data.equacoes.forEach((eq) => {
+                  // Assumindo que 'eq' é um objeto com os campos esperados
+                  equacoesHtml += `<li class="list-group-item"><strong>${
+                    eq.linguagem_desc || "N/A"
+                  }:</strong> 
+                                    <code>${eq.equacao || "-"}</code><br>
+                                    <small class="text-muted">(Ref: ${
+                                      eq.ref_titulo || "N/A"
+                                    } (${eq.ref_ano || ""}) ${
+                    eq.ref_autores || ""
+                  })</span></li>`;
+                });
+                equacoesHtml += "</ul>";
+                equacoesDiv.innerHTML = equacoesHtml;
+              } else {
+                equacoesDiv.innerHTML =
+                  '<p class="text-muted fst-italic small p-2"><i class="bi bi-info-circle me-1"></i>Nenhuma equação associada a esta variável.</p>';
+              }
             }
           } catch (error) {
-            console.error('Erro ao buscar códigos vinculados:', error);
-            const codigosList = Swal.getHtmlContainer().querySelector('#codigos-list');
-            if (codigosList) {
-              codigosList.innerHTML = `<li class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Erro ao carregar os códigos.</li>`;
+            console.error("Erro ao buscar detalhes da variável:", error);
+            if (normalidadeDiv)
+              normalidadeDiv.innerHTML =
+                '<p class="text-danger small p-2"><i class="bi bi-exclamation-triangle me-1"></i>Erro ao carregar normalidades.</p>';
+            if (equacoesDiv)
+              equacoesDiv.innerHTML =
+                '<p class="text-danger small p-2"><i class="bi bi-exclamation-triangle me-1"></i>Erro ao carregar equações.</p>';
+          }
+        }
+      );
+    }
+
+    const formulaModalElement = document.getElementById("formulaModal");
+    if (formulaModalElement) {
+      formulaModalElement.addEventListener("show.bs.modal", function (event) {
+        const button = event.relatedTarget;
+        const varVariavel = button.dataset.variavel;
+        const formula = button.dataset.formula;
+        const casas = button.dataset.casas;
+
+        const modalVariavel = formulaModalElement.querySelector(
+          "#formulaModalVariavel"
+        );
+        const modalFormula = formulaModalElement.querySelector(
+          "#formulaModalFormula"
+        );
+        const modalCasas =
+          formulaModalElement.querySelector("#formulaModalCasas");
+        const modalTitle = formulaModalElement.querySelector(".modal-title");
+
+        if (modalVariavel) modalVariavel.textContent = varVariavel || "";
+        if (modalFormula) modalFormula.textContent = formula || "-";
+        if (modalCasas) modalCasas.textContent = casas || "N/A";
+        if (modalTitle)
+          modalTitle.textContent =
+            "Fórmula da Variável: " + (varVariavel || "");
+      });
+    }
+
+    const listDisplayModalElement = document.getElementById("listDisplayModal");
+    if (listDisplayModalElement) {
+      listDisplayModalElement.addEventListener(
+        "show.bs.modal",
+        function (event) {
+          const button = event.relatedTarget;
+          const modalTitle = button.dataset.modalTitle || "Detalhes"; // Fallback para título
+          const itemsJsonString = button.dataset.listItems; // String JSON dos itens
+          const itemType = button.dataset.itemType || "text";
+          console.log("Conteúdo de data-list-items:", itemsJsonString); // LOG PARA DEPURAR
+          console.log("Tipo do item:", itemType);
+
+          let itemsToDisplay = [];
+          if (itemsJsonString && itemsJsonString.trim() !== "") {
+            try {
+              itemsToDisplay = JSON.parse(itemsJsonString);
+            } catch (e) {
+              // ...
+            }
+          }
+
+          const modalTitleElement =
+            listDisplayModalElement.querySelector(".modal-title");
+          const modalBodyListElement = listDisplayModalElement.querySelector(
+            "#listDisplayModalBodyContent"
+          );
+
+          if (modalTitleElement)
+            modalTitleElement.innerHTML = `<i class="bi bi-list-ul me-2"></i>${modalTitle}`;
+          if (modalBodyListElement) {
+            modalBodyListElement.innerHTML = "";
+            let itemsToDisplay = [];
+
+            if (itemsJsonString && itemsJsonString.trim() !== "") {
+              try {
+                itemsToDisplay = JSON.parse(itemsJsonString);
+              } catch (e) {
+                console.error(
+                  "Erro ao parsear data-list-items:",
+                  itemsJsonString,
+                  e
+                );
+                const li = document.createElement("li");
+                li.className = "list-group-item text-danger";
+                li.textContent =
+                  "Erro ao carregar os itens. Formato de dados inválido.";
+                modalBodyListElement.appendChild(li);
+                return; // Interrompe se o JSON for inválido
+              }
+            }
+
+            if (itemsToDisplay && itemsToDisplay.length > 0) {
+              itemsToDisplay.forEach((itemData) => {
+                const li = document.createElement("li");
+                li.className = "list-group-item";
+                if (itemType === "code") {
+                  li.innerHTML = `<code>${itemData}</code>`;
+                } else if (itemType === "anexo") {
+                  let anexoLink = "#";
+                  let linkContent = `<span class="text-muted fst-italic small">(Link indisponível)</span>`;
+                  if (itemData && itemData.caminho) {
+                    // Verifica se itemData e itemData.caminho existem
+                    if (itemData.tipo_anexo === "URL") {
+                      anexoLink = itemData.caminho;
+                      linkContent = `<a href="${anexoLink}" target="_blank" class="text-decoration-none small"><i class="bi bi-link-45deg me-1"></i>Visualizar URL</a>`;
+                    } else {
+                      anexoLink = itemData.caminho;
+                      linkContent = `<a href="${anexoLink}" target="_blank" class="text-decoration-none small"><i class="bi bi-file-earmark-text-fill me-1"></i>Visualizar Arquivo</a>`;
+                    }
+                  }
+                  li.innerHTML = `<div class="d-flex justify-content-between align-items-center">
+                                          <span><i class="bi bi-paperclip me-2"></i>${
+                                            itemData.descricao || "Anexo"
+                                          } (${
+                    itemData.tipo_anexo || "N/D"
+                  })</span>
+                                          ${linkContent}
+                                        </div>`;
+                } else {
+                  li.textContent = itemData; // Para 'text' e fallback
+                }
+                modalBodyListElement.appendChild(li);
+              });
+            } else {
+              const li = document.createElement("li");
+              li.className = "list-group-item text-muted fst-italic";
+              li.textContent = "Nenhum item para exibir.";
+              modalBodyListElement.appendChild(li);
             }
           }
         }
+      );
+    }
+
+    document.querySelectorAll(".ver-codigos-btn").forEach((button) => {
+      button.addEventListener("click", async function () {
+        const codvariavel = this.dataset.codvariavel;
+        const nomeVariavel = this.dataset.nome;
+        Swal.fire({
+          title: "Códigos DICOM Vinculados",
+          html: `
+          <p class="text-start mb-1"><strong>Variável:</strong> ${nomeVariavel}</p>
+          <div id="codigos-content-swal" class="text-start mt-2">
+            <h6 class="mb-1">Códigos Vinculados:</h6>
+            <ul id="codigos-list-swal" class="list-unstyled ps-3 small"><li><div class="spinner-border spinner-border-sm" role="status"></div> Carregando...</li></ul>
+          </div>`,
+          showCloseButton: true,
+          showConfirmButton: false,
+          customClass: { popup: "swal2-zindex-high swal-wide" },
+          didOpen: async () => {
+            try {
+              const response = await fetch(
+                `/variaveis/get_codigos_vinculados/${codvariavel}`
+              );
+              if (!response.ok)
+                throw new Error(`HTTP error! Status: ${response.status}`);
+              const codigos = await response.json();
+              const codigosList =
+                Swal.getHtmlContainer().querySelector("#codigos-list-swal");
+              if (!codigosList) return;
+              codigosList.innerHTML = "";
+              if (codigos.error) {
+                codigosList.innerHTML = `<li class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Erro: ${codigos.error}</li>`;
+              } else if (codigos.length > 0) {
+                codigos.forEach((codigo) => {
+                  const li = document.createElement("li");
+                  li.innerHTML = `<code>${codigo.codigo}</code> - ${
+                    codigo.descricaoptbr ||
+                    '<span class="text-muted fst-italic">Sem descrição</span>'
+                  }`;
+                  codigosList.appendChild(li);
+                });
+              } else {
+                codigosList.innerHTML =
+                  '<li><i class="bi bi-info-circle me-1"></i>Nenhum código DICOM vinculado.</li>';
+              }
+            } catch (error) {
+              console.error("Erro ao buscar códigos vinculados:", error);
+              const codigosList =
+                Swal.getHtmlContainer().querySelector("#codigos-list-swal");
+              if (codigosList) {
+                codigosList.innerHTML = `<li class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Erro ao carregar códigos.</li>`;
+              }
+            }
+          },
+        });
       });
     });
   });
-});
 
-// Estilo para garantir que o modal do Swal fique na frente de modais Bootstrap
-const styleSwalZIndex = document.createElement('style');
-styleSwalZIndex.textContent = '.swal2-zindex-high { z-index: 1060 !important; } .swal-wide { width: 600px !important; }';
-document.head.appendChild(styleSwalZIndex);
+  const styleSwalZIndex = document.createElement("style");
+  styleSwalZIndex.textContent =
+    ".swal2-zindex-high { z-index: 1060 !important; } .swal-wide { width: 600px !important; }";
+  document.head.appendChild(styleSwalZIndex);
 </script>
 {% endset %}

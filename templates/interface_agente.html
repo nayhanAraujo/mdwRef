@@ -1,0 +1,65 @@
+{% extends 'layout.html' %}
+
+{% block title %}Processar Documento Acadêmico{% endblock %}
+
+{% set content %}
+<div class="container mt-4">
+    <h3 class="mb-4"><i class="bi bi-robot me-2"></i>Agente de Extração de Referências</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Upload de Documento e Informações</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="pdf_file" class="form-label">Arquivo PDF do Estudo/Guideline</label>
+                    <input type="file" class="form-control" id="pdf_file" name="pdf_file" accept=".pdf" required>
+                </div>
+                <div class="mb-3">
+                    <label for="variable_sigla" class="form-label">Sigla ou Nome da Variável Principal de Interesse</label>
+                    <input type="text" class="form-control" id="variable_sigla" name="variable_sigla" list="variaveis_datalist" placeholder="Ex: VR_AO ou Aorta Diâmetro" required>
+                    <datalist id="variaveis_datalist">
+                        {% for var_db in variaveis_db %}
+                            <option value="{{ var_db[0] }}">{{ var_db[1] }}</option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label for="ref_titulo" class="form-label">Título da Referência (Ex: ASE 2015 Guidelines)</label>
+                        <input type="text" class="form-control" id="ref_titulo" name="ref_titulo" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="ref_ano" class="form-label">Ano da Referência</label>
+                        <input type="number" class="form-control" id="ref_ano" name="ref_ano" min="1900" max="{{ now.year }}" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-gear-fill me-2"></i>Processar Documento
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    // Adicionar o ano atual como máximo para o input de ano
+    document.addEventListener('DOMContentLoaded', function() {
+        const anoInput = document.getElementById('ref_ano');
+        if (anoInput) {
+            anoInput.max = new Date().getFullYear();
+        }
+    });
+</script>
+{% endset %}

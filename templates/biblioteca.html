@@ -28,7 +28,7 @@
 
 
 
-<div class="container-fluid px-lg-4 px-md-3 px-sm-2"> {# Ajustado padding responsivo #}
+<div class="container-fluid px-lg-4 px-md-3 px-sm-2"> 
   <div class="quick-access">
     <h5 class="quick-access-title"><i class="bi bi-lightning-charge-fill"></i>Acesso Rápido</h5>
     <div class="row g-3">
@@ -67,8 +67,11 @@
           <i class="bi bi-box-fill me-1"></i>Novo Pacote
         </a>
       </div>
-      {# Adicione mais botões de acesso rápido se necessário, ajustando as classes de coluna #}
-    </div>
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+        <a href="{{ url_for('agente_referencias.processar_documento') }}" class="module-action d-block text-center">
+          <i class="bi bi-robot me-1"></i>Agente de Extração
+        </a>
+      </div>    </div>
   </div>
 
   <h4 class="section-title"><i class="bi bi-grid-1x2-fill me-2"></i>Módulos do Sistema</h4>
@@ -88,7 +91,8 @@
       </div>
     </div>
     
-    <div class="col-md-6 col-lg-4">
+
+        <div class="col-md-6 col-lg-4">
       <div class="module-card">
         <div class="module-icon bg-success"> <i class="bi bi-journal-bookmark-fill"></i> </div>
         <h5 class="module-title">Referências</h5>
@@ -166,7 +170,7 @@
     
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
-        <div class="module-icon" style="background-color: #6f42c1;"> <i class="bi bi-diagram-3-fill"></i> </div> {# Cor roxa customizada #}
+        <div class="module-icon" style="background-color: #6f42c1;"> <i class="bi bi-diagram-3-fill"></i> </div> 
         <h5 class="module-title">Códigos Universais e DICOM</h5>
         <p class="module-desc">Gerencie códigos universais (ex: LOINC, SNOMED) e vincule-os a variáveis.</p>
         <div class="mt-auto module-actions">
@@ -175,6 +179,19 @@
         </div>
       </div>
     </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon bg-purple" style="background-color: #22c2b4 ;"> <i class="bi bi-robot"></i> </div>
+        <h5 class="module-title">Agente de Extração de Referências</h5>
+        <p class="module-desc">Utilize IA para extrair faixas de normalidade de documentos acadêmicos e atualizar o banco de dados.</p>
+        <div class="module-actions">
+          <a href="{{ url_for('agente_referencias.processar_documento') }}" class="module-action">Processar Documento</a>
+          </div>
+      </div>
+    </div>
+
+
   </div>
 </div>
 

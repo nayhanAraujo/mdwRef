@@ -1,33 +1,36 @@
 import logging
 from datetime import datetime
-from flask import current_app # Para obter a conexão do app Flask
+from flask import g # Importar g
+
+# Não precisa mais de 'current_app' aqui se todas as chamadas usarem 'g'
+# Não precisa mais de 'import sys, os, from database import conectar' se
+# esta unidade só for usada dentro do contexto de uma app Flask que já tem 'g' populado.
 
 logger = logging.getLogger(__name__)
 
-def get_db_from_app():
-    """Obtém conexão e cursor do contexto da aplicação Flask."""
-    conn = current_app.config.get('db_conn')
-    cur = current_app.config.get('db_cursor')
-    if conn is None or cur is None:
-        # Isso pode acontecer se chamado fora de um request context ou se before_request não rodou.
-        # Para scripts standalone, você precisaria de uma conexão direta.
-        from database import conectar # Importação local para evitar dependência circular no nível do módulo
-        logger.warning("Obtendo nova conexão com o BD fora do contexto Flask.")
-        conn = conectar()
-        cur = conn.cursor()
-        # Nota: Esta conexão precisaria ser gerenciada (fechada) manualmente se usada assim.
-    return conn, cur
-
+def get_db_from_g():
+    """Obtém conexão e cursor de flask.g. Assume que g.db_conn e g.db_cur foram definidos em app.before_request."""
+    if not hasattr(g, 'db_conn') or g.db_conn.closed:
+        logger.error("DB_UPDATER: Conexão não encontrada ou fechada em flask.g!")
+        # Em um cenário de produção, você pode querer uma forma mais robusta de lidar com isso,
+        # mas para o fluxo normal do Flask, before_request deve garantir a conexão.
+        raise RuntimeError("Conexão com banco de dados não disponível em flask.g. Verifique app.py before_request.")
+    if not hasattr(g, 'db_cur') or g.db_cur.closed: # Adicionado verificação para cursor
+        logger.error("DB_UPDATER: Cursor não encontrado ou fechado em flask.g!")
+        g.db_cur = g.db_conn.cursor() # Tenta reabrir o cursor se a conexão ainda estiver boa
+        logger.info("DB_UPDATER: Novo cursor criado a partir da conexão em flask.g.")
+    return g.db_conn, g.db_cur
 
 def get_variable_cod(variable_sigla_or_name):
     """Busca CODVARIAVEL pela SIGLA ou NOME."""
-    conn, cur = get_db_from_app()
+    conn, cur = get_db_from_g() # Usar a conexão de g
     try:
-        cur.execute("SELECT CODVARIAVEL FROM VARIAVEIS WHERE SIGLA = ? OR NOME = ?", (variable_sigla_or_name, variable_sigla_or_name))
+        cur.execute("SELECT CODVARIAVEL FROM VARIAVEIS WHERE SIGLA = ? OR NOME = ?",
+                    (variable_sigla_or_name, variable_sigla_or_name))
         result = cur.fetchone()
         return result[0] if result else None
     except Exception as e:
-        logger.error(f"Erro ao buscar CODVARIAVEL para '{variable_sigla_or_name}': {e}")
+        logger.error(f"DB_UPDATER: Erro ao buscar CODVARIAVEL para '{variable_sigla_or_name}': {e}", exc_info=True)
         return None
 
 def get_or_create_referencia(titulo, ano, descricao=None, codespecialidade=None, codusuario=None):
@@ -36,7 +39,7 @@ def get_or_create_referencia(titulo, ano, descricao=None, codespecialidade=None,
     Retorna CODREFERENCIA.
     `codusuario` é obrigatório para criação.
     """
-    conn, cur = get_db_from_app()
+    conn, cur = get_db_from_g() # Usar a conexão de g
     try:
         cur.execute("SELECT CODREFERENCIA FROM REFERENCIA WHERE UPPER(TITULO) = UPPER(?) AND ANO = ?", (titulo.strip(), ano))
         result = cur.fetchone()
@@ -47,7 +50,7 @@ def get_or_create_referencia(titulo, ano, descricao=None, codespecialidade=None,
             if codusuario is None:
                 logger.error("CODUSUARIO é necessário para criar nova referência.")
                 return None
-            
+
             dthr = datetime.now()
             cur.execute(
                 """
@@ -62,7 +65,7 @@ def get_or_create_referencia(titulo, ano, descricao=None, codespecialidade=None,
             return codreferencia
     except Exception as e:
         conn.rollback()
-        logger.error(f"Erro em get_or_create_referencia para '{titulo}': {e}")
+        logger.error(f"Erro em get_or_create_referencia para '{titulo}': {e}", exc_info=True)
         return None
 
 def insert_normalidade_batch(normalidades_data):
@@ -71,7 +74,7 @@ def insert_normalidade_batch(normalidades_data):
     Cada item em normalidades_data deve ser um dicionário com as chaves:
     codvariavel, codreferencia, valormin, valormax, sexo, idade_min, idade_max, codusuario
     """
-    conn, cur = get_db_from_app()
+    conn, cur = get_db_from_g() # Usar a conexão de g
     try:
         sql = """
             INSERT INTO NORMALIDADE (CODVARIAVEL, CODREFERENCIA, VALORMIN, VALORMAX, SEXO, IDADE_MIN, IDADE_MAX, CODUSUARIO, DTHRULTMODIFICACAO)
@@ -85,20 +88,21 @@ def insert_normalidade_batch(normalidades_data):
                 item['codreferencia'],
                 item.get('valormin'),
                 item.get('valormax'),
-                item.get('sexo', 'A')[:1], # Garante que seja apenas 1 caractere, default 'A'
+                item.get('sexo', 'A')[:1].upper(), # Garante 1 char maiúsculo, default 'A'
                 item.get('idade_min'),
                 item.get('idade_max'),
                 item['codusuario'],
                 dthr
             ))
-        
+
         if params_list:
             cur.executemany(sql, params_list)
             conn.commit()
             logger.info(f"{len(params_list)} registros de normalidade inseridos com sucesso.")
             return True
-        return False
+        logger.info("Nenhum dado de normalidade para inserir.")
+        return False # Retorna False se não havia nada para inserir
     except Exception as e:
         conn.rollback()
-        logger.error(f"Erro ao inserir normalidades em lote: {e}")
+        logger.error(f"Erro ao inserir normalidades em lote: {e}", exc_info=True)
         return False

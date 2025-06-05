@@ -4,14 +4,6 @@ from functools import wraps
 
 biblioteca_pb = Blueprint('bibliotecas', __name__)
 
-def get_db():
-    #from app import conn, cur
-    #return conn, cur
-    conn = current_app.config.get('db_conn')
-    cur = current_app.config.get('db_cursor')
-    if conn is None or cur is None:
-        raise Exception("Conexão com o banco de dados não foi inicializada.")
-    return conn, cur
 
 def admin_required(f):
     @wraps(f)

@@ -1,49 +1,74 @@
 {% extends 'layout.html' %}
 
+{% block title %}Gerenciar Pacotes de Scripts{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-box-fill me-2"></i>Pacotes
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome']|e }}</strong>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-collection-fill me-2 icon-gradient"></i> Gerenciar Pacotes de Scripts
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome']|e }}</strong>
+    </div>
   </div>
+  <hr class="mt-2 mb-0 page-header-divider">
 </div>
 
-<div class="container">
+<div class="container-fluid">
   <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between mb-3">
-        <h5 class="text-primary">Lista de Pacotes</h5>
-        <a href="{{ url_for('pacotes.novo_pacote') }}" class="btn btn-outline-primary">
-          <i class="bi bi-plus-circle"></i> Novo Pacote
-        </a>
+    <div class="card-header bg-light py-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary">Lista de Pacotes Cadastrados</h5>
+        {# Botão agora abre o modal #}
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoPacote">
+          <i class="bi bi-plus-circle-fill me-1"></i> Novo Pacote
+        </button>
       </div>
+    </div>
+    <div class="card-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
       {% if pacotes %}
         <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Descrição</th>
-                <th>Última Modificação</th>
-                <th>Ações</th>
+          <table class="table table-hover table-bordered align-middle">
+            <thead class="table-light">
+              <tr class="text-center">
+                <th class="text-start" style="width: 30%;">Nome do Pacote</th>
+                <th class="text-start">Descrição</th>
+                <th style="width: 20%;">Última Modificação</th>
+                <th style="width: 15%;">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {% for pacote in pacotes %}
+              {% for pacote_item in pacotes %} {# Renomeada variável de loop #}
                 <tr>
-                  <td>{{ pacote.nome }}</td>
-                  <td>{{ pacote.descricao|default('-') }}</td>
-                  <td>{{ pacote.dthrultmodificacao.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-                  <td>
-                    <a href="{{ url_for('pacotes.editar_pacote', codpacote=pacote.codpacote) }}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Editar pacote">
-                      <i class="bi bi-pencil"></i>
-                    </a>
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmarExcluirPacote({{ pacote.codpacote }})" data-bs-toggle="tooltip" title="Excluir pacote">
-                      <i class="bi bi-trash"></i>
-                    </button>
+                  <td class="text-start fw-medium">{{ pacote_item.nome }}</td>
+                  <td class="text-start">{{ pacote_item.descricao|default('-', true) }}</td>
+                  <td class="text-center small">{{ pacote_item.dthrultmodificacao.strftime('%d/%m/%Y %H:%M:%S') if pacote_item.dthrultmodificacao else '-' }}</td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Ações para o Pacote {{ pacote_item.nome }}">
+                      <a href="{{ url_for('pacotes.editar_pacote', codpacote=pacote_item.codpacote) }}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Editar Pacote">
+                        <i class="bi bi-pencil-square"></i>
+                      </a>
+                      <form action="{{ url_for('pacotes.excluir_pacote', codpacote=pacote_item.codpacote) }}" method="GET" class="d-inline excluir-pacote-form"> {# método GET conforme sua rota #}
+                          <input type="hidden" name="codpacote_hidden" value="{{ pacote_item.codpacote }}">
+                          <button type="submit" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Excluir Pacote">
+                              <i class="bi bi-trash-fill"></i>
+                          </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               {% endfor %}
@@ -51,32 +76,153 @@
           </table>
         </div>
       {% else %}
-        <p class="text-muted">Nenhum pacote cadastrado.</p>
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle-fill me-2"></i>Nenhum pacote cadastrado. 
+            <button type="button" class="btn btn-link p-0 align-baseline" data-bs-toggle="modal" data-bs-target="#modalNovoPacote">
+                Clique aqui
+            </button> para adicionar um novo pacote.
+        </div>
       {% endif %}
     </div>
   </div>
 </div>
 
+<div class="modal fade" id="modalNovoPacote" tabindex="-1" aria-labelledby="modalNovoPacoteLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg"> {# modal-lg para mais espaço #}
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNovoPacoteLabel"><i class="bi bi-box-fill me-2"></i>Novo Pacote</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('pacotes.novo_pacote') }}" id="formNovoPacote" class="needs-validation" novalidate>
+        <div class="modal-body">
+          <h6 class="text-primary mb-3">Informações do Pacote</h6>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label for="nomePacoteModal" class="form-label">Nome do Pacote <span class="text-danger">*</span></label>
+              <input type="text" name="nome" id="nomePacoteModal" class="form-control" placeholder="Nome descritivo para o pacote" required>
+              <div class="invalid-feedback">O nome do pacote é obrigatório.</div>
+            </div>
+            <div class="col-md-6">
+              <label for="descricaoPacoteModal" class="form-label">Descrição (Opcional)</label>
+              <textarea name="descricao" id="descricaoPacoteModal" class="form-control" rows="1" placeholder="Breve descrição do conteúdo do pacote"></textarea>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save-fill me-1"></i> Salvar Pacote
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<style>
+  /* Estilos do Page Header (se não estiverem globais) */
+  .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
+  .page-header .icon-gradient {background: linear-gradient(45deg, var(--bs-primary), var(--bs-info)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; font-size: 1.65rem; vertical-align: middle;}
+  .page-header-divider {border-top: 1px solid rgba(0, 0, 0, 0.08);}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // Inicializa Tooltips
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  [...tooltipTriggerList].forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+  [...tooltipTriggerList].forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl, {container: 'body'}));
+
+  // SweetAlert2 para confirmação de exclusão de pacote
+  const swalConfirmDeleteMixin = Swal.mixin({
+    customClass: {
+      confirmButton: 'btn btn-danger mx-1',
+      cancelButton: 'btn btn-secondary mx-1'
+    },
+    buttonsStyling: false,
+    popup: 'swal2-zindex-high'
+  });
+
+  document.querySelectorAll('.excluir-pacote-form').forEach(form => {
+    form.addEventListener('submit', function(event) {
+      event.preventDefault(); 
+      const formAction = this.action; // Pega a URL da action do formulário
+      
+      swalConfirmDeleteMixin.fire({
+        title: 'Excluir Pacote?',
+        html: "Esta ação não pode ser desfeita.<br><strong>Atenção:</strong> Os scripts vinculados a este pacote serão desassociados (não excluídos).",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir!',
+        cancelButtonText: '<i class="bi bi-x-lg me-1"></i> Cancelar',
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = formAction; // Redireciona para a URL de exclusão (GET)
+        }
+      });
+    });
+  });
+
+  // Validação Bootstrap para o formulário do modal "Novo Pacote"
+  const formNovoPacote = document.getElementById('formNovoPacote');
+  if (formNovoPacote) {
+    formNovoPacote.addEventListener('submit', function(event) {
+      if (!formNovoPacote.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      formNovoPacote.classList.add('was-validated');
+      // A submissão padrão ocorrerá se for válida, ou pode ser interceptada por SweetAlert
+      // Se quiser confirmação Swal antes de salvar o novo pacote:
+      /*
+      event.preventDefault(); 
+      if (formNovoPacote.checkValidity()) {
+          Swal.fire({
+              title: 'Salvar Novo Pacote?',
+              text: "Confirma a criação deste pacote com os scripts selecionados?",
+              icon: 'question',
+              showCancelButton: true,
+              confirmButtonColor: '#198754',
+              cancelButtonColor: '#6c757d',
+              confirmButtonText: '<i class="bi bi-check-lg"></i> Sim, Salvar',
+              cancelButtonText: '<i class="bi bi-x-lg"></i> Cancelar',
+              customClass: { popup: 'swal2-zindex-high' }
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  formNovoPacote.submit(); 
+              }
+          });
+      }
+      formNovoPacote.classList.add('was-validated');
+      */
+    }, false);
+  }
+
+  // Limpar o formulário do modal ao fechar
+  const modalNovoPacote = document.getElementById('modalNovoPacote');
+  if (modalNovoPacote) {
+    modalNovoPacote.addEventListener('hidden.bs.modal', function () {
+      if (formNovoPacote) {
+        formNovoPacote.reset();
+        formNovoPacote.classList.remove('was-validated');
+        // O select múltiplo pode precisar de uma limpeza mais específica se .reset() não for suficiente
+        const scriptSelect = formNovoPacote.querySelector('#scriptlaudosModal');
+        if (scriptSelect) {
+            Array.from(scriptSelect.options).forEach(option => option.selected = false);
+        }
+      }
+    });
+  }
 });
 
-function confirmarExcluirPacote(codpacote) {
-  Swal.fire({
-    title: 'Excluir pacote?',
-    text: 'Esta ação não pode ser desfeita e pode afetar scripts vinculados.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sim, excluir',
-    cancelButtonText: 'Cancelar'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      const url = '{{ url_for("pacotes.excluir_pacote", codpacote=0) }}'.replace('/0', '/' + codpacote);
-      window.location.href = url;
-    }
-  });
-}
+// Estilo para garantir que o modal do Swal fique na frente
+const styleSwalZIndexPacotes = document.createElement('style');
+styleSwalZIndexPacotes.textContent = '.swal2-zindex-high { z-index: 1060 !important; }'; // z-index um pouco mais alto que modais Bootstrap
+document.head.appendChild(styleSwalZIndexPacotes);
 </script>
 {% endset %}

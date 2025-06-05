@@ -6,7 +6,7 @@
     <i class="bi bi-plus-circle me-2"></i> Nova Especialidade
   </h3>
   <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario'] }}</strong>
+    <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome']|e }}</strong>
   </div>
 </div>
 

@@ -1,69 +1,222 @@
 {% extends 'layout.html' %}
 
+{% block title %}Gerenciar Especialidades{% endblock %}
+
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-list-ul me-2"></i> Especialidades Cadastradas
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-bookmark-star-fill me-2 icon-gradient"></i> Gerenciar Especialidades Médicas
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome']|e }}</strong>
+    </div>
+  </div>
+  <hr class="mt-2 mb-0 page-header-divider">
+</div>
+
+<div class="container-fluid">
+  <div class="card shadow-sm">
+    <div class="card-header bg-light py-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-primary">Especialidades Cadastradas</h5>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEspecialidade" onclick="abrirModalNovaEspecialidade()">
+          <i class="bi bi-plus-circle-fill me-1"></i> Nova Especialidade
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% if especialidades %}
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered align-middle">
+            <thead class="table-light">
+              <tr class="text-center">
+                <th style="width: 10%;">#</th>
+                <th class="text-start">Descrição da Especialidade</th>
+                <th style="width: 15%;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cod, descricao in especialidades %}
+              <tr class="text-center">
+                <td>{{ cod }}</td>
+                <td class="text-start fw-medium">{{ descricao }}</td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary" 
+                            data-bs-toggle="modal" data-bs-target="#modalEspecialidade" 
+                            onclick="abrirModalEditarEspecialidade({{ cod }}, '{{ descricao | escape }}')"
+                            title="Editar Especialidade">
+                      <i class="bi bi-pencil-square"></i> Editar
+                    </button>
+                    <form action="{{ url_for('especialidades.excluir_especialidade', codespecialidade=cod) }}" method="POST" class="d-inline excluir-especialidade-form">
+                      <input type="hidden" name="codespecialidade" value="{{ cod }}">
+                      <button type="submit" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Excluir Especialidade">
+                        <i class="bi bi-trash-fill"></i> Excluir
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle-fill me-2"></i>Nenhuma especialidade cadastrada.
+            <button type="button" class="btn btn-link p-0 align-baseline" data-bs-toggle="modal" data-bs-target="#modalEspecialidade" onclick="abrirModalNovaEspecialidade()">
+                Clique aqui
+            </button> para adicionar uma nova.
+        </div>
+      {% endif %}
+    </div>
   </div>
 </div>
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <a href="{{ url_for('especialidades.nova_especialidade') }}" class="btn btn-primary mb-3">
-      <i class="bi bi-plus-circle"></i> Nova Especialidade
-    </a>
-    <table class="table table-hover table-bordered align-middle">
-      <thead class="table-primary text-center">
-        <tr>
-          <th>#</th>
-          <th>Descrição</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for cod, descricao in especialidades %}
-        <tr class="text-center">
-          <td>{{ cod }}</td>
-          <td class="text-start">{{ descricao }}</td>
-          <td>
-            <a href="{{ url_for('especialidades.editar_especialidade', codespecialidade=cod) }}" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-pencil-square"></i> Editar
-            </a>
-            <form action="{{ url_for('especialidades.excluir_especialidade', codespecialidade=cod) }}" method="post" class="d-inline excluir-especialidade-form">
-              <button type="submit" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash"></i> Excluir
-              </button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="modal fade" id="modalEspecialidade" tabindex="-1" aria-labelledby="modalEspecialidadeLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEspecialidadeLabel"></h5> {# Título será definido por JS #}
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="" id="formEspecialidade" class="needs-validation" novalidate> {# Action será definida por JS #}
+        <input type="hidden" name="codespecialidade" id="codespecialidadeModal">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="nomeEspecialidadeModal" class="form-label">Nome da Especialidade <span class="text-danger">*</span></label>
+            <input type="text" name="nome" id="nomeEspecialidadeModal" class="form-control" placeholder="Ex: Cardiologia" required>
+            <div class="invalid-feedback">
+                Por favor, insira o nome da especialidade.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save-fill me-1"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
+
+<style>
+  /* Estilos do Page Header (se não estiverem globais) */
+  .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
+  .page-header .icon-gradient {background: linear-gradient(45deg, var(--bs-primary), var(--bs-info)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; font-size: 1.65rem; vertical-align: middle;}
+  .page-header-divider {border-top: 1px solid rgba(0, 0, 0, 0.08);}
+</style>
 
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Inicializa Tooltips
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  [...tooltipTriggerList].forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl, {container: 'body'}));
+
+  const modalEspecialidadeElement = document.getElementById('modalEspecialidade');
+  const formEspecialidade = document.getElementById('formEspecialidade');
+  const modalEspecialidadeLabel = document.getElementById('modalEspecialidadeLabel');
+  const nomeEspecialidadeModalInput = document.getElementById('nomeEspecialidadeModal');
+  const codespecialidadeModalInput = document.getElementById('codespecialidadeModal');
+
+  // Função para abrir modal para Nova Especialidade
+  window.abrirModalNovaEspecialidade = function() {
+    if (!formEspecialidade || !modalEspecialidadeLabel || !nomeEspecialidadeModalInput || !codespecialidadeModalInput) return;
+    formEspecialidade.action = "{{ url_for('especialidades.nova_especialidade') }}";
+    modalEspecialidadeLabel.innerHTML = '<i class="bi bi-plus-circle-fill me-2"></i>Nova Especialidade';
+    nomeEspecialidadeModalInput.value = '';
+    codespecialidadeModalInput.value = ''; // Limpa o código para nova
+    formEspecialidade.classList.remove('was-validated');
+  }
+
+  // Função para abrir modal para Editar Especialidade
+  window.abrirModalEditarEspecialidade = function(codespecialidade, nomeAtual) {
+    if (!formEspecialidade || !modalEspecialidadeLabel || !nomeEspecialidadeModalInput || !codespecialidadeModalInput) return;
+    formEspecialidade.action = `{{ url_for('especialidades.editar_especialidade', codespecialidade=0) }}`.replace('0', codespecialidade);
+    modalEspecialidadeLabel.innerHTML = '<i class="bi bi-pencil-fill me-2"></i>Editar Especialidade';
+    nomeEspecialidadeModalInput.value = nomeAtual;
+    codespecialidadeModalInput.value = codespecialidade;
+    formEspecialidade.classList.remove('was-validated');
+  }
+
+  // Validação Bootstrap para o formulário do modal
+  if (formEspecialidade) {
+    formEspecialidade.addEventListener('submit', function(event) {
+      if (!formEspecialidade.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      formEspecialidade.classList.add('was-validated');
+      // Se quiser confirmação Swal antes de submeter, adicione aqui como nos outros formulários.
+      // Por simplicidade, o submit padrão ocorrerá se for válido.
+      // A rota Python já faz flash e redirect.
+    }, false);
+  }
+  
+  // Limpar o formulário do modal ao fechar
+  if (modalEspecialidadeElement && formEspecialidade) {
+    modalEspecialidadeElement.addEventListener('hidden.bs.modal', function () {
+        formEspecialidade.reset();
+        formEspecialidade.classList.remove('was-validated');
+        nomeEspecialidadeModalInput.value = '';
+        codespecialidadeModalInput.value = '';
+    });
+  }
+
+  // SweetAlert2 para confirmação de exclusão
+  const swalConfirmDeleteMixin = Swal.mixin({
+    customClass: {
+      confirmButton: 'btn btn-danger mx-1',
+      cancelButton: 'btn btn-secondary mx-1'
+    },
+    buttonsStyling: false,
+    popup: 'swal2-zindex-high'
+  });
+
   document.querySelectorAll('.excluir-especialidade-form').forEach(form => {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      Swal.fire({
-        title: 'Confirmar Exclusão',
-        text: 'Deseja excluir esta especialidade?',
+    form.addEventListener('submit', function(event) {
+      event.preventDefault(); 
+      const formAction = this.action;
+      
+      swalConfirmDeleteMixin.fire({
+        title: 'Excluir Especialidade?',
+        text: "Esta ação não pode ser desfeita e pode afetar outros registros vinculados.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Excluir',
-        cancelButtonText: 'Cancelar'
+        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir!',
+        cancelButtonText: '<i class="bi bi-x-lg me-1"></i> Cancelar',
+        reverseButtons: true
       }).then((result) => {
         if (result.isConfirmed) {
-          form.submit();
+          // A rota de exclusão no seu especialidades.py usa POST
+          form.submit(); 
         }
       });
     });
   });
+});
+
+// Estilo para garantir que o modal do Swal fique na frente
+const styleSwalZIndexEspecialidades = document.createElement('style');
+styleSwalZIndexEspecialidades.textContent = '.swal2-zindex-high { z-index: 1060 !important; }';
+document.head.appendChild(styleSwalZIndexEspecialidades);
 </script>
 {% endset %}

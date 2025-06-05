@@ -19,6 +19,7 @@ from routes.agente_referencias   import agente_bp
 from routes.codigos_universais import codigos_universais_bp  # Adicione esta linha
 from dotenv import load_dotenv  # Adicione este import
 from datetime import timedelta
+
 import os
 import logging
 
@@ -34,7 +35,6 @@ IS_LOCAL = os.environ.get('FLASK_ENV') == 'development'
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.environ.get('SECRET_KEY', 'sua_chave_secreta_segura')
-
     # Configurar logging
     logging.basicConfig(
         level=logging.DEBUG,
@@ -44,97 +44,54 @@ def create_app():
     # Verifica se está rodando localmente (desenvolvimento)
     is_local = os.environ.get('FLASK_ENV') == 'development' or os.getenv('FLASK_DEBUG') == '1'
     
-    # Configurações de sessão
     app.config['SESSION_TYPE'] = 'filesystem'
     app.config['SESSION_PERMANENT'] = False
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Expira em 30 minutos
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
     app.config['SESSION_USE_SIGNER'] = True
-
-    # In app.py or config.py
-    app.config.update(
-        SMTP_SERVER='smtp.gmail.com',  # e.g., Gmail SMTP server
-        SMTP_PORT=587,
-        SMTP_USERNAME='nayhanbsb@gmail.com',
-        SMTP_PASSWORD='txkt aiqx qqvk vjdr',  # Use an app-specific password for Gmail
-        SMTP_SENDER='nayhanbsb@gmail.com'
-    )
-
-
-
-    if is_local:
-        # Usar um caminho explícito no diretório raiz do projeto
-        app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sessions')
-    else:
-        app.config['SESSION_FILE_DIR'] = '/app/sessions'
-
+    app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sessions') if is_local else '/app/sessions'
     app.config['SESSION_FILE_THRESHOLD'] = 500
-    app.config['SESSION_COOKIE_SECURE'] = not is_local  # Cookies só em HTTPS
-    app.config['SESSION_COOKIE_HTTPONLY'] = True  # Impede acesso via JavaScript
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção contra CSRF
-    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB
+    app.config['SESSION_COOKIE_SECURE'] = not is_local
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
     app.config['UPLOAD_FOLDER_INTERFACES'] = 'static/uploads/interfaces'
     app.config['UPLOAD_FOLDER_IMPRESSOES'] = 'static/uploads/impressoes'
-    # Configuração do diretório de upload dinâmico
-    # Configuração do diretório de upload dinâmico
-    if is_local:
-        app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/Uploads')
-    else:
-        app.config['UPLOAD_FOLDER'] = '/app/uploads'
+    app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/Uploads') if is_local else '/app/uploads'
+    app.config['UPLOAD_FOLDER_DOCUMENTOS'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads_documentos_academicos') if is_local else '/app/uploads_documentos_academicos'
 
-    if is_local:
-        app.config['UPLOAD_FOLDER_DOCUMENTOS'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads_documentos_academicos')
-    else:
-        app.config['UPLOAD_FOLDER_DOCUMENTOS'] = '/app/uploads_documentos_academicos' # Exemplo para produção
-    try:
-     os.makedirs(app.config['UPLOAD_FOLDER_DOCUMENTOS'], exist_ok=True)
-    except OSError as e:
-      app.logger.error(f"Erro ao criar diretório de uploads de documentos: {e}")
+    app.config.update(
+        SMTP_SERVER='smtp.gmail.com',
+        SMTP_PORT=587,
+        SMTP_USERNAME='nayhanbsb@gmail.com',
+        SMTP_PASSWORD='txkt aiqx qqvk vjdr',
+        SMTP_SENDER='nayhanbsb@gmail.com'
+    )  
+ 
 
-    # Inicializar extensões
-    Session(app)
-
-    # Criar diretórios necessários
-    try:
-        os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    except OSError as e:
-        app.logger.error(f"Erro ao criar diretórios: {e}")
-
-    # Configuração do banco de dados por ambiente
-    if is_local:
-        app.config['DB_CONFIG'] = {
+    app.config['DB_CONFIG'] = {
             'host': os.environ.get('LOCAL_DB_HOST', '127.0.0.1'),
             'port': os.environ.get('LOCAL_DB_PORT', '3052'),
             'database': os.environ.get('LOCAL_DB_PATH', 'C:\\Users\\nayhan\\Documents\\PROJETOS AZURE\\6- AZURE - REFERENCIAS\\REFERENCIAS\\BD\\REFERENCIAS.FDB'),
             'user': os.environ.get('LOCAL_DB_USER', 'SYSDBA'),
             'password': os.environ.get('LOCAL_DB_PASSWORD', 'masterkey')
-        }
-    else:
-        app.config['DB_CONFIG'] = {
+        } if is_local else {
             'host': os.environ.get('FIREBIRD_HOST', '127.0.0.1'),
             'port': os.environ.get('FIREBIRD_PORT', '3050'),
             'database': os.environ.get('FIREBIRD_DB', '/app/data/REFERENCIAS.FDB'),
             'user': os.environ.get('FIREBIRD_USER', 'SYSDBA'),
             'password': os.environ.get('FIREBIRD_PASSWORD', 'masterkey')
         }
-  
-    # Inicialização da conexão com o banco de dados
-    @app.before_request
-    def before_request():
-        conn = conectar()
-        cur = conn.cursor()
-        current_app.config['db_conn'] = conn
-        current_app.config['db_cursor'] = cur
-        app.logger.info(f"Sessão atual: {session.get('usuario', 'Nenhuma sessão')}")
 
-        
-    @app.teardown_request
-    def teardown_request(exception):
-        conn = current_app.config.get('db_conn')
-        if conn:
-            conn.close()
+    try:
+            os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            os.makedirs(app.config['UPLOAD_FOLDER_DOCUMENTOS'], exist_ok=True)
+    except OSError as e:
+            app.logger.error(f"Erro ao criar diretórios: {e}")
 
-    # Filtro para extrair o nome do arquivo do caminho
+
+    Session(app)
+
     @app.template_filter('basename')
     def basename_filter(path):
         if path:
@@ -223,5 +180,5 @@ if __name__ == '__main__':
     os.environ['FLASK_ENV'] = 'development'
     load_dotenv()  # Garante o carregamento das variáveis
     
-    app = create_app()
+    #app = create_app()
     app.run(host='0.0.0.0', port=5000, debug=True)

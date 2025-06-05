@@ -88,11 +88,9 @@
                     <a href="{{ url_for('formulas.editar_formula', codformula=cod) }}" class="btn btn-outline-secondary" title="Editar Fórmula">
                       <i class="bi bi-pencil-square"></i> Editar
                     </a>
-                    <form action="{{ url_for('formulas.excluir_formula', codformula=cod) }}" method="POST" class="d-inline excluir-formula-form">
-                      <button type="submit" class="btn btn-outline-danger" title="Excluir Fórmula">
-                        <i class="bi bi-trash-fill"></i> Excluir
-                      </button>
-                    </form>
+                    <a href="{{ url_for('formulas.excluir_formula', codformula=cod) }}" class="btn btn-outline-danger" title="Excluir Fórmula">
+                      <i class="bi bi-trash-fill"></i> Excluir
+                    </a>
                   </div>
                 </td>
               </tr>
@@ -222,6 +220,45 @@
   </div>
 </div>
 
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalConfirmarExclusao" tabindex="-1" aria-labelledby="modalConfirmarExclusaoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="modalConfirmarExclusaoLabel">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Exclusão
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="lead">Você está prestes a excluir a seguinte fórmula:</p>
+        
+        <div class="alert alert-warning">
+          <h5 id="formulaNome" class="mb-2"></h5>
+          <p class="mb-0"><strong>Fórmula:</strong> <code id="formulaConteudo" class="d-block mt-1 p-2 bg-light rounded"></code></p>
+        </div>
+
+        <p class="text-danger mt-3">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <strong>Atenção:</strong> Esta ação não pode ser desfeita.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <form id="formExcluirFormula" method="POST">
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash-fill"></i> Sim, excluir fórmula
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-lg"></i> Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
   /* ... (Estilos do cabeçalho da página e outros existentes) ... */
   .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
@@ -252,6 +289,27 @@
   .suggestions-container code {
     font-weight: bold;
     color: var(--bs-primary); /* Destaca a sigla da variável */
+  }
+
+  /* Estilos para o modal de confirmação */
+  #formulaConteudo {
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 8px;
+  }
+
+  #formulaNome {
+    color: #dc3545;
+    font-weight: 600;
+  }
+
+  .modal-body .alert {
+    margin-bottom: 1rem;
   }
 </style>
 
@@ -472,6 +530,38 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         });
     }
+
+  // Configuração do modal de exclusão
+  const modalConfirmarExclusao = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
+  const formExcluirFormula = document.getElementById('formExcluirFormula');
+  const formulaNome = document.getElementById('formulaNome');
+  const formulaConteudo = document.getElementById('formulaConteudo');
+
+  // Adicionar evento de clique nos botões de exclusão
+  const excluirButtons = document.querySelectorAll('.btn-outline-danger');
+  excluirButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      const row = this.closest('tr');
+      const nome = row.querySelector('td:nth-child(2)').textContent.trim();
+      const formula = row.querySelector('td:nth-child(3) code').textContent.trim();
+      const codformula = this.getAttribute('href').split('/').pop();
+      
+      formulaNome.textContent = nome;
+      formulaConteudo.textContent = formula;
+      formExcluirFormula.action = `/excluir_formula/${codformula}`;
+      
+      modalConfirmarExclusao.show();
+    });
+  });
+
+  // Limpar o conteúdo do modal apenas quando ele for fechado
+  document.getElementById('modalConfirmarExclusao').addEventListener('hidden.bs.modal', function () {
+    formulaNome.textContent = '';
+    formulaConteudo.textContent = '';
+    formExcluirFormula.action = '';
+  });
 });
 
 const styleSwalZIndex = document.createElement('style');

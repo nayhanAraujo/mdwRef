@@ -4,10 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 def extract_text_from_pdf(pdf_path):
-    """
-    Extrai texto de um arquivo PDF.
-    Retorna uma string com o texto completo ou None em caso de erro.
-    """
+
     try:
         with open(pdf_path, 'rb') as file:
             reader = PyPDF2.PdfReader(file)

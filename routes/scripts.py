@@ -608,7 +608,8 @@ def visualizar_scripts():
                         CASE WHEN s.ARQUIVO_JSON IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_JSON,
                         s.APROVADO_POR, p.NOME AS NOME_PACOTE, s.CAMINHO_AZURE,
                         CASE WHEN s.DLL IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_DLL,
-                        CASE WHEN s.MRD IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_MRD
+                        CASE WHEN s.MRD IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_MRD,
+                        s.CRIADO_POR
                     FROM SCRIPTLAUDO s
                     LEFT JOIN PACOTES p ON s.CODPACOTE = p.CODPACOTE
                     {where_sql}
@@ -665,7 +666,8 @@ def visualizar_scripts():
                         'pdfs': pdfs,
                         'caminho_azure': script_tuple[12],
                         'tem_arquivo_dll': bool(script_tuple[13]),
-                        'tem_arquivo_mrd': bool(script_tuple[14])
+                        'tem_arquivo_mrd': bool(script_tuple[14]),
+                        'criado_por': script_tuple[15]
                     })
                 except Exception as e:
                     current_app.logger.error(f"Erro ao processar script {codscriptlaudo if 'codscriptlaudo' in locals() else 'N/A'}: {str(e)}")
@@ -1074,3 +1076,33 @@ def exportar_mrd(codscriptlaudo):
             current_app.logger.error(f"Erro ao exportar MRD para CODSCRIPTLAUDO={codscriptlaudo}: {str(e)}", exc_info=True)
             flash(f"Erro ao tentar exportar o arquivo MRD: {str(e)}", "error")
             return redirect(url_for('scripts.visualizar_scripts'))
+
+@scripts_bp.route('/excluir_script/<int:codscriptlaudo>', methods=['POST'])
+def excluir_script(codscriptlaudo):
+    if 'usuario' not in session:
+        flash("Acesso negado. Por favor, faça login.", "error")
+        return redirect(url_for('auth.login'))
+
+    try:
+        with get_db() as (conn, cur):
+            # Excluir arquivos associados
+            cur.execute("SELECT CAMINHO FROM SCRIPT_ARQUIVOS WHERE CODSCRIPTLAUDO = ?", (codscriptlaudo,))
+            arquivos = cur.fetchall()
+            for (caminho,) in arquivos:
+                filepath = os.path.join(current_app.root_path, caminho.lstrip('/'))
+                if os.path.exists(filepath):
+                    try:
+                        os.remove(filepath)
+                    except Exception as e:
+                        current_app.logger.warning(f'Erro ao remover arquivo físico: {filepath} - {str(e)}')
+
+            cur.execute("DELETE FROM SCRIPT_ARQUIVOS WHERE CODSCRIPTLAUDO = ?", (codscriptlaudo,))
+            cur.execute("DELETE FROM SCRIPTLAUDO_VARIAVEL WHERE CODSCRIPTLAUDO = ?", (codscriptlaudo,))
+            cur.execute("DELETE FROM SCRIPTLAUDO WHERE CODSCRIPTLAUDO = ?", (codscriptlaudo,))
+            conn.commit()
+            flash("Script excluído com sucesso!", "success")
+    except Exception as e:
+        current_app.logger.error(f"Erro ao excluir script {codscriptlaudo}: {str(e)}")
+        flash(f"Erro ao excluir script: {str(e)}", "error")
+
+    return redirect(url_for('scripts.visualizar_scripts'))

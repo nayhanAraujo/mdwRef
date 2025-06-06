@@ -218,24 +218,27 @@
                   {% else %}
                     <span class="badge bg-danger"><i class="bi bi-x-circle-fill"></i> Não</span>
                   {% endif %}
-                  <br>
-                  <span class="d-none d-md-inline-block">
-                    <strong>Verificado em:</strong> {{ item.script[7]|datetimeformat('%d/%m/%Y %H:%M') if item.script[7] else '-' }}<br>
-                    <strong>Aprovado Por:</strong> {{ item.script[10] or '-' }}<br>
-                  </span>
                   <strong>Status:</strong> 
                   {% if item.script[8] %}
                     <span class="badge bg-success"><i class="bi bi-play-circle-fill"></i> Ativo</span>
                   {% else %}
                     <span class="badge bg-secondary"><i class="bi bi-pause-circle-fill"></i> Inativo</span>
                   {% endif %}
+                  <br>
+                  
+                  <span class="d-none d-md-inline-block">
+                    <strong>Verificado em:</strong> {{ item.script[7]|datetimeformat('%d/%m/%Y %H:%M') if item.script[7] else '-' }}<br>
+                    <strong>Aprovado Por:</strong> {{ item.script[10] or '-' }}<br>
+                    <strong>Criado por:</strong> {{ item.script[15] or '-' }}<br>
+                  </span>
+                
                 </p>
                 <div class="mt-auto">
                     <div class="d-flex justify-content-between align-items-center">
                     <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailsModal-{{ item.script[0] }}" data-bs-tooltip="tooltip" title="Ver detalhes do script">
                         <i class="bi bi-info-circle-fill"></i> Detalhes
                     </button>
-                    <div class="btn-group">
+                    <div class="btn-group acao-dropdown">
                         <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-tooltip="tooltip" title="Mais Ações">
                         <i class="bi bi-gear-fill"></i> Ações
                         </button>
@@ -265,15 +268,22 @@
                                 <li><a class="dropdown-item" href="{{ url_for('scripts.exportar_mrd', codscriptlaudo=item.script[0]) }}" title="Baixar arquivo MRD do script"><i class="bi bi-file-earmark-binary-fill me-2"></i>Exportar MRD</a></li>
                             {% endif %}
 
+                            <li>
+                              <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#excluirScriptModal" onclick="scriptParaExcluir = {{ item.script[0] }}">
+                                <i class="bi bi-trash-fill me-2"></i>Excluir Script
+                              </button>
+                              <form id="form-excluir-script-{{ item.script[0] }}" method="POST" action="{{ url_for('scripts.excluir_script', codscriptlaudo=item.script[0]) }}" style="display:none;"></form>
+                            </li>
+
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="toggleAprovacao({{ item.script[0] }}, {{ item.script[6] }}); return false;">
+                            <li><a class="dropdown-item" href="#" onclick="toggleAprovacao('{{ item.script[0] }}', '{{ item.script[6] }}'); return false;">
                                 <i class="bi bi-{% if item.script[6] %}hand-thumbs-down-fill text-danger{% else %}hand-thumbs-up-fill text-success{% endif %} me-2"></i> {{ 'Desaprovar' if item.script[6] else 'Aprovar' }}
                             </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="toggleAtivo({{ item.script[0] }}, {{ item.script[8] }}); return false;">
+                            <li><a class="dropdown-item" href="#" onclick="toggleAtivo('{{ item.script[0] }}', '{{ item.script[8] }}'); return false;">
                                 <i class="bi bi-toggle-{% if item.script[8] %}off text-secondary{% else %}on text-success{% endif %} me-2"></i> {{ 'Desativar' if item.script[8] else 'Ativar' }}
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="openEmailModal({{ item.script[0] }}, '{{ item.script[5]|e }}'); return false;">
+                            <li><a class="dropdown-item" href="#" onclick="openEmailModal('{{ item.script[0] }}', '{{ item.script[5]|e }}'); return false;">
                               <i class="bi bi-envelope-fill me-2"></i>Enviar Imagens
                             </a></li>
                         </ul>
@@ -438,27 +448,41 @@
     </div>
   </div>
 </div>
+      <!-- MODAL DE EXCLUSÃO COM BOOTSTRAP -->
+      <div class="modal fade" id="excluirScriptModal" tabindex="-1" aria-labelledby="excluirScriptModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title" id="excluirScriptModalLabel">Confirmar Exclusão</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-0">Tem certeza que deseja excluir este script?</p>
+              <p class="text-danger fw-bold">Esta ação não pode ser desfeita!</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-danger" id="confirmarExclusaoBtn">Excluir Script</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
 <style>
-  .script-display-card { 
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
-    border: 1px solid var(--bs-border-color-translucent); 
-    position: relative;
-  overflow: visible !important;
-
-  }
-  .script-display-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
-    border-color: var(--bs-primary); 
-  }
-  /* Fix para dropdowns dentro de elementos com overflow ou contextos de empilhamento */
-  .script-display-card .btn-group.show { /* Aplica ao btn-group quando o dropdown está aberto */
-    position: relative; 
-    z-index: 20; /* Z-index mais alto que os cards vizinhos */
-  }
-  .dropdown-menu {
-  z-index: 1060 !important; /* Maior que o z-index dos cards */
+.script-display-card {
+  position: relative;
+  z-index: 1;
+}
+.script-display-card:hover {
+  /* transform: translateY(-4px); */ /* REMOVA OU COMENTE ESTA LINHA */
+  top: -4px;        /* Simula translateY */
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+  border-color: var(--bs-primary); 
+  z-index: 10;
+}
+.dropdown-menu {
+  position: absolute;
+  z-index: 2000 !important;
 }
 
   /* ... (Restante dos seus estilos CSS) ... */
@@ -780,6 +804,24 @@ document.addEventListener('click', function (event) {
     }
   });
 });
+
+let scriptParaExcluir = null;
+
+function abrirModalExclusao(codscriptlaudo) {
+  scriptParaExcluir = codscriptlaudo;
+  const modal = new bootstrap.Modal(document.getElementById('excluirScriptModal'));
+  modal.show();
+}
+
+function fecharModalExclusao() {
+  scriptParaExcluir = null;
+}
+
+document.getElementById('confirmarExclusaoBtn').onclick = function () {
+  if (scriptParaExcluir) {
+    document.getElementById('form-excluir-script-' + scriptParaExcluir).submit();
+  }
+};
 
   </script>
   

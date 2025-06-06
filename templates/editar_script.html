@@ -31,6 +31,14 @@
               <div class="invalid-feedback">Nome do script é obrigatório.</div>
             </div>
 
+            <!-- Adicione dentro do <form> e do grid, idealmente próximo ao campo Nome do Script -->
+            <div class="col-md-6">
+              <label for="criado_por" class="form-label">Criado por <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="criado_por" name="criado_por"
+                    value="{{ script.criado_por }}" placeholder="Nome do responsável pela criação" required>
+              <div class="invalid-feedback">O nome do criador é obrigatório.</div>
+            </div>
+
             <div class="col-md-6">
               <label for="codpacote" class="form-label">Pacote</label>
               <select name="codpacote" id="codpacote" class="form-select">

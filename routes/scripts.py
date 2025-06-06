@@ -194,6 +194,8 @@ def novo_script():
 
             if request.method == 'POST':
                 # Coletar dados do formulário
+                
+
                 nome = request.form['nome'].strip()
                 codpacote = request.form['codpacote'] or None
                 descricao = request.form['descricao'].strip() or None
@@ -209,6 +211,7 @@ def novo_script():
                 arquivo_dll = request.files.get('arquivo_dll')
                 imagens = request.files.getlist('imagens[]')
                 pdfs = request.files.getlist('pdfs[]')
+                criado_por = request.form['criado_por'].strip()
 
                 # Validações básicas
                 if not nome:
@@ -225,7 +228,10 @@ def novo_script():
                 if sistema and sistema not in ('Laudos UX', 'Laudos Flex'):
                     flash("Sistema inválido. Escolha 'Laudos UX' ou 'Laudos Flex'.", "error")
                     return redirect(request.url)
-
+                
+                if not criado_por:
+                    flash("O nome do criador é obrigatório.", "error")
+                    return redirect(request.url)
                 # Processar arquivos
                 arquivo_json_blob = None
                 if sistema == 'Laudos UX':
@@ -265,14 +271,14 @@ def novo_script():
                         INSERT INTO SCRIPTLAUDO (
                             NOME, CODPACOTE, DESCRICAO, LINGUAGEM, CAMINHO_PROJETO, 
                             CAMINHO_AZURE, SISTEMA, APROVADO, DATA_VERIFICACAO, 
-                            APROVADO_POR, ATIVO, ARQUIVO_JSON, MRD, DLL
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            APROVADO_POR, ATIVO, ARQUIVO_JSON, MRD, DLL, CRIADO_POR
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         RETURNING CODSCRIPTLAUDO
                     """, (
                         nome, codpacote, descricao, linguagem, caminho_projeto,
                         caminho_azure, sistema, aprovado,
                         datetime.now() if aprovado else None,
-                        aprovado_por, ativo, arquivo_json_blob, arquivo_mrd_blob, arquivo_dll_blob
+                        aprovado_por, ativo, arquivo_json_blob, arquivo_mrd_blob, arquivo_dll_blob, criado_por
                     ))
                     codscriptlaudo = cur.fetchone()[0]
 
@@ -365,6 +371,8 @@ def editar_script(codscriptlaudo):
                 arquivo_dll = request.files.get('arquivo_dll')
                 imagens = request.files.getlist('imagens[]')
                 pdfs = request.files.getlist('pdfs[]')
+                criado_por = request.form['criado_por'].strip()
+
 
                 # Validações
                 if not nome:
@@ -380,8 +388,11 @@ def editar_script(codscriptlaudo):
                 if sistema and sistema not in ('Laudos UX', 'Laudos Flex'):
                     flash("Sistema inválido. Escolha 'Laudos UX' ou 'Laudos Flex'.", "error")
                     return redirect(request.url)
+                
+                if not criado_por:
+                    flash("O nome do criador é obrigatório.", "error")
+                    return redirect(request.url)
 
-                # Processar arquivos
                 arquivo_json_blob = None
                 if sistema == 'Laudos UX' and arquivo_json and arquivo_json.filename:
                     if not arquivo_json.filename.endswith('.json'):
@@ -422,12 +433,14 @@ def editar_script(codscriptlaudo):
                             ATIVO = ?, 
                             ARQUIVO_JSON = COALESCE(?, ARQUIVO_JSON), 
                             MRD = COALESCE(?, MRD), 
-                            DLL = COALESCE(?, DLL)
+                            DLL = COALESCE(?, DLL),
+                            CRIADO_POR =?
+                            
                         WHERE CODSCRIPTLAUDO = ?
                     """, (
                         nome, codpacote, descricao, linguagem, caminho_projeto, caminho_azure, 
                         sistema, aprovado, aprovado, aprovado, aprovado_por, ativo, 
-                        arquivo_json_blob, arquivo_mrd_blob, arquivo_dll_blob, codscriptlaudo
+                        arquivo_json_blob, arquivo_mrd_blob, arquivo_dll_blob,criado_por, codscriptlaudo
                     ))
 
                     if cur.rowcount == 0:
@@ -472,7 +485,7 @@ def editar_script(codscriptlaudo):
                        CASE WHEN ARQUIVO_JSON IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_JSON,
                        CASE WHEN MRD IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_MRD,
                        CASE WHEN DLL IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_DLL,
-                       APROVADO_POR
+                       APROVADO_POR, CRIADO_POR
                 FROM SCRIPTLAUDO
                 WHERE CODSCRIPTLAUDO = ?
             """, (codscriptlaudo,))
@@ -494,6 +507,7 @@ def editar_script(codscriptlaudo):
             imagens = [{'codarquivo': row[0], 'caminho': row[2], 'nome': row[3]} for row in arquivos if row[1] == 'IMAGEM']
             pdfs = [{'codarquivo': row[0], 'caminho': row[2], 'nome': row[3]} for row in arquivos if row[1] == 'PDF']
 
+
             script_data = {
                 'nome': script[0],
                 'descricao': script[1] or '',
@@ -509,8 +523,11 @@ def editar_script(codscriptlaudo):
                 'tem_arquivo_mrd': bool(script[11]),
                 'tem_arquivo_dll': bool(script[12]),
                 'aprovado_por': script[13] if script[13] is not None else '',
+                'criado_por': script[14] if script[14] is not None else '',
                 'imagens': imagens,
                 'pdfs': pdfs
+                
+            
             }
 
             return render_template('editar_script.html',

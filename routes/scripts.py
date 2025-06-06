@@ -590,7 +590,8 @@ def visualizar_scripts():
                         s.APROVADO, s.DATA_VERIFICACAO, s.ATIVO,
                         CASE WHEN s.ARQUIVO_JSON IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_JSON,
                         s.APROVADO_POR, p.NOME AS NOME_PACOTE, s.CAMINHO_AZURE,
-                        CASE WHEN s.DLL IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_DLL
+                        CASE WHEN s.DLL IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_DLL,
+                        CASE WHEN s.MRD IS NOT NULL THEN 1 ELSE 0 END AS TEM_ARQUIVO_MRD
                     FROM SCRIPTLAUDO s
                     LEFT JOIN PACOTES p ON s.CODPACOTE = p.CODPACOTE
                     {where_sql}
@@ -646,7 +647,8 @@ def visualizar_scripts():
                         'imagens': imagens,
                         'pdfs': pdfs,
                         'caminho_azure': script_tuple[12],
-                        'tem_arquivo_dll': bool(script_tuple[13])
+                        'tem_arquivo_dll': bool(script_tuple[13]),
+                        'tem_arquivo_mrd': bool(script_tuple[14])
                     })
                 except Exception as e:
                     current_app.logger.error(f"Erro ao processar script {codscriptlaudo if 'codscriptlaudo' in locals() else 'N/A'}: {str(e)}")
@@ -1003,4 +1005,55 @@ def exportar_dll(codscriptlaudo):
         except Exception as e:
             current_app.logger.error(f"Erro ao exportar DLL para CODSCRIPTLAUDO={codscriptlaudo}: {str(e)}", exc_info=True)
             flash(f"Erro ao tentar exportar o arquivo DLL: {str(e)}", "error")
+            return redirect(url_for('scripts.visualizar_scripts'))
+
+@scripts_bp.route('/exportar_mrd/<int:codscriptlaudo>')
+def exportar_mrd(codscriptlaudo):
+    if 'usuario' not in session:
+        flash("Acesso negado. Por favor, faça login.", "error")
+        return redirect(url_for('auth.login'))
+
+    with get_db() as (conn, cur):
+        try:
+            cur.execute("""
+                SELECT MRD, NOME, SISTEMA
+                FROM SCRIPTLAUDO
+                WHERE CODSCRIPTLAUDO = ?
+            """, (codscriptlaudo,))
+            script_info = cur.fetchone()
+
+            if not script_info:
+                flash("Script não encontrado.", "error")
+                return redirect(url_for('scripts.visualizar_scripts'))
+
+            arquivo_mrd_blob_reader, nome_script, sistema = script_info
+
+            if sistema != 'Laudos Flex':
+                flash("Exportação de MRD aplicável apenas para scripts do sistema Laudos Flex.", "warning")
+                return redirect(url_for('scripts.visualizar_scripts'))
+
+            if not arquivo_mrd_blob_reader:
+                flash("Arquivo MRD não disponível para este script.", "warning")
+                return redirect(url_for('scripts.visualizar_scripts'))
+
+            try:
+                mrd_bytes = arquivo_mrd_blob_reader.read()
+            except Exception as e:
+                current_app.logger.error(f"Erro ao ler dados do Blob MRD para CODSCRIPTLAUDO={codscriptlaudo}: {str(e)}", exc_info=True)
+                flash(f"Erro ao processar o arquivo MRD: {str(e)}", "error")
+                return redirect(url_for('scripts.visualizar_scripts'))
+
+            sane_nome_script = "".join(c if c.isalnum() or c in (' ', '_', '-') else '_' for c in nome_script).rstrip()
+            sane_nome_script = sane_nome_script.replace(' ', '_')
+            download_name = f"script_{sane_nome_script}_{codscriptlaudo}.mrd"
+
+            return send_file(
+                io.BytesIO(mrd_bytes),
+                mimetype='application/octet-stream',
+                as_attachment=True,
+                download_name=download_name
+            )
+        except Exception as e:
+            current_app.logger.error(f"Erro ao exportar MRD para CODSCRIPTLAUDO={codscriptlaudo}: {str(e)}", exc_info=True)
+            flash(f"Erro ao tentar exportar o arquivo MRD: {str(e)}", "error")
             return redirect(url_for('scripts.visualizar_scripts'))

@@ -206,6 +206,9 @@
                   {% if item.script[13] %} {# TEM_ARQUIVO_DLL - Índice 13 #}
                     <span class="badge bg-dark"><i class="bi bi-file-earmark-binary-fill me-1"></i>Possui DLL</span>
                   {% endif %}
+                  {% if item.script[14] %} {# TEM_ARQUIVO_MRD - Índice 14 #}
+                    <span class="badge bg-warning text-dark"><i class="bi bi-file-earmark-binary-fill me-1"></i>Tem MRD</span>
+                  {% endif %}
                 </div>
                 <p class="card-text text-muted small mb-3">
                   <strong>Linguagem:</strong> {{ item.script[3] or '-' }}<br>
@@ -253,6 +256,13 @@
                                     <li><hr class="dropdown-divider"></li>
                                 {% endif %}
                                 <li><a class="dropdown-item" href="{{ url_for('scripts.exportar_dll', codscriptlaudo=item.script[0]) }}" title="Baixar arquivo DLL do script"><i class="bi bi-file-earmark-code-fill me-2"></i>Exportar DLL</a></li>
+                            {% endif %}
+
+                            {% if item.script[5] == 'Laudos Flex' and item.script[14] %} {# SISTEMA (5), TEM_ARQUIVO_MRD (14) #}
+                                {% if not (item.script[5] == 'Laudos Flex' and item.script[12]) %} 
+                                    <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{{ url_for('scripts.exportar_mrd', codscriptlaudo=item.script[0]) }}" title="Baixar arquivo MRD do script"><i class="bi bi-file-earmark-binary-fill me-2"></i>Exportar MRD</a></li>
                             {% endif %}
 
                             <li><hr class="dropdown-divider"></li>
@@ -306,6 +316,9 @@
                        {% endif %}
                        {% if item.script[5] == 'Laudos Flex' and item.script[13] %} {# TEM_ARQUIVO_DLL #}
                         <p><a class="btn btn-sm btn-outline-dark mt-2" href="{{ url_for('scripts.exportar_dll', codscriptlaudo=item.script[0]) }}"><i class="bi bi-file-earmark-code-fill me-2"></i>Baixar Arquivo DLL</a></p>
+                       {% endif %}
+                       {% if item.script[5] == 'Laudos Flex' and item.script[14] %}
+                        <p><a class="btn btn-sm btn-outline-primary mt-2" href="{{ url_for('scripts.exportar_mrd', codscriptlaudo=item.script[0]) }}"><i class="bi bi-file-earmark-binary-fill me-2"></i>Baixar Arquivo MRD</a></p>
                        {% endif %}
                     </div>
                   </div>

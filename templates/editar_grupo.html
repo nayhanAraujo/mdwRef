@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Novo Grupo de Variáveis</h2>
+<form method="post">
+  <div class="mb-3">
+    <label for="nome" class="form-label">Nome</label>
+    <input type="text" class="form-control" id="nome" name="nome" required value="{{ grupo[1] if grupo else '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="descricao" class="form-label">Descrição</label>
+    <input type="text" class="form-control" id="descricao" name="descricao" value="{{ grupo[2] if grupo else '' }}">
+  </div>
+  <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" id="ativo" name="ativo" {% if grupo and grupo[3] %}checked{% elif not grupo %}checked{% endif %}>
+    <label class="form-check-label" for="ativo">Ativo</label>
+  </div>
+  <button type="submit" class="btn btn-success">Salvar</button>
+  <a href="{{ url_for('grupos.listar_grupos') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

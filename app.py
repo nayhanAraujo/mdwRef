@@ -15,6 +15,7 @@ from routes.scripts import scripts_bp
 from routes.secoes import secoes_bp
 from routes.modelos import modelos_bp
 from routes.pacotes import pacotes_bp
+from routes.grupos import grupos_bp
 from routes.agente_referencias   import agente_bp
 from routes.codigos_universais import codigos_universais_bp  # Adicione esta linha
 from dotenv import load_dotenv  # Adicione este import
@@ -168,6 +169,8 @@ def create_app():
     app.register_blueprint(codigos_universais_bp, url_prefix='/codigos_universais')  # Adicione esta linha
     app.register_blueprint(pacotes_bp,url_prefix='/pacotes')
     app.register_blueprint(agente_bp,url_prefix='/agente')
+    app.register_blueprint(grupos_bp)
+
 
 
 

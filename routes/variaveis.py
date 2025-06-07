@@ -790,48 +790,6 @@ def editar_variavel(codvariavel):
                 ORDER BY r.ANO DESC
             """)
             referencias = cur.fetchall()
-            cur.execute("SELECT CODLINGUAGEM, DESCRICAO FROM TIPOLINGUAGEM ORDER BY DESCRICAO")
-            linguagens = cur.fetchall()
-            cur.execute("SELECT ALTERNATIVA FROM VARIAVEIS_ALTERNATIVAS WHERE CODVARIAVEL = ?", (codvariavel,))
-            alternativas = [row[0] for row in cur.fetchall()]
-            cur.execute("""
-                SELECT el.CODLINGUAGEM, el.EQUACAO, el.CODREFERENCIA
-                FROM EQUACOES_LINGUAGEM el
-                JOIN FORMULA_VARIAVEL fv ON el.CODFORMULA = fv.CODFORMULA
-                WHERE fv.CODVARIAVEL = ?
-            """, (codvariavel,))
-            equacoes = [{'codlinguagem': row[0], 'equacao': row[1], 'codreferencia': row[2]} for row in cur.fetchall()]
-            cur.execute("""
-                SELECT f.FORMULA, f.CASADECIMAIS
-                FROM FORMULAS f
-                JOIN FORMULA_VARIAVEL fv ON f.CODFORMULA = fv.CODFORMULA
-                WHERE fv.CODVARIAVEL = ?
-            """, (codvariavel,))
-            formula_data = cur.fetchone()
-            formula = formula_data[0] if formula_data else None
-            formula_casas_decimais = formula_data[1] if formula_data else 2
-            cur.execute("""
-                SELECT SEXO, VALORMIN, VALORMAX, CODREFERENCIA
-                FROM NORMALIDADE
-                WHERE CODVARIAVEL = ?
-            """, (codvariavel,))
-            normalidades = []
-            normalidade_dict = {}
-            for row in cur.fetchall():
-                sexo = row[0]
-                if sexo not in normalidade_dict:
-                    normalidade_dict[sexo] = {'valormin': row[1], 'valormax': row[2], 'referencia': row[3]}
-            if normalidade_dict:
-                normalidade = {}
-                if 'M' in normalidade_dict:
-                    normalidade['valormin_m'] = normalidade_dict['M']['valormin']
-                    normalidade['valormax_m'] = normalidade_dict['M']['valormax']
-                    normalidade['referencia'] = normalidade_dict['M']['referencia']
-                if 'F' in normalidade_dict:
-                    normalidade['valormin_f'] = normalidade_dict['F']['valormin']
-                    normalidade['valormax_f'] = normalidade_dict['F']['valormax']
-                    normalidade['referencia'] = normalidade['referencia'] or normalidade_dict['F']['referencia']
-                normalidades.append(normalidade)
             cur.execute("SELECT CODGRUPO, NOME FROM GRUPOS_CLASSIFICACOES ORDER BY NOME")
             grupos = cur.fetchall()
             cur.execute("""
@@ -910,6 +868,30 @@ def visualizar_variaveis():
                         flash(f"Erro ao associar variável: {str(e)}", "error")
                 return redirect(url_for('variaveis.visualizar_variaveis', page=pagina, variavel=filtro_geral))
 
+            # Buscar grupos
+            cur.execute("SELECT CODGRUPO, NOME FROM GRUPOS_VARIAVEIS ORDER BY NOME")
+            grupos = cur.fetchall()
+
+            # Buscar variáveis sem grupo
+            cur.execute("""
+                SELECT CODVARIAVEL, NOME, VARIAVEL, SIGLA, ABREVIACAO
+                FROM VARIAVEIS 
+                WHERE CODGRUPO IS NULL
+                ORDER BY NOME
+            """)
+            variaveis_sem_grupo = cur.fetchall()
+
+            # Buscar variáveis por grupo
+            variaveis_por_grupo = {}
+            for grupo in grupos:
+                cur.execute("""
+                    SELECT CODVARIAVEL, NOME, VARIAVEL, SIGLA, ABREVIACAO
+                    FROM VARIAVEIS 
+                    WHERE CODGRUPO = ?
+                    ORDER BY NOME
+                """, (grupo[0],))
+                variaveis_por_grupo[grupo[0]] = cur.fetchall()
+
             where_clauses = ["1=1"]
             params_list = []
             count_params_list = []
@@ -941,9 +923,6 @@ def visualizar_variaveis():
 
             cur.execute(query_principal, params_list)
             variaveis_data = cur.fetchall()
-
-            cur.execute("SELECT CODGRUPO, NOME FROM GRUPOS_VARIAVEIS ORDER BY NOME")
-            grupos = cur.fetchall()
 
             # Processar detalhes de cada variável
             variaveis_detalhes = []
@@ -1049,6 +1028,8 @@ def visualizar_variaveis():
             return render_template('visualizar_variaveis.html',
                                  variaveis_detalhes=variaveis_detalhes,
                                  grupos=grupos,
+                                 variaveis_sem_grupo=variaveis_sem_grupo,
+                                 variaveis_por_grupo=variaveis_por_grupo,
                                  pagina=pagina,
                                  total_paginas=total_paginas,
                                  total_variaveis=total_variaveis,
@@ -1061,6 +1042,9 @@ def visualizar_variaveis():
 
 @variaveis_bp.route('/atualizar_grupo', methods=['POST'])
 def atualizar_grupo():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
+
     data = request.get_json()
     codvariavel = data.get('variavel_id')
     codgrupo = data.get('grupo_id')
@@ -1070,18 +1054,21 @@ def atualizar_grupo():
 
     try:
         with get_db() as (conn, cur):
+            # Se codgrupo for '0', significa que a variável está sendo movida para "Sem Grupo"
+            if codgrupo == '0':
+                codgrupo = None
+
             cur.execute("""
                 UPDATE VARIAVEIS 
                 SET CODGRUPO = ? 
                 WHERE CODVARIAVEL = ?
-            """, (codgrupo or None, codvariavel))
+            """, (codgrupo, codvariavel))
             conn.commit()
-        return jsonify({"success": True, "message": "Grupo atualizado com sucesso."})
+            return jsonify({"success": True, "message": "Grupo atualizado com sucesso."})
     except Exception as e:
-        conn.rollback()
+        if 'conn' in locals():
+            conn.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
-
-
 
 @variaveis_bp.route('/excluir_variavel/<int:codvariavel>', methods=["POST"])
 @admin_required

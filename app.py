@@ -93,6 +93,22 @@ def create_app():
 
     Session(app)
 
+    @app.before_request
+    def _open_db_connection():
+        """Abre uma conexão para cada request e armazena em flask.g."""
+        g.db_conn = conectar()
+        g.db_cur = g.db_conn.cursor()
+
+    @app.teardown_appcontext
+    def _close_db_connection(exception=None):
+        """Fecha a conexão e o cursor ao final do contexto da aplicação."""
+        db_cur = g.pop('db_cur', None)
+        if db_cur is not None:
+            db_cur.close()
+        db_conn = g.pop('db_conn', None)
+        if db_conn is not None:
+            db_conn.close()
+
     @app.template_filter('basename')
     def basename_filter(path):
         if path:

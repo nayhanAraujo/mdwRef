@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session,send_file,jsonify
+from services import db_updater
 from datetime import datetime
 import io,re,os,uuid
 import smtplib
@@ -12,11 +13,7 @@ from email import encoders
 scripts_bp = Blueprint('scripts', __name__)
 
 def get_db():
-    conn = current_app.config.get('db_conn')
-    cur = current_app.config.get('db_cursor')
-    if conn is None or cur is None:
-        raise Exception("Conexão com o banco de dados não foi inicializada.")
-    return conn, cur
+    return db_updater.get_db_from_g()
 
 
 @scripts_bp.app_template_filter('datetimeformat')

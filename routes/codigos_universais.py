@@ -1,13 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from services import db_updater
 
 codigos_universais_bp = Blueprint('codigos_universais', __name__)
 
 def get_db():
-    conn = current_app.config.get('db_conn')
-    cur = current_app.config.get('db_cursor')
-    if conn is None or cur is None:
-        raise Exception("Conexão com o banco de dados não foi inicializada.")
-    return conn, cur
+    return db_updater.get_db_from_g()
 
 @codigos_universais_bp.route('/visualizar', methods=['GET', 'POST'])
 def visualizar_codigos_universais():

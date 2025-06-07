@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from functools import wraps
-from get_db import get_db  
+from get_db import get_db
 import re
 import os
 import uuid
@@ -245,8 +245,6 @@ def confirmar_importacao():
 
     return render_template('confirmar_importacao.html', dados=dados)
 
-# Dentro de routes/variaveis.py
-
 @variaveis_bp.route('/')
 def home():
     if 'usuario' not in session:
@@ -356,7 +354,6 @@ def home():
         current_app.logger.error(f"Erro ao carregar dashboards: {str(e)}", exc_info=True)
         flash(f"Ocorreu um erro ao carregar os dashboards. Por favor, tente mais tarde. Detalhes: {str(e)}", "error")
         return redirect(url_for('bibliotecas.biblioteca')) # Ou uma página de erro apropriada
-
 
 @variaveis_bp.route('/nova_variavel', methods=['GET', 'POST'])
 @admin_required
@@ -897,18 +894,33 @@ def visualizar_variaveis():
 
     try:
         with get_db() as (conn, cur):
-            # Construir a cláusula WHERE e parâmetros
+            
+            if request.method == 'POST':
+                codvariavel = request.form.get('codvariavel')
+                codgrupo = request.form.get('codgrupo') or None
+                if not codvariavel:
+                    flash("Selecione uma variável.", "error")
+                else:
+                    try:
+                        cur.execute("UPDATE VARIAVEIS SET CODGRUPO = ? WHERE CODVARIAVEL = ?", (codgrupo, codvariavel))
+                        conn.commit()
+                        flash("Associação de grupo atualizada.", "success")
+                    except Exception as e:
+                        conn.rollback()
+                        flash(f"Erro ao associar variável: {str(e)}", "error")
+                return redirect(url_for('variaveis.visualizar_variaveis', page=pagina, variavel=filtro_geral))
+
             where_clauses = ["1=1"]
             params_list = []
             count_params_list = []
 
             if filtro_geral:
-                where_clauses.append("(UPPER(V.NOME) LIKE UPPER(?) OR UPPER(V.VARIAVEL) LIKE UPPER(?))")
-                params_list.extend([f"%{filtro_geral}%", f"%{filtro_geral}%"])
-                count_params_list.extend([f"%{filtro_geral}%", f"%{filtro_geral}%"])
+                where_clauses.append("(UPPER(V.NOME) LIKE UPPER(?) OR UPPER(V.VARIAVEL) LIKE UPPER(?) OR UPPER(G.NOME) LIKE UPPER(?))")
+                params_list.extend([f"%{filtro_geral}%", f"%{filtro_geral}%", f"%{filtro_geral}%"])
+                count_params_list.extend([f"%{filtro_geral}%", f"%{filtro_geral}%", f"%{filtro_geral}%"])
 
             where_sql_for_count = " AND ".join(where_clauses).replace("V.NOME", "NOME").replace("V.VARIAVEL", "VARIAVEL")
-            count_query = f"SELECT COUNT(*) FROM VARIAVEIS V WHERE {where_sql_for_count}"
+            count_query = f"SELECT COUNT(*) FROM VARIAVEIS V LEFT JOIN GRUPOS_VARIAVEIS G ON V.CODGRUPO = G.CODGRUPO WHERE {where_sql_for_count}"
 
             # Executar contagem total
             cur.execute(count_query, count_params_list)
@@ -919,14 +931,19 @@ def visualizar_variaveis():
             # Consulta principal com paginação
             query_principal = f"""
                 SELECT FIRST {itens_por_pagina} SKIP {offset}
-                       V.CODVARIAVEL, V.NOME, V.VARIAVEL, V.SIGLA, V.ABREVIACAO
+                       V.CODVARIAVEL, V.NOME, V.VARIAVEL, V.SIGLA, V.ABREVIACAO,
+                       V.CODGRUPO, G.NOME AS NOME_GRUPO
                 FROM VARIAVEIS V
+                LEFT JOIN GRUPOS_VARIAVEIS G ON V.CODGRUPO = G.CODGRUPO
                 WHERE {" AND ".join(where_clauses)}
-                ORDER BY V.NOME
+                ORDER BY COALESCE(G.NOME, ''), V.NOME
             """
 
             cur.execute(query_principal, params_list)
             variaveis_data = cur.fetchall()
+
+            cur.execute("SELECT CODGRUPO, NOME FROM GRUPOS_VARIAVEIS ORDER BY NOME")
+            grupos = cur.fetchall()
 
             # Processar detalhes de cada variável
             variaveis_detalhes = []
@@ -1031,6 +1048,7 @@ def visualizar_variaveis():
 
             return render_template('visualizar_variaveis.html',
                                  variaveis_detalhes=variaveis_detalhes,
+                                 grupos=grupos,
                                  pagina=pagina,
                                  total_paginas=total_paginas,
                                  total_variaveis=total_variaveis,
@@ -1040,6 +1058,30 @@ def visualizar_variaveis():
         current_app.logger.error(f"Erro na rota visualizar_variaveis: {str(e)}")
         flash("Ocorreu um erro ao carregar as variáveis. Por favor, tente novamente.", "error")
         return redirect(url_for('bibliotecas.biblioteca'))
+
+@variaveis_bp.route('/atualizar_grupo', methods=['POST'])
+def atualizar_grupo():
+    data = request.get_json()
+    codvariavel = data.get('variavel_id')
+    codgrupo = data.get('grupo_id')
+
+    if not codvariavel:
+        return jsonify({"success": False, "message": "Código da variável ausente."}), 400
+
+    try:
+        with get_db() as (conn, cur):
+            cur.execute("""
+                UPDATE VARIAVEIS 
+                SET CODGRUPO = ? 
+                WHERE CODVARIAVEL = ?
+            """, (codgrupo or None, codvariavel))
+            conn.commit()
+        return jsonify({"success": True, "message": "Grupo atualizado com sucesso."})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 
 @variaveis_bp.route('/excluir_variavel/<int:codvariavel>', methods=["POST"])
 @admin_required

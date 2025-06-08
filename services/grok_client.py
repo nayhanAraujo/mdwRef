@@ -8,17 +8,16 @@ logger = logging.getLogger(__name__)
 
 GROK_API_URL = "https://api.x.ai/v1/chat/completions" 
 
-def get_reference_ranges_from_grok(text_content, variable_name_human_readable):
-
-    api_key = "xai-ay2cNXFlUnVuCRMpFzgOE57ndqQt74TrzI8MNfOTMu8VoPLuQDWO6UelCrhnQ2Pq2qPzroOaTvzKcQoP"
+def get_reference_ranges_from_grok(text_content):
+    api_key = "xai-IwhlDBCTsCK4px3l0ABoBSYliZB359syDOgZDEX4aa33g39zb9aTUotpmVwHKBLv9nnd4ajXXSDvAtW0"
     if not api_key:
         logger.error("GROK_API_KEY não configurada.")
         return None
 
-    # Este prompt é crucial e precisará de muitos testes e refinamentos!
     prompt = f"""
-    Analise o seguinte texto acadêmico e extraia todas as faixas de normalidade para a medida '{variable_name_human_readable}'.
-    Para cada faixa encontrada, forneça:
+    Analise o seguinte texto acadêmico e extraia TODAS as medidas que possuem valores de referência ou faixas de normalidade.
+    Para cada medida encontrada, forneça:
+    - "nome_medida": O nome da medida encontrada (ex: "Diâmetro da Aorta", "Volume do Ventrículo Esquerdo").
     - "valor_min": O valor mínimo da faixa (numérico, use null se não aplicável ou se for < X).
     - "valor_max": O valor máximo da faixa (numérico, use null se não aplicável ou se for > X).
     - "unidade_medida": A unidade de medida (ex: "mm", "cm/m²", "%").
@@ -28,14 +27,17 @@ def get_reference_ranges_from_grok(text_content, variable_name_human_readable):
     - "condicao_adicional": Qualquer outra condição relevante (ex: "indexado pela superfície corporal", "em repouso", "percentil 5-95"). Deixe como null se não houver.
     - "texto_original_relevante": O trecho exato do texto de onde a informação foi extraída, para fins de auditoria (máximo 300 caracteres).
 
-    Se uma faixa for descrita como "menor que X", coloque X em "valor_max" e "valor_min" como null.
-    Se for "maior que X", coloque X em "valor_min" e "valor_max" como null.
-    Se for um valor único de referência, coloque-o em "valor_max" e "valor_min" como null.
-    Se for um intervalo "X-Y", use "valor_min": X e "valor_max": Y.
-    Se não encontrar nenhuma faixa para a medida especificada, retorne uma lista vazia.
+    Regras para extração:
+    1. Se uma faixa for descrita como "menor que X", coloque X em "valor_max" e "valor_min" como null.
+    2. Se for "maior que X", coloque X em "valor_min" e "valor_max" como null.
+    3. Se for um valor único de referência, coloque-o em "valor_max" e "valor_min" como null.
+    4. Se for um intervalo "X-Y", use "valor_min": X e "valor_max": Y.
+    5. Se não encontrar nenhuma medida com valores de referência, retorne uma lista vazia.
+    6. Extraia TODAS as medidas que encontrar no texto, não apenas uma específica.
 
     Retorne os dados estritamente em formato JSON como uma lista de objetos. Exemplo de um item na lista:
     {{
+        "nome_medida": "Diâmetro da Aorta Ascendente",
         "valor_min": 2.5,
         "valor_max": 4.0,
         "unidade_medida": "cm",
@@ -48,37 +50,31 @@ def get_reference_ranges_from_grok(text_content, variable_name_human_readable):
 
     Texto para análise:
     ---
-    {text_content[:15000]} # Limitar o tamanho do texto enviado para a API (verificar limites do Grok)
+    {text_content[:15000]}
     ---
     """
-    # O limite de 15000 caracteres é um chute. VERIFIQUE A DOCUMENTAÇÃO DO GROK.
-    # Pode ser necessário processar o texto em chunks ou encontrar seções relevantes primeiro.
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "grok-3-mini-beta", # Ou o modelo apropriado que você tem acesso
+        "model": "grok-3-mini-beta",
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7, 
-      
+        "temperature": 0.7,
     }
 
     try:
         logger.debug(f"Enviando request para Grok. Payload: {json.dumps(payload, indent=2)}")
-        response = requests.post(GROK_API_URL, headers=headers, json=payload, timeout=120) # Timeout de 120 segundos
-        response.raise_for_status()  # Levanta um erro para respostas 4xx/5xx
+        response = requests.post(GROK_API_URL, headers=headers, json=payload, timeout=120)
+        response.raise_for_status()
         
         response_data = response.json()
         logger.debug(f"Resposta da API Grok: {json.dumps(response_data, indent=2)}")
 
-        # A estrutura da resposta do Grok pode variar. Ajuste a extração abaixo.
-        # Este é um exemplo hipotético de como o Grok pode retornar o JSON dentro de sua resposta.
         if response_data.get("choices") and len(response_data["choices"]) > 0:
             message_content = response_data["choices"][0].get("message", {}).get("content", "")
             try:
-                # Tenta fazer o parse direto do conteúdo
                 extracted_data = json.loads(message_content)
                 logger.info(f"Dados JSON extraídos e parseados com sucesso: {extracted_data}")
                 return extracted_data

@@ -1,10 +1,10 @@
 {% extends 'layout.html' %}
 
-{% block title %}Processar Documento Acadêmico{% endblock %}
+{% block title %}Buscar Referências na PubMed{% endblock %}
 
 {% set content %}
 <div class="container mt-4">
-    <h3 class="mb-4"><i class="bi bi-robot me-2"></i>Agente de Extração de Referências</h3>
+    <h3 class="mb-4"><i class="bi bi-search me-2"></i>Busca de Referências na PubMed</h3>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -19,16 +19,12 @@
 
     <div class="card shadow-sm">
         <div class="card-header">
-            <h5>Upload de Documento e Informações</h5>
+            <h5>Parâmetros de Busca</h5>
         </div>
         <div class="card-body">
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST">
                 <div class="mb-3">
-                    <label for="pdf_file" class="form-label">Arquivo PDF do Estudo/Guideline</label>
-                    <input type="file" class="form-control" id="pdf_file" name="pdf_file" accept=".pdf" required>
-                </div>
-                <div class="mb-3">
-                    <label for="variable_sigla" class="form-label">Sigla ou Nome da Variável Principal de Interesse</label>
+                    <label for="variable_sigla" class="form-label">Medida a ser pesquisada</label>
                     <input type="text" class="form-control" id="variable_sigla" name="variable_sigla" list="variaveis_datalist" placeholder="Ex: VR_AO ou Aorta Diâmetro" required>
                     <datalist id="variaveis_datalist">
                         {% for var_db in variaveis_db %}
@@ -36,11 +32,89 @@
                         {% endfor %}
                     </datalist>
                 </div>
+                <div class="mb-3">
+                    <label for="years_back" class="form-label">Anos para trás</label>
+                    <input type="number" class="form-control" id="years_back" name="years_back" min="1" max="20" value="5" required>
+                    <div class="form-text">Número de anos para trás para buscar artigos (máximo 20 anos)</div>
+                </div>
+                <div class="mb-3">
+                    <label for="max_results" class="form-label">Número máximo de resultados</label>
+                    <input type="number" class="form-control" id="max_results" name="max_results" min="1" max="50" value="10" required>
+                    <div class="form-text">Número máximo de artigos a retornar (máximo 50)</div>
+                </div>
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-gear-fill me-2"></i>Processar Documento
+                    <i class="bi bi-search me-2"></i>Buscar Referências
                 </button>
             </form>
         </div>
     </div>
+
+    {% if articles %}
+    <div class="card shadow-sm mt-4">
+        <div class="card-header">
+            <h5>Resultados da Busca</h5>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for article in articles %}
+                <div class="list-group-item">
+                    <h5 class="mb-1">{{ article.title }}</h5>
+                    <p class="mb-1">
+                        <small class="text-muted">
+                            Autores: {{ article.authors|join(', ') }} | 
+                            Ano: {{ article.year }} | 
+                            DOI: {{ article.doi }}
+                        </small>
+                    </p>
+                    <p class="mb-1">{{ article.abstract[:300] }}...</p>
+                    <a href="{{ article.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Ver artigo
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if normalized_data %}
+    <div class="card shadow-sm mt-4">
+        <div class="card-header">
+            <h5>Faixas de Normalidade Encontradas para {{ measure_name }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for study in normalized_data %}
+                <div class="list-group-item mb-3">
+                    <h5>{{ study.title }}</h5>
+                    <p class="mb-1">
+                        <small class="text-muted">
+                            PMID: {{ study.pmid }} | 
+                            Ano: {{ study.year }} | 
+                            <a href="{{ study.url }}" target="_blank">Ver artigo</a>
+                        </small>
+                    </p>
+                    
+                    <div class="mt-2">
+                        <h6>Valores de Referência:</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for range in study.reference_ranges %}
+                            <li class="list-group-item">
+                                <strong>{{ range.nome_medida }}:</strong>
+                                {{ range.valor_min|default('N/A') }} a {{ range.valor_max|default('N/A') }} {{ range.unidade_medida }}
+                                {% if range.condicao_adicional %}({{ range.condicao_adicional }}){% endif %}
+                                <br>
+                                <small class="text-muted">Fonte: {{ range.texto_original_relevante[:150] }}...</small>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 {% endset %}

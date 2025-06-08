@@ -36,16 +36,6 @@
                         {% endfor %}
                     </datalist>
                 </div>
-                <div class="row">
-                    <div class="col-md-8 mb-3">
-                        <label for="ref_titulo" class="form-label">Título da Referência (Ex: ASE 2015 Guidelines)</label>
-                        <input type="text" class="form-control" id="ref_titulo" name="ref_titulo" required>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="ref_ano" class="form-label">Ano da Referência</label>
-                        <input type="number" class="form-control" id="ref_ano" name="ref_ano" min="1900" max="{{ now.year }}" required>
-                    </div>
-                </div>
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-gear-fill me-2"></i>Processar Documento
                 </button>
@@ -53,13 +43,4 @@
         </div>
     </div>
 </div>
-<script>
-    // Adicionar o ano atual como máximo para o input de ano
-    document.addEventListener('DOMContentLoaded', function() {
-        const anoInput = document.getElementById('ref_ano');
-        if (anoInput) {
-            anoInput.max = new Date().getFullYear();
-        }
-    });
-</script>
 {% endset %}

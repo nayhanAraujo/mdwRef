@@ -276,7 +276,7 @@
                             </li>
 
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="toggleAprovacao('{{ item.script[0] }}', '{{ item.script[6] }}'); return false;">
+                            <li><a class="dropdown-item" href="#" onclick="toggleAprovacao('{{ item.script[0] }}', {{ item.script[6]|int }}); return false;">
                                 <i class="bi bi-{% if item.script[6] %}hand-thumbs-down-fill text-danger{% else %}hand-thumbs-up-fill text-success{% endif %} me-2"></i> {{ 'Desaprovar' if item.script[6] else 'Aprovar' }}
                             </a></li>
                             <li><a class="dropdown-item" href="#" onclick="toggleAtivo('{{ item.script[0] }}', '{{ item.script[8] }}'); return false;">
@@ -678,7 +678,10 @@ function clearSearch() {
 }
 
 function toggleAprovacao(codscriptlaudo, aprovado) {
-  if (!aprovado) {
+  // Converte aprovado para número se for string
+  const isAprovado = parseInt(aprovado) === 1;
+  
+  if (!isAprovado) {
     Swal.fire({
       title: 'Aprovar script?',
       text: 'Digite o nome da pessoa ou entidade que está aprovando:',

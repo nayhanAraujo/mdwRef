@@ -1,0 +1,4 @@
+# Arquivos e diretórios ignorados pelo Cursor
+__pycache__/
+*.pyc
+venv/

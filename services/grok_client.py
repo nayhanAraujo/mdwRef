@@ -5,23 +5,19 @@ from flask import current_app # Para acessar config
 
 logger = logging.getLogger(__name__)
 
-# A URL da API do Grok pode variar. Verifique a documentação oficial.
-# Exemplo hipotético:
-GROK_API_URL = "https://api.x.ai/v1/chat/completions" # URL Hipotética, ajuste conforme necessário
 
-def get_reference_ranges_from_grok(text_content, variable_name_human_readable, reference_document_title, reference_year):
-    """
-    Consulta a API Grok para extrair faixas de normalidade.
-    Retorna uma lista de dicionários com os dados extraídos ou None em caso de erro.
-    """
-    api_key = current_app.config.get('GROK_API_KEY')
+GROK_API_URL = "https://api.x.ai/v1/chat/completions" 
+
+def get_reference_ranges_from_grok(text_content, variable_name_human_readable):
+
+    api_key = "xai-ay2cNXFlUnVuCRMpFzgOE57ndqQt74TrzI8MNfOTMu8VoPLuQDWO6UelCrhnQ2Pq2qPzroOaTvzKcQoP"
     if not api_key:
         logger.error("GROK_API_KEY não configurada.")
         return None
 
     # Este prompt é crucial e precisará de muitos testes e refinamentos!
     prompt = f"""
-    Analise o seguinte texto acadêmico do documento "{reference_document_title}" ({reference_year}) e extraia todas as faixas de normalidade para a medida '{variable_name_human_readable}'.
+    Analise o seguinte texto acadêmico e extraia todas as faixas de normalidade para a medida '{variable_name_human_readable}'.
     Para cada faixa encontrada, forneça:
     - "valor_min": O valor mínimo da faixa (numérico, use null se não aplicável ou se for < X).
     - "valor_max": O valor máximo da faixa (numérico, use null se não aplicável ou se for > X).
@@ -82,17 +78,10 @@ def get_reference_ranges_from_grok(text_content, variable_name_human_readable, r
         if response_data.get("choices") and len(response_data["choices"]) > 0:
             message_content = response_data["choices"][0].get("message", {}).get("content", "")
             try:
-                # O Grok pode retornar o JSON diretamente ou dentro de uma string, ou com texto adicional.
-                # Tentar encontrar o JSON dentro da string.
-                json_match = re.search(r'\[\s*\{.*\}\s*\]|^\s*\{\s*.*\}\s*$', message_content, re.DOTALL | re.MULTILINE)
-                if json_match:
-                    extracted_json_str = json_match.group(0)
-                    extracted_data = json.loads(extracted_json_str)
-                    logger.info(f"Dados JSON extraídos e parseados com sucesso: {extracted_data}")
-                    return extracted_data
-                else:
-                    logger.warning(f"Nenhum JSON válido encontrado na resposta do Grok: {message_content}")
-                    return [] # Retorna lista vazia se não encontrar JSON formatado
+                # Tenta fazer o parse direto do conteúdo
+                extracted_data = json.loads(message_content)
+                logger.info(f"Dados JSON extraídos e parseados com sucesso: {extracted_data}")
+                return extracted_data
             except json.JSONDecodeError as je:
                 logger.error(f"Erro ao decodificar JSON da resposta do Grok: {je}. Conteúdo: {message_content}")
                 return None

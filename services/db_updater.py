@@ -10,14 +10,12 @@ logger = logging.getLogger(__name__)
 
 def get_db_from_g():
     """Obtém conexão e cursor de flask.g. Assume que g.db_conn e g.db_cur foram definidos em app.before_request."""
-    if not hasattr(g, 'db_conn') or g.db_conn.closed:
-        logger.error("DB_UPDATER: Conexão não encontrada ou fechada em flask.g!")
-        # Em um cenário de produção, você pode querer uma forma mais robusta de lidar com isso,
-        # mas para o fluxo normal do Flask, before_request deve garantir a conexão.
+    if not hasattr(g, 'db_conn'):
+        logger.error("DB_UPDATER: Conexão não encontrada em flask.g!")
         raise RuntimeError("Conexão com banco de dados não disponível em flask.g. Verifique app.py before_request.")
-    if not hasattr(g, 'db_cur') or g.db_cur.closed: # Adicionado verificação para cursor
-        logger.error("DB_UPDATER: Cursor não encontrado ou fechado em flask.g!")
-        g.db_cur = g.db_conn.cursor() # Tenta reabrir o cursor se a conexão ainda estiver boa
+    if not hasattr(g, 'db_cur'):
+        logger.error("DB_UPDATER: Cursor não encontrado em flask.g!")
+        g.db_cur = g.db_conn.cursor()
         logger.info("DB_UPDATER: Novo cursor criado a partir da conexão em flask.g.")
     return g.db_conn, g.db_cur
 

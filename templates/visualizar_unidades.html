@@ -1,71 +1,187 @@
 {% extends 'layout.html' %}
 
 {% set content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="fw-bold text-primary mb-0">
-    <i class="bi bi-list-ul me-2"></i> Unidades de Medida Cadastradas
-  </h3>
-  <div class="text-muted small">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
-  </div>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="fw-bold text-primary mb-0">
+                    <i class="bi bi-rulers me-2"></i>Unidades de Medida
+                </h3>
+                <div class="text-muted small">
+                    <i class="bi bi-person-circle me-1"></i>
+                    {{ session['usuario']['nome'] }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 text-primary">
+                            <i class="bi bi-list-ul me-2"></i>Lista de Unidades
+                            <span class="text-muted small ms-2">(Total: {{ total_registros }})</span>
+                        </h5>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novaUnidadeModal">
+                            <i class="bi bi-plus-circle me-1"></i>Nova Unidade
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center" style="width: 80px;">#</th>
+                                    <th>Descrição</th>
+                                    <th class="text-center" style="width: 120px;">Status</th>
+                                    <th class="text-center" style="width: 200px;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cod, descricao, status in unidades %}
+                                <tr>
+                                    <td class="text-center">{{ cod }}</td>
+                                    <td>{{ descricao }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if status == 1 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ 'Ativo' if status == 1 else 'Inativo' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('unidades.editar_unidade', codunidademedida=cod) }}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="Editar">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <form action="{{ url_for('unidades.excluir_unidade', codunidademedida=cod) }}" 
+                                                  method="post" 
+                                                  class="d-inline excluir-unidade-form">
+                                                <button type="submit" 
+                                                        class="btn btn-sm btn-outline-danger" 
+                                                        title="Excluir">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if total_paginas > 1 %}
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted small">
+                            Página {{ pagina_atual }} de {{ total_paginas }}
+                        </div>
+                        <nav aria-label="Navegação de páginas">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item {% if pagina_atual == 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('unidades.visualizar_unidades', pagina=pagina_atual-1) if pagina_atual > 1 else '#' }}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                                
+                                {% set inicio = pagina_atual - 2 %}
+                                {% if inicio < 1 %}
+                                    {% set inicio = 1 %}
+                                {% endif %}
+                                
+                                {% set fim = inicio + 4 %}
+                                {% if fim > total_paginas %}
+                                    {% set fim = total_paginas %}
+                                    {% set inicio = fim - 4 if fim > 4 else 1 %}
+                                {% endif %}
+                                
+                                {% for p in range(inicio, fim + 1) %}
+                                <li class="page-item {% if p == pagina_atual %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('unidades.visualizar_unidades', pagina=p) }}">{{ p }}</a>
+                                </li>
+                                {% endfor %}
+                                
+                                <li class="page-item {% if pagina_atual == total_paginas %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('unidades.visualizar_unidades', pagina=pagina_atual+1) if pagina_atual < total_paginas else '#' }}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <a href="{{ url_for('unidades.nova_unidade') }}" class="btn btn-primary mb-3">
-      <i class="bi bi-plus-circle"></i> Nova Unidade
-    </a>
-    <table class="table table-hover table-bordered align-middle">
-      <thead class="table-primary text-center">
-        <tr>
-          <th>#</th>
-          <th>Descrição</th>
-          <th>Status</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for cod, descricao, status in unidades %}
-        <tr class="text-center">
-          <td>{{ cod }}</td>
-          <td class="text-start">{{ descricao }}</td>
-          <td>{{ 'Inativo' if status == 0 else 'Ativo' }}</td>
-          <td>
-            <a href="{{ url_for('unidades.editar_unidade', codunidademedida=cod) }}" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-pencil-square"></i> Editar
-            </a>
-            <form action="{{ url_for('unidades.excluir_unidade', codunidademedida=cod) }}" method="post" class="d-inline excluir-unidade-form">
-              <button type="submit" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash"></i> Excluir
-              </button>
+<!-- Modal Nova Unidade -->
+<div class="modal fade" id="novaUnidadeModal" tabindex="-1" aria-labelledby="novaUnidadeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('unidades.nova_unidade') }}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="novaUnidadeModalLabel">
+                        <i class="bi bi-plus-circle me-2"></i>Nova Unidade de Medida
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Descrição</label>
+                        <input type="text" class="form-control" id="descricao" name="descricao" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="1">Ativo</option>
+                            <option value="0">Inativo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Salvar
+                    </button>
+                </div>
             </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+        </div>
+    </div>
 </div>
 
 <script>
-  document.querySelectorAll('.excluir-unidade-form').forEach(form => {
+document.querySelectorAll('.excluir-unidade-form').forEach(form => {
     form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      Swal.fire({
-        title: 'Confirmar Exclusão',
-        text: 'Deseja excluir esta unidade de medida?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Excluir',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          form.submit();
-        }
-      });
+        e.preventDefault();
+        Swal.fire({
+            title: 'Confirmar Exclusão',
+            text: 'Tem certeza que deseja excluir esta unidade de medida?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, excluir',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
     });
-  });
+});
+
+// Limpar formulário quando o modal for fechado
+document.getElementById('novaUnidadeModal').addEventListener('hidden.bs.modal', function () {
+    this.querySelector('form').reset();
+});
 </script>
 {% endset %}

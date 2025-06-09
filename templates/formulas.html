@@ -319,7 +319,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const variaveisParaSugestao = {{ variaveis_para_sugestao | tojson | safe if variaveis_para_sugestao else '[]' }};
   const formulaTextarea = document.getElementById('formulaTextModal');
-  let suggestionsDiv = null; 
+  let suggestionsDiv = null;
+  const baseUrl = "{{ url_for('formulas.excluir_formula', codformula=0) }}".replace('0', '');
 
   function createSuggestionsDiv() {
     if (!suggestionsDiv) {
@@ -550,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       formulaNome.textContent = nome;
       formulaConteudo.textContent = formula;
-      formExcluirFormula.action = `/excluir_formula/${codformula}`;
+      formExcluirFormula.action = baseUrl + codformula;
       
       modalConfirmarExclusao.show();
     });

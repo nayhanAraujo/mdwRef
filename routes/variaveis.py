@@ -901,8 +901,13 @@ def visualizar_variaveis():
                 params_list.extend([f"%{filtro_geral}%", f"%{filtro_geral}%", f"%{filtro_geral}%"])
                 count_params_list.extend([f"%{filtro_geral}%", f"%{filtro_geral}%", f"%{filtro_geral}%"])
 
-            where_sql_for_count = " AND ".join(where_clauses).replace("V.NOME", "NOME").replace("V.VARIAVEL", "VARIAVEL")
-            count_query = f"SELECT COUNT(*) FROM VARIAVEIS V LEFT JOIN GRUPOS_VARIAVEIS G ON V.CODGRUPO = G.CODGRUPO WHERE {where_sql_for_count}"
+            # Query de contagem corrigida
+            count_query = f"""
+                SELECT COUNT(*) 
+                FROM VARIAVEIS V 
+                LEFT JOIN GRUPOS_VARIAVEIS G ON V.CODGRUPO = G.CODGRUPO 
+                WHERE {" AND ".join(where_clauses)}
+            """
 
             # Executar contagem total
             cur.execute(count_query, count_params_list)

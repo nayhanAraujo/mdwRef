@@ -10,37 +10,34 @@ PUBMED_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 PUBMED_SEARCH_URL = f"{PUBMED_BASE_URL}/esearch.fcgi"
 PUBMED_FETCH_URL = f"{PUBMED_BASE_URL}/efetch.fcgi"
 
-def search_pubmed_references(measure_name, years_back=5, max_results=10):
+def search_pubmed_references(measure_name):
     try:
-        date_limit = (datetime.now() - timedelta(days=years_back*365)).strftime("%Y/%m/%d")
-        
         # 1. Tratamento da medida para evitar problemas com caracteres especiais
-        safe_measure = measure_name.replace('"', '').strip()  # Remove aspas se houver
+        safe_measure = measure_name.replace('"', '').strip()
         
-        # 2. Construção da query dinâmica
+        # 2. Construção da query mais flexível
         query = (
-            f'("{safe_measure}"[Title/Abstract] OR "{safe_measure}"[MeSH Terms]) '  # Busca no título, resumo OU termos MeSH
-            f'AND ("reference values"[Title/Abstract] OR "normal range"[Title/Abstract] OR "guidelines"[Publication Type]) '
-            f'AND ("echocardiography"[MeSH Terms] OR "cardiac imaging"[Title/Abstract]) '
-            f'AND ("{date_limit}"[Date - Publication] : "3000"[Date - Publication])'
+            f'("{safe_measure}"[Title/Abstract] OR "{safe_measure}"[MeSH Terms]) '
+            f'AND ("echocardiography"[MeSH Terms] OR "echocardiography"[Title/Abstract]) '
+            f'AND ("reference values"[Title/Abstract] OR "normal values"[Title/Abstract] OR "normal range"[Title/Abstract] OR "guidelines"[Publication Type])'
         )
         
         # 3. Parâmetros da requisição
         search_params = {
             'db': 'pubmed',
             'term': query,
-            'retmax': str(max_results),
+            'retmax': '20',  # Limita a 20 resultados mais relevantes
             'retmode': 'json',
             'sort': 'relevance'
         }
         
-        logger.info(f"Buscando artigos para: '{measure_name}' | Query: {query}")
+        logger.info(f"Buscando diretrizes para: '{measure_name}' | Query: {query}")
         search_response = requests.get(PUBMED_SEARCH_URL, params=search_params)
         search_response.raise_for_status()
         search_data = search_response.json()
         
         if not search_data.get('esearchresult', {}).get('idlist'):
-            logger.info("Nenhum artigo encontrado para a busca")
+            logger.info("Nenhuma diretriz encontrada para a busca")
             return []
         
         # Obtém os detalhes dos artigos encontrados
@@ -77,24 +74,27 @@ def search_pubmed_references(measure_name, years_back=5, max_results=10):
                 pub_date = article.find('.//PubDate')
                 year = pub_date.find('Year').text if pub_date is not None else "N/A"
                 
-                # Extrai DOI
-                doi = article.find('.//ELocationID[@EIdType="doi"]')
-                doi_text = doi.text if doi is not None else "N/A"
-                
                 # Extrai PMID
                 pmid = article.find('.//PMID').text
                 
                 # Constrói o link para o artigo
                 article_url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
                 
+                # Identifica a fonte (ASE, EACVI, etc.)
+                source = "Outro"
+                if "ASE" in abstract_text or "American Society of Echocardiography" in abstract_text:
+                    source = "ASE"
+                elif "EACVI" in abstract_text:
+                    source = "EACVI"
+                
                 articles.append({
                     'title': title,
                     'authors': authors,
                     'year': year,
-                    'doi': doi_text,
                     'abstract': abstract_text,
                     'url': article_url,
-                    'pmid': pmid
+                    'pmid': pmid,
+                    'source': source
                 })
                 
             except Exception as e:
@@ -110,8 +110,7 @@ def search_pubmed_references(measure_name, years_back=5, max_results=10):
         return None
     except Exception as e:
         logger.error(f"Erro inesperado ao buscar artigos: {e}")
-        return None 
-    
+        return None
 
 def extract_reference_ranges(articles, measure_name):
     """

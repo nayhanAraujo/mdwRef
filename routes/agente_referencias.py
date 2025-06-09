@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session, g
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session, g, jsonify
 from services import pubmed_client, db_updater, grok_client
 from services.grok_client import get_reference_ranges_from_grok
+from services.pubmed_client import search_pubmed_references
 import logging
 from datetime import datetime
 from functools import wraps
@@ -119,3 +120,46 @@ def processar_documento():
             return render_template('interface_agente.html', variaveis_db=variaveis_db_para_template)
 
     return render_template('interface_agente.html', variaveis_db=variaveis_db_para_template)
+
+@agente_bp.route('/agente-referencias', methods=['GET'])
+def interface_agente():
+    return render_template('interface_agente.html')
+
+@agente_bp.route('/buscar-faixas-normalidade', methods=['POST'])
+def buscar_faixas_normalidade():
+    try:
+        data = request.get_json()
+        measure_name = data.get('measure_name')
+        
+        if not measure_name:
+            return jsonify({'error': 'Nome da medida é obrigatório'}), 400
+            
+        # Busca diretrizes na PubMed
+        articles = search_pubmed_references(measure_name)
+        
+        if articles is None:
+            return jsonify({'error': 'Erro ao buscar diretrizes na PubMed'}), 500
+            
+        if not articles:
+            return jsonify({'message': 'Nenhuma diretriz encontrada para esta medida'}), 404
+            
+        # Processa os artigos para extrair as faixas de normalidade
+        processed_articles = []
+        for article in articles:
+            try:
+                extracted_ranges = get_reference_ranges_from_grok(article['abstract'])
+                if extracted_ranges:
+                    article['reference_ranges'] = extracted_ranges
+                processed_articles.append(article)
+            except Exception as e:
+                logger.error(f"Erro ao processar artigo {article.get('pmid', 'N/A')}: {e}")
+                continue
+            
+        return jsonify({
+            'success': True,
+            'articles': processed_articles
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar faixas de normalidade: {e}")
+        return jsonify({'error': str(e)}), 500

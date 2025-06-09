@@ -1,10 +1,10 @@
 {% extends 'layout.html' %}
 
-{% block title %}Buscar Referências na PubMed{% endblock %}
+{% block title %}Buscar Faixas de Normalidade{% endblock %}
 
 {% set content %}
 <div class="container mt-4">
-    <h3 class="mb-4"><i class="bi bi-search me-2"></i>Busca de Referências na PubMed</h3>
+    <h3 class="mb-4"><i class="bi bi-search me-2"></i>Busca de Faixas de Normalidade</h3>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -19,10 +19,10 @@
 
     <div class="card shadow-sm">
         <div class="card-header">
-            <h5>Parâmetros de Busca</h5>
+            <h5>Buscar Faixas de Normalidade</h5>
         </div>
         <div class="card-body">
-            <form method="POST">
+            <form id="searchForm">
                 <div class="mb-3">
                     <label for="variable_sigla" class="form-label">Medida a ser pesquisada</label>
                     <input type="text" class="form-control" id="variable_sigla" name="variable_sigla" list="variaveis_datalist" placeholder="Ex: VR_AO ou Aorta Diâmetro" required>
@@ -32,50 +32,14 @@
                         {% endfor %}
                     </datalist>
                 </div>
-                <div class="mb-3">
-                    <label for="years_back" class="form-label">Anos para trás</label>
-                    <input type="number" class="form-control" id="years_back" name="years_back" min="1" max="20" value="5" required>
-                    <div class="form-text">Número de anos para trás para buscar artigos (máximo 20 anos)</div>
-                </div>
-                <div class="mb-3">
-                    <label for="max_results" class="form-label">Número máximo de resultados</label>
-                    <input type="number" class="form-control" id="max_results" name="max_results" min="1" max="50" value="10" required>
-                    <div class="form-text">Número máximo de artigos a retornar (máximo 50)</div>
-                </div>
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search me-2"></i>Buscar Referências
+                    <i class="bi bi-search me-2"></i>Buscar Faixas de Normalidade
                 </button>
             </form>
         </div>
     </div>
 
-    {% if articles %}
-    <div class="card shadow-sm mt-4">
-        <div class="card-header">
-            <h5>Resultados da Busca</h5>
-        </div>
-        <div class="card-body">
-            <div class="list-group">
-                {% for article in articles %}
-                <div class="list-group-item">
-                    <h5 class="mb-1">{{ article.title }}</h5>
-                    <p class="mb-1">
-                        <small class="text-muted">
-                            Autores: {{ article.authors|join(', ') }} | 
-                            Ano: {{ article.year }} | 
-                            DOI: {{ article.doi }}
-                        </small>
-                    </p>
-                    <p class="mb-1">{{ article.abstract[:300] }}...</p>
-                    <a href="{{ article.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Ver artigo
-                    </a>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
+    <div id="searchResults"></div>
 
     {% if normalized_data %}
     <div class="card shadow-sm mt-4">
@@ -115,6 +79,87 @@
         </div>
     </div>
     {% endif %}
-
 </div>
+
+<script>
+document.getElementById('searchForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const measureName = document.getElementById('variable_sigla').value;
+    const resultsDiv = document.getElementById('searchResults');
+    
+    try {
+        resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Carregando...</span></div></div>';
+        
+        const response = await fetch('/agente/buscar-faixas-normalidade', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ measure_name: measureName })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Erro ao buscar faixas de normalidade');
+        }
+        
+        if (data.message) {
+            resultsDiv.innerHTML = `<div class="alert alert-info">${data.message}</div>`;
+            return;
+        }
+        
+        let html = '<div class="row">';
+        
+        data.articles.forEach(article => {
+            html += `
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">${article.title}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <strong>Fonte:</strong> ${article.source}<br>
+                                <strong>Ano:</strong> ${article.year}<br>
+                                <strong>Autores:</strong> ${article.authors.join(', ')}<br>
+                                <strong>PMID:</strong> <a href="${article.url}" target="_blank">${article.pmid}</a>
+                            </p>
+                            <div class="mt-3">
+                                <h6>Resumo:</h6>
+                                <p class="card-text">${article.abstract}</p>
+                            </div>`;
+            
+            if (article.reference_ranges && article.reference_ranges.length > 0) {
+                html += `
+                    <div class="mt-3">
+                        <h6>Faixas de Normalidade Encontradas:</h6>
+                        <ul class="list-group list-group-flush">`;
+                
+                article.reference_ranges.forEach(range => {
+                    html += `
+                        <li class="list-group-item">
+                            <strong>${range.nome_medida}:</strong><br>
+                            ${range.valor_min !== null ? range.valor_min : '<'} a ${range.valor_max !== null ? range.valor_max : '>'} ${range.unidade_medida}
+                            ${range.condicao_adicional ? `<br><small>(${range.condicao_adicional})</small>` : ''}
+                            <br>
+                            <small class="text-muted">${range.texto_original_relevante}</small>
+                        </li>`;
+                });
+                
+                html += `</ul></div>`;
+            }
+            
+            html += `</div></div></div>`;
+        });
+        
+        html += '</div>';
+        resultsDiv.innerHTML = html;
+        
+    } catch (error) {
+        resultsDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    }
+});
+</script>
 {% endset %}

@@ -1,0 +1,178 @@
+{% extends 'layout.html' %}
+{% block title %}Associar Variáveis a Grupos{% endblock %}
+
+{% set content %}
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h2 class="page-title mb-0">
+      <i class="bi bi-diagram-3 me-2"></i> Associar Variáveis aos Grupos
+    </h2>
+    <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="btn btn-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  <hr class="mt-2 mb-0 page-header-divider" />
+</div>
+
+<div class="alert alert-info small">
+  <i class="bi bi-info-circle"></i> Segure <strong>Ctrl</strong> (ou <strong>Cmd</strong> no Mac) para selecionar múltiplas variáveis. Arraste uma delas para mover todas ao grupo.
+</div>
+
+<div class="row g-3" id="grupo-container">
+  <!-- Coluna de variáveis sem grupo -->
+  <div class="col-md-3">
+    <div class="card h-100">
+      <div class="card-header bg-light">
+        <h6 class="mb-0">Sem Grupo</h6>
+        <input type="text" class="form-control form-control-sm filtro-grupo mt-2" placeholder="Filtrar variáveis...">
+      </div>
+      <div class="card-body p-2 bg-light-subtle dropzone" data-grupo-id="0">
+        {% for var in variaveis_sem_grupo %}
+        <div class="variavel-card card p-2 mb-2 draggable" draggable="true" data-id="{{ var[0] }}">
+          <small class="text-muted d-block">{{ var[2] }}</small>
+          <strong>{{ var[1] }}</strong>
+        </div>
+        {% else %}
+        <div class="text-muted text-center">Nenhuma variável sem grupo</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Colunas dos grupos existentes -->
+  {% for grupo in grupos %}
+  <div class="col-md-3">
+    <div class="card h-100">
+      <div class="card-header bg-light">
+        <h6 class="mb-0">{{ grupo[1] }}</h6>
+        <input type="text" class="form-control form-control-sm filtro-grupo mt-2" placeholder="Filtrar variáveis...">
+      </div>
+      <div class="card-body p-2 dropzone bg-light-subtle" data-grupo-id="{{ grupo[0] }}">
+        {% for var in variaveis_por_grupo[grupo[0]] %}
+        <div class="variavel-card card p-2 mb-2 draggable" draggable="true" data-id="{{ var[0] }}">
+          <small class="text-muted d-block">{{ var[2] }}</small>
+          <strong>{{ var[1] }}</strong>
+        </div>
+        {% else %}
+        <div class="text-muted text-center">Sem variáveis</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div id="toast" class="toast align-items-center text-white bg-success border-0 position-fixed bottom-0 end-0 m-4" role="alert" aria-live="assertive" aria-atomic="true" style="display: none;">
+  <div class="d-flex">
+    <div class="toast-body">Atualizado com sucesso!</div>
+    <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="document.getElementById('toast').style.display='none';"></button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const filtros = document.querySelectorAll('.filtro-grupo');
+    const dropzones = document.querySelectorAll('.dropzone');
+    let selected = new Set();
+
+    document.querySelectorAll('.draggable').forEach(card => {
+      card.addEventListener('click', e => {
+        if (e.ctrlKey || e.metaKey) {
+          card.classList.toggle('selected');
+        } else {
+          document.querySelectorAll('.draggable.selected').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+        }
+      });
+
+      card.addEventListener('dragstart', e => {
+        if (!card.classList.contains('selected')) {
+          document.querySelectorAll('.draggable.selected').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+        }
+        document.body.classList.add('wait');
+        e.dataTransfer.setData('text/plain', 'dragging');
+      });
+    });
+
+    dropzones.forEach(zone => {
+      zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('border-primary');
+      });
+
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('border-primary');
+      });
+
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('border-primary');
+        const cards = document.querySelectorAll('.draggable.selected');
+        const codgrupo = zone.dataset.grupoId;
+
+        cards.forEach(card => {
+          zone.appendChild(card);
+          const codvariavel = card.dataset.id;
+
+          fetch("{{ url_for('grupos.atualizar_grupo_variavel') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codvariavel, codgrupo })
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (!data.success) alert('Erro: ' + data.message);
+              else showToast('Variável atualizada com sucesso!');
+            })
+            .catch(err => alert('Erro ao comunicar com o servidor.'))
+            .finally(() => document.body.classList.remove('wait'));
+        });
+      });
+    });
+
+    filtros.forEach(input => {
+      input.addEventListener('input', e => {
+        const termo = e.target.value.toLowerCase();
+        const container = e.target.closest('.card').querySelector('.dropzone');
+        container.querySelectorAll('.variavel-card').forEach(card => {
+          const texto = card.textContent.toLowerCase();
+          card.style.display = texto.includes(termo) ? '' : 'none';
+        });
+      });
+    });
+  });
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.querySelector('.toast-body').textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 3000);
+  }
+</script>
+
+<style>
+  .dropzone {
+    min-height: 300px;
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 10px;
+    transition: border-color 0.3s, background-color 0.3s;
+  }
+  .dropzone.border-primary {
+    border-color: #0d6efd !important;
+    background-color: #e9f2ff;
+  }
+  .variavel-card {
+    cursor: grab;
+  }
+  .variavel-card.selected {
+    border: 2px solid #0d6efd;
+    background-color: #e9f2ff;
+  }
+  body.wait {
+    cursor: wait;
+  }
+</style>
+{% endset %}
+

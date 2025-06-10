@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from datetime import datetime
 from get_db import get_db
 
@@ -64,3 +64,71 @@ def deletar_grupo(codgrupo):
         conn.commit()
         flash("Grupo deletado com sucesso!", "success")
     return redirect(url_for('grupos.listar_grupos'))
+
+
+
+
+
+
+@grupos_bp.route('/associar_grupos', methods=['GET'])
+def associar_grupos():
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    with get_db() as (conn, cur):
+        # Variáveis ainda não associadas a nenhum grupo
+        cur.execute("""
+            SELECT V.CODVARIAVEL, V.NOME, V.VARIAVEL
+            FROM VARIAVEIS V
+            WHERE V.CODGRUPO IS NULL
+        """)
+        variaveis_sem_grupo = cur.fetchall()
+
+        # Grupos cadastrados
+        cur.execute("SELECT CODGRUPO, NOME FROM GRUPOS_VARIAVEIS ORDER BY NOME")
+        grupos = cur.fetchall()
+
+        # Variáveis por grupo
+        variaveis_por_grupo = {}
+        for grupo in grupos:
+            cur.execute("""
+                SELECT CODVARIAVEL, NOME, VARIAVEL
+                FROM VARIAVEIS
+                WHERE CODGRUPO = ?
+            """, (grupo[0],))
+            variaveis_por_grupo[grupo[0]] = cur.fetchall()
+
+    return render_template(
+        'associar_grupos.html',
+        variaveis_sem_grupo=variaveis_sem_grupo,
+        grupos=grupos,
+        variaveis_por_grupo=variaveis_por_grupo
+    )
+
+@grupos_bp.route('/atualizar_grupo_variavel', methods=['POST'])
+def atualizar_grupo_variavel():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "Usuário não autenticado"}), 401
+
+    data = request.get_json()
+    codvariavel = data.get('codvariavel')
+    codgrupo = data.get('codgrupo')
+
+    if not codvariavel:
+        return jsonify({"success": False, "message": "Código da variável é obrigatório"}), 400
+
+    try:
+        codgrupo = int(codgrupo) if codgrupo else None
+        codvariavel = int(codvariavel)
+
+        with get_db() as (conn, cur):
+            cur.execute(
+                "UPDATE VARIAVEIS SET CODGRUPO = ?, DTHRULTMODIFICACAO = ? WHERE CODVARIAVEL = ?",
+                (codgrupo, datetime.now(), codvariavel)
+            )
+            conn.commit()
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500

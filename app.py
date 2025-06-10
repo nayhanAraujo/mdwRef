@@ -154,8 +154,8 @@ def create_app():
     ('Visualizar Variáveis', 'variaveis.visualizar_variaveis', 'card-list'),  # Lista → cartão com lista
     ('Fórmulas Cadastradas', 'formulas.visualizar_formulas', 'calculator-fill'),  # Calculadora preenchida
     #('Visualizar Unidades', 'unidades.visualizar_unidades', 'rulers'),  
-    ('Visualizar Especialidades', 'especialidades.visualizar_especialidades', 'briefcase'),  # Profissões → maleta
-    ('Visualizar Linguagens', 'linguagens.visualizar_linguagens', 'translate'),  # Linguagens → ícone de tradução
+    #('Visualizar Especialidades', 'especialidades.visualizar_especialidades', 'briefcase'),  # Profissões → maleta
+    #('Visualizar Linguagens', 'linguagens.visualizar_linguagens', 'translate'),  # Linguagens → ícone de tradução
     ('Gerenciar Classificações', 'variaveis.gerenciar_grupos_classificacoes', 'tags-fill'),  # Classificações → tags
     ('Agente de Extração', 'agente_referencias.processar_documento', 'robot'), # Ícone 'robot' ou outro de sua preferência
 

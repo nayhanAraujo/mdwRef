@@ -1,4 +1,5 @@
-{% extends 'layout.html' %} {% block title %}Visualizar Variáveis{% endblock %}
+{% extends 'layout.html' %} 
+{% block title %}Visualizar Variáveis{% endblock %}
 {% set content %}
 <div class="page-header mb-4">
   <div class="d-flex justify-content-between align-items-center">
@@ -16,70 +17,61 @@
   <hr class="mt-2 mb-0 page-header-divider" />
 </div>
 
-<div class="card shadow-sm">
+<div class="card shadow-sm mb-4">
   <div class="card-body">
-    <div class="row mb-4 align-items-center">
-      <div class="col-md-5">
-        <form
-          method="GET"
-          action="{{ url_for('variaveis.visualizar_variaveis') }}"
-        >
-          <div class="input-group">
-            <input
-              type="text"
-              name="variavel"
-              class="form-control"
-              placeholder="Buscar por Nome Clínico ou Código..."
-              value="{{ variavel_filtro if variavel_filtro is defined else request.args.get('variavel', '') }}"
-            />
-            <button type="submit" class="btn btn-primary" title="Pesquisar">
-              <i class="bi bi-search"></i>
-            </button>
-            {% if variavel_filtro %}
-            <a
-              href="{{ url_for('variaveis.visualizar_variaveis') }}"
-              class="btn btn-outline-secondary"
-              title="Limpar filtro"
+      <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+          
+          <form method="GET" action="{{ url_for('variaveis.visualizar_variaveis') }}" class="d-flex flex-wrap gap-2 align-items-center">
+              
+              <div style="min-width: 200px;">
+                  <label for="grupo" class="form-label visually-hidden">Filtrar por Grupo</label>
+                  <select id="grupo" name="grupo" class="form-select">
+                      <option value="">Todos os grupos</option>
+                      {% for grupo in grupos %}
+                      <option value="{{ grupo[0] }}" {% if request.args.get('grupo')|string == grupo[0]|string %}selected{% endif %}>{{ grupo[1] }}</option>
+                      {% endfor %}
+                  </select>
+              </div>
+
+              <div style="min-width: 250px;">
+                  <label for="busca" class="form-label visually-hidden">Buscar</label>
+                  <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-search"></i></span>
+                      <input type="search" id="busca" name="busca" class="form-control" placeholder="Buscar por nome, tag, descrição..." value="{{ request.args.get('busca', '') }}">
+                  </div>
+              </div>
+
+              <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary">
+                      <i class="bi bi-funnel-fill me-1"></i> Aplicar Filtros
+                  </button>
+                  <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="btn btn-outline-secondary" title="Limpar Filtros">
+                      <i class="bi bi-x-lg"></i>
+                  </a>
+              </div>
+          </form>
+
+          <div class="d-flex gap-2 justify-content-end flex-wrap">
+              <a href="{{ url_for('variaveis.nova_variavel') }}" class="btn btn-success">
+                  <i class="bi bi-plus-lg me-1"></i> Nova Variável
+              </a>
+              <a href="{{ url_for('grupos.associar_grupos') }}" class="btn btn-secondary">
+                  <i class="bi bi-diagram-3 me-1"></i> Associar a Grupos
+              </a>
+              <a href="{{ url_for('variaveis.importar_variaveis') }}" class="btn btn-info">
+                  <i class="bi bi-upload me-1"></i> Importar (.cs)
+              </a>
+              <a
+              href="{{ url_for('variaveis.vincular_codigo_universal') }}"
+              class="btn btn-primary mb-1 mb-md-0"
+              title="Vincular variáveis a códigos DICOM universais"
             >
-              <i class="bi bi-eraser"></i>
+              <i class="bi bi-link-45deg me-1"></i> Vincular DICOM
             </a>
-            {% endif %}
           </div>
-        </form>
       </div>
-      <div class="col-md-7 text-md-end mt-3 mt-md-0">
-        <a
-          href="{{ url_for('variaveis.nova_variavel') }}"
-          class="btn btn-success me-1 mb-1 mb-md-0"
-          title="Cadastrar uma nova variável no sistema"
-        >
-          <i class="bi bi-plus-circle-fill me-1"></i> Nova Variável
-        </a>
-        <a
-          href="{{ url_for('variaveis.importar_variaveis') }}"
-          class="btn btn-info me-1 mb-1 mb-md-0"
-          title="Importar variáveis a partir de um arquivo .CS"
-        >
-          <i class="bi bi-upload me-1"></i> Importar (.cs)
-        </a>
-        <a
-          href="{{ url_for('variaveis.vincular_codigo_universal') }}"
-          class="btn btn-secondary mb-1 mb-md-0"
-          title="Vincular variáveis a códigos DICOM universais"
-        >
-          <i class="bi bi-link-45deg me-1"></i> Vincular DICOM
-        </a>
-        <button
-          type="button"
-          class="btn btn-primary mb-1 mb-md-0"
-          data-bs-toggle="modal"
-          data-bs-target="#associarGruposModal"
-          title="Associar variáveis aos grupos"
-        >
-          <i class="bi bi-diagram-3 me-1"></i> Associar Grupos
-        </button>
-      </div>
-    </div>
+  </div>
+</div>
 
     <div class="actions-legend mb-3 p-3 border rounded bg-light-subtle small">
       <h6 class="fw-bold mb-2">
@@ -115,6 +107,7 @@
         <thead class="table-light">
           <tr>
             <th class="text-center align-middle" style="width: 5%">Cód.</th>
+            <th class="text-start align-middle">Grupo</th>
             <th class="text-start align-middle">Nome Clínico</th>
             <th class="text-start align-middle">Variável (Código)</th>
             <th class="text-center align-middle">Sigla</th>
@@ -137,6 +130,13 @@
           {% set var = detalhe.variavel %}
           <tr>
             <td class="text-center align-middle">{{ detalhe.variavel[0] }}</td>
+            <td class="align-middle">
+              {% if detalhe.grupo %}
+                <span class="badge bg-primary">{{ detalhe.grupo[1] }}</span>
+              {% else %}
+                <span class="badge bg-secondary">Sem grupo</span>
+              {% endif %}
+            </td>
             <td class="align-middle">{{ detalhe.variavel[1] }}</td>
             <td class="align-middle"><code>{{ detalhe.variavel[2] }}</code></td>
             <td class="text-center align-middle">{{ detalhe.variavel[3] }}</td>
@@ -321,7 +321,7 @@
         <li class="page-item">
           <a
             class="page-link"
-            href="{{ url_for('variaveis.visualizar_variaveis', page=pagina-1, variavel=variavel_filtro) }}"
+            href="{{ url_for('variaveis.visualizar_variaveis', page=pagina-1, variavel=variavel_filtro, grupo=request.args.get('grupo', '')) }}"
             ><i class="bi bi-chevron-left"></i> Anterior</a
           >
         </li>
@@ -350,7 +350,7 @@
         <li class="page-item">
           <a
             class="page-link"
-            href="{{ url_for('variaveis.visualizar_variaveis', page=i, variavel=variavel_filtro) }}"
+            href="{{ url_for('variaveis.visualizar_variaveis', page=i, variavel=variavel_filtro, grupo=request.args.get('grupo', '')) }}"
             >{{ i }}</a
           >
         </li>
@@ -358,7 +358,7 @@
         <li class="page-item">
           <a
             class="page-link"
-            href="{{ url_for('variaveis.visualizar_variaveis', page=pagina+1, variavel=variavel_filtro) }}"
+            href="{{ url_for('variaveis.visualizar_variaveis', page=pagina+1, variavel=variavel_filtro, grupo=request.args.get('grupo', '')) }}"
             >Próxima <i class="bi bi-chevron-right"></i
           ></a>
         </li>

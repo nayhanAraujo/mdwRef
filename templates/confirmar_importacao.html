@@ -1,110 +1,228 @@
 {% extends 'layout.html' %}
 
-{% set content %}
-<!-- Incluir o Tailwind CSS via CDN -->
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+{% block title %}Confirmar Importação de Variáveis{% endblock %}
 
-<div class="flex justify-between items-center mb-4">
-  <h3 class="text-2xl font-bold text-blue-600">
-    <svg class="inline-block w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    Confirmar Importação de Variáveis
-  </h3>
-  <div class="text-gray-500 text-sm">
-    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
-  </div>
+{% set content %}
+<div class="container mt-4">
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h2 page-title mb-0">
+                <i class="bi bi-check2-square me-2"></i> Confirmar Importação de Variáveis
+            </h1>
+            <div class="text-muted small">
+                <i class="bi bi-person-circle me-1"></i> Usuário:
+                <strong>{{ session.get('usuario', {}).get('nome', 'Desconhecido') }}</strong>
+            </div>
+        </div>
+        <hr class="mt-2 mb-0" />
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="fw-bold">
+                    <p class="mb-0">Foram encontradas {{ dados.variaveis|length }} variáveis no arquivo. Selecione quais deseja importar:</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="search" id="filtro-variaveis" class="form-control form-control-sm" placeholder="Filtrar por nome...">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" id="selecionar-todos" class="btn btn-outline-secondary">
+                            <i class="bi bi-check-square-fill me-1"></i> Todos
+                        </button>
+                        <button type="button" id="desselecionar-todos" class="btn btn-outline-secondary">
+                            <i class="bi bi-square me-1"></i> Nenhum
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="POST" id="form-importacao">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col" style="width: 5%;">
+                                    <input class="form-check-input" type="checkbox" id="checkbox-cabecalho">
+                                </th>
+                                <th scope="col">Variável</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Sigla</th>
+                                <th scope="col">Abreviação</th>
+                                <th scope="col">Unidade</th>
+                                <th scope="col">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-variaveis">
+                            {% for variavel in dados.variaveis %}
+                            <tr class="{% if variavel.existe_no_banco %}table-danger{% endif %}">
+                                <td>
+                                    <input class="form-check-input checkbox-linha" type="checkbox" 
+                                           name="variaveis[]" 
+                                           value="{{ variavel.codigo }}" 
+                                           {% if not variavel.existe_no_banco %}checked{% endif %}
+                                           {% if variavel.existe_no_banco %}disabled{% endif %}>
+                                </td>
+                                <td>{{ variavel.codigo }}</td>
+                                <td>{{ variavel.nome }}</td>
+                                <td>{{ variavel.sigla }}</td>
+                                <td>{{ variavel.abreviacao }}</td>
+                                <td>{{ variavel.unidade }}</td>
+                                <td>
+                                    {% if variavel.existe_no_banco %}
+                                        <span class="badge bg-danger" title="Esta variável já existe no banco de dados e não pode ser importada">Já existe</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Novo</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center p-4">Nenhuma variável para importar.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Importante:</strong> Variáveis marcadas em vermelho já existem no banco de dados e não podem ser importadas.
+                </div>
+
+                <div class="d-flex justify-content-end mt-4 gap-2">
+                    <a href="{{ url_for('variaveis.importar_variaveis') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success" id="btn-confirmar">
+                        <i class="bi bi-check-lg me-1"></i> Confirmar Importação
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
-<div class="shadow-md rounded-lg">
-  <div class="p-6">
-    <form method="POST">
-      <div class="flex justify-between mb-4">
-        <p class="text-lg">Selecione as variáveis que deseja importar:</p>
-        <div>
-          <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded mr-2 hover:bg-blue-600" id="marcarTodas">
-            <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Marcar Todas
-          </button>
-          <button type="button" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600" id="desmarcarTodas">
-            <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            Desmarcar Todas
-          </button>
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-labelledby="modalConfirmacaoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalConfirmacaoLabel">Confirmar Importação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Você está prestes a importar <strong id="qtd-variaveis">0</strong> variável(is).</p>
+                <p>Deseja realmente prosseguir com a importação?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btn-confirmar-importacao">
+                    <i class="bi bi-check-lg me-1"></i> Sim, Importar
+                </button>
+            </div>
         </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full border border-gray-300">
-          <thead class="bg-blue-100">
-            <tr>
-              <th class="py-2 px-4 border-b text-center">Selecionar</th>
-              <th class="py-2 px-4 border-b text-center">Variável</th>
-              <th class="py-2 px-4 border-b text-center">Nome</th>
-              <th class="py-2 px-4 border-b text-center">Sigla</th>
-              <th class="py-2 px-4 border-b text-center">Unidade</th>
-              <th class="py-2 px-4 border-b text-center">Fórmula</th>
-              <th class="py-2 px-4 border-b text-center">Normalidade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for variavel in dados.variaveis %}
-              <!-- Log para depuração -->
-              <script>
-                console.log("Variável: {{ variavel.codigo }}, Existe no banco: {{ variavel.existe_no_banco | tojson }}");
-              </script>
-              <tr {% if variavel.existe_no_banco == True %}class="bg-red-200"{% endif %}>
-                <td class="py-2 px-4 border-b text-center">
-                  <input type="checkbox" name="variaveis[]" value="{{ variavel.codigo }}" class="variavel-checkbox">
-                </td>
-                <td class="py-2 px-4 border-b">{{ variavel.codigo }}</td>
-                <td class="py-2 px-4 border-b">{{ variavel.nome }}</td>
-                <td class="py-2 px-4 border-b">{{ variavel.sigla }}</td>
-                <td class="py-2 px-4 border-b">{{ variavel.unidade }}</td>
-                <td class="py-2 px-4 border-b">
-                  {% set formula = dados.formulas | selectattr('variavel', 'equalto', variavel.codigo) | first %}
-                  {% if formula %}
-                    {{ formula.expressao }} (Casas: {{ formula.casas_decimais }})
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
-                <td class="py-2 px-4 border-b">
-                  {% set normalidade = dados.normalidades | selectattr('variavel', 'equalto', variavel.codigo) | first %}
-                  {% if normalidade %}
-                    Sexo: {{ normalidade.sexo }}, Min: {{ normalidade.valor_min }}, Max: {{ normalidade.valor_max }}, Idade Min: {{ normalidade.idade_min }}, Idade Max: {{ normalidade.idade_max }}, Ref: {{ normalidade.referencia }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="flex justify-end mt-4">
-        <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded mr-2 hover:bg-green-600">
-          <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-          Confirmar Importação
-        </button>
-        <a href="{{ url_for('variaveis.importar_variaveis') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-          <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Voltar
-        </a>
-      </div>
-    </form>
-  </div>
+    </div>
 </div>
 
 <script>
-  // Botão para marcar todas as checkboxes
-  document.getElementById('marcarTodas').addEventListener('click', function() {
-    document.querySelectorAll('.variavel-checkbox').forEach(checkbox => {
-      checkbox.checked = true;
-    });
-  });
+document.addEventListener('DOMContentLoaded', () => {
+    const checkboxCabecalho = document.getElementById('checkbox-cabecalho');
+    const checkboxesLinha = document.querySelectorAll('.checkbox-linha');
+    const btnSelecionarTodos = document.getElementById('selecionar-todos');
+    const btnDesselecionarTodos = document.getElementById('desselecionar-todos');
+    const filtroInput = document.getElementById('filtro-variaveis');
+    const tabelaBody = document.getElementById('tabela-variaveis');
+    const btnConfirmar = document.getElementById('btn-confirmar');
+    const formImportacao = document.getElementById('form-importacao');
+    const modalConfirmacao = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
+    const qtdVariaveis = document.getElementById('qtd-variaveis');
+    const btnConfirmarImportacao = document.getElementById('btn-confirmar-importacao');
 
-  // Botão para desmarcar todas as checkboxes
-  document.getElementById('desmarcarTodas').addEventListener('click', function() {
-    document.querySelectorAll('.variavel-checkbox').forEach(checkbox => {
-      checkbox.checked = false;
+    const atualizarStatusCabecalho = () => {
+        const totalVisivel = Array.from(checkboxesLinha).filter(cb => 
+            !cb.disabled && cb.closest('tr').style.display !== 'none'
+        ).length;
+        const totalSelecionadoVisivel = Array.from(checkboxesLinha).filter(cb => 
+            cb.checked && !cb.disabled && cb.closest('tr').style.display !== 'none'
+        ).length;
+        
+        if (totalVisivel > 0 && totalVisivel === totalSelecionadoVisivel) {
+            checkboxCabecalho.checked = true;
+            checkboxCabecalho.indeterminate = false;
+        } else if (totalSelecionadoVisivel > 0) {
+            checkboxCabecalho.checked = false;
+            checkboxCabecalho.indeterminate = true;
+        } else {
+            checkboxCabecalho.checked = false;
+            checkboxCabecalho.indeterminate = false;
+        }
+    };
+
+    checkboxCabecalho.addEventListener('click', () => {
+        const visiveis = Array.from(checkboxesLinha).filter(cb => 
+            !cb.disabled && cb.closest('tr').style.display !== 'none'
+        );
+        visiveis.forEach(checkbox => {
+            checkbox.checked = checkboxCabecalho.checked;
+        });
+        atualizarStatusCabecalho();
     });
-  });
+
+    checkboxesLinha.forEach(checkbox => {
+        checkbox.addEventListener('change', atualizarStatusCabecalho);
+    });
+
+    btnSelecionarTodos.addEventListener('click', () => {
+        const visiveis = Array.from(checkboxesLinha).filter(cb => 
+            !cb.disabled && cb.closest('tr').style.display !== 'none'
+        );
+        visiveis.forEach(checkbox => checkbox.checked = true);
+        atualizarStatusCabecalho();
+    });
+
+    btnDesselecionarTodos.addEventListener('click', () => {
+        const visiveis = Array.from(checkboxesLinha).filter(cb => 
+            !cb.disabled && cb.closest('tr').style.display !== 'none'
+        );
+        visiveis.forEach(checkbox => checkbox.checked = false);
+        atualizarStatusCabecalho();
+    });
+
+    filtroInput.addEventListener('input', () => {
+        const termo = filtroInput.value.toLowerCase();
+        tabelaBody.querySelectorAll('tr').forEach(row => {
+            const texto = row.textContent.toLowerCase();
+            row.style.display = texto.includes(termo) ? '' : 'none';
+        });
+        atualizarStatusCabecalho();
+    });
+
+    // Manipula o envio do formulário
+    formImportacao.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const variaveisSelecionadas = Array.from(checkboxesLinha).filter(cb => cb.checked);
+        
+        if (variaveisSelecionadas.length === 0) {
+            alert('Selecione pelo menos uma variável para importar.');
+            return;
+        }
+
+        // Atualiza o texto do modal com a quantidade de variáveis
+        qtdVariaveis.textContent = variaveisSelecionadas.length;
+        
+        // Mostra o modal de confirmação
+        modalConfirmacao.show();
+    });
+
+    // Confirma a importação quando o usuário clica no botão do modal
+    btnConfirmarImportacao.addEventListener('click', () => {
+        modalConfirmacao.hide();
+        formImportacao.submit();
+    });
+
+    // Inicia o estado do checkbox do cabeçalho
+    atualizarStatusCabecalho();
+});
 </script>
 {% endset %}

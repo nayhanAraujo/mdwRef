@@ -94,16 +94,16 @@ def parse_cs_file(file_content):
     current_app.logger.debug(f"Dados finais antes de adicionar existe_no_banco: {dados}")
 
     # Adicionar a flag existe_no_banco
-    conn, cur = get_db()
-    for variavel in dados["variaveis"]:
-        codigo = variavel.get("codigo")
-        if not codigo:
-            current_app.logger.error(f"Erro: Variável sem 'codigo': {variavel}")
-            continue
-        cur.execute("SELECT 1 FROM VARIAVEIS WHERE UPPER(VARIAVEL) = UPPER(?)", (codigo,))
-        existe_no_banco = bool(cur.fetchone())
-        variavel["existe_no_banco"] = existe_no_banco
-        current_app.logger.debug(f"Verificação no banco para '{codigo}': Existe = {existe_no_banco}, Tipo = {type(existe_no_banco)}")
+    with get_db() as (conn, cur):
+        for variavel in dados["variaveis"]:
+            codigo = variavel.get("codigo")
+            if not codigo:
+                current_app.logger.error(f"Erro: Variável sem 'codigo': {variavel}")
+                continue
+            cur.execute("SELECT 1 FROM VARIAVEIS WHERE UPPER(VARIAVEL) = UPPER(?)", (codigo,))
+            existe_no_banco = bool(cur.fetchone())
+            variavel["existe_no_banco"] = existe_no_banco
+            current_app.logger.debug(f"Verificação no banco para '{codigo}': Existe = {existe_no_banco}, Tipo = {type(existe_no_banco)}")
 
     current_app.logger.debug(f"Dados finais após adicionar existe_no_banco: {dados}")
     return dados

@@ -1,0 +1,111 @@
+{% extends 'layout.html' %}
+{% block title %}Autores Cadastrados{% endblock %}
+{% set content %}
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-people-fill me-2 icon-gradient"></i> Autores Cadastrados
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome'] }}</strong>
+    </div>
+  </div>
+  <hr class="mt-2 mb-0 page-header-divider">
+</div>
+<div class="card shadow-sm">
+  <div class="card-header bg-light py-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 text-primary">Listagem de Autores</h5>
+      <a href="{{ url_for('autores.novo_autor') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle-fill me-1"></i> Novo Autor
+      </a>
+    </div>
+  </div>
+  <div class="card-body">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered align-middle">
+        <thead class="table-light">
+          <tr class="text-center">
+            <th style="width:10%;">#</th>
+            <th class="text-start">Nome</th>
+            <th class="text-start">Abreviação</th>
+            <th class="text-start">Tipo</th>
+            <th style="width:20%;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cod, nome, abreviacao, tipo in autores %}
+          <tr class="text-center">
+            <td>{{ cod }}</td>
+            <td class="text-start">{{ nome }}</td>
+            <td class="text-start">{{ abreviacao or '-' }}</td>
+            <td class="text-start">{{ tipo or '-' }}</td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="{{ url_for('autores.editar_autor', codautor=cod) }}" class="btn btn-outline-secondary">
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+                <form action="{{ url_for('autores.excluir_autor', codautor=cod) }}" method="POST" class="d-inline excluir-autor-form">
+                  <button type="submit" class="btn btn-outline-danger">
+                    <i class="bi bi-trash-fill"></i> Excluir
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-center text-muted fst-italic">Nenhum autor cadastrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-4 text-end">
+      <a href="{{ url_for('bibliotecas.biblioteca') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left-circle me-1"></i> Voltar para Biblioteca
+      </a>
+    </div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('.excluir-autor-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const swalWithBootstrapButtons = Swal.mixin({
+        customClass: {
+          confirmButton: 'btn btn-danger mx-1',
+          cancelButton: 'btn btn-secondary mx-1'
+        },
+        buttonsStyling: false,
+        popup: 'swal2-zindex-high'
+      });
+      swalWithBootstrapButtons.fire({
+        title: 'Confirmar Exclusão',
+        text: 'Deseja realmente excluir este autor?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Sim, Excluir!',
+        cancelButtonText: '<i class="bi bi-x-lg me-1"></i> Cancelar',
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+</script>
+{% endset %}

@@ -21,7 +21,11 @@
         <div class="card-header bg-light p-3">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div class="fw-bold">
-                    <p class="mb-0">Foram encontradas {{ dados.variaveis|length }} variáveis no arquivo. Selecione quais deseja importar:</p>
+                    <p class="mb-0">
+                        Foram encontradas {{ dados.variaveis|length }} variáveis no arquivo.
+                        Selecione quais deseja importar
+                        (<span id="contador-selecionadas">0 selecionadas</span>):
+                    </p>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <input type="search" id="filtro-variaveis" class="form-control form-control-sm" placeholder="Filtrar por nome...">
@@ -138,12 +142,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalConfirmacao = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
     const qtdVariaveis = document.getElementById('qtd-variaveis');
     const btnConfirmarImportacao = document.getElementById('btn-confirmar-importacao');
+    const contadorSelecionadas = document.getElementById('contador-selecionadas');
 
     const atualizarStatusCabecalho = () => {
-        const totalVisivel = Array.from(checkboxesLinha).filter(cb => 
+        const totalVisivel = Array.from(checkboxesLinha).filter(cb =>
             !cb.disabled && cb.closest('tr').style.display !== 'none'
         ).length;
-        const totalSelecionadoVisivel = Array.from(checkboxesLinha).filter(cb => 
+        const totalSelecionadoVisivel = Array.from(checkboxesLinha).filter(cb =>
             cb.checked && !cb.disabled && cb.closest('tr').style.display !== 'none'
         ).length;
         
@@ -157,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             checkboxCabecalho.checked = false;
             checkboxCabecalho.indeterminate = false;
         }
+        contadorSelecionadas.textContent = `${totalSelecionadoVisivel} selecionada(s)`;
     };
 
     checkboxCabecalho.addEventListener('click', () => {

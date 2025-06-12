@@ -77,6 +77,11 @@
           <i class="bi bi-collection"></i> Grupos de Variáveis
         </a>
       </div> 
+      <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+        <a href="{{ url_for('autores.visualizar_autores') }}" class="module-action d-block text-center">
+          <i class="bi bi-person-lines-fill"></i> Vincular Autores
+        </a>
+      </div> 
      </div>
   </div>
 
@@ -102,13 +107,13 @@
         <div class="col-md-6 col-lg-4">
       <div class="module-card">
         <div class="module-icon bg-success"> <i class="bi bi-journal-bookmark-fill"></i> </div>
-        <h5 class="module-title">Referências</h5>
+        <h5 class="module-title">Autores e Referências</h5>
         <p class="module-desc">Armazene e gerencie referências bibliográficas e documentos de apoio.</p>
         <div class="mt-auto module-actions">
           <a href="{{ url_for('referencias.nova_referencia') }}" class="module-action">Nova Referência</a>
           <a href="{{ url_for('referencias.visualizar_referencias') }}" class="module-action">Listar Referências</a>
-          <a href="{{ url_for('autores.visualizar_autores') }}" class="module-action">Autores</a>
-          {# <a href="{{ url_for('referencias.visualizar_anexos_geral') }}" class="module-action">Ver Todos Anexos</a> #}
+          <a href="{{ url_for('autores.visualizar_autores') }}" class="module-action">Listar Autores</a>
+          <a href="{{ url_for('autores.novo_autor') }}" class="module-action">Novo Autor</a>
         </div>
       </div>
     </div>
@@ -198,7 +203,6 @@
           </div>
       </div>
     </div>
-
 
   </div>
 </div>

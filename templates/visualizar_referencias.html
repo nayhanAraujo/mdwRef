@@ -167,6 +167,13 @@
                 >
                   <i class="bi bi-paperclip"></i> Anexos
                 </a>
+                <a
+                  href="{{ url_for('autores.vincular_autores', codreferencia=cod) }}"
+                  class="btn btn-outline-primary"
+                  title="Vincular Autores"
+                >
+                  <i class="bi bi-people"></i> Autores
+                </a>
                 <form
                   action="{{ url_for('referencias.excluir_referencia', codreferencia=cod) }}"
                   method="POST"

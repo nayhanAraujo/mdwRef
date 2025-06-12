@@ -232,10 +232,17 @@
                 </a>
                 <a
                   href="{{ url_for('variaveis.editar_variavel', codvariavel=detalhe.variavel[0]) }}"
-                  class="btn btn-outline-primary"
+                  class="btn btn-outline-secondary"
                   title="Editar Variável"
                 >
-                  <i class="bi bi-pencil-square"></i>
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+                <a
+                  href="{{ url_for('variaveis.visualizar_normalidades', codvariavel=detalhe.variavel[0]) }}"
+                  class="btn btn-outline-primary"
+                  title="Visualizar Normalidades"
+                >
+                  <i class="bi bi-graph-up"></i> Normalidades
                 </a>
                 <button
                   type="button"
@@ -840,12 +847,18 @@
             if (data.normalidades && data.normalidades.length > 0) {
               let normalidadeHtml = '<ul class="list-group list-group-flush small">';
               data.normalidades.forEach((n) => {
+                const ref = n.referencia;
+                const refInfo = ref ? 
+                  `<br><small class="text-muted">(Ref: ${ref.titulo || "N/A"} (${ref.ano || ""}) ${ref.autores || ""})</small>` : 
+                  '<br><small class="text-muted">(Sem referência)</small>';
+                
                 normalidadeHtml += `<li class="list-group-item">
                   <strong>Sexo:</strong> ${n.sexo || "N/A"}, 
                   <strong>Min:</strong> ${n.valormin !== null ? n.valormin : "-"}, 
-                  <strong>Max:</strong> ${n.valormax !== null ? n.valormax : "-"} <br>
-                  <small class="text-muted">(Idade: ${n.idade_min || "N/A"}-${n.idade_max || "N/A"}; 
-                  Ref: ${n.ref_titulo || "N/A"} (${n.ref_ano || ""}) ${n.ref_autores || ""})</small></li>`;
+                  <strong>Max:</strong> ${n.valormax !== null ? n.valormax : "-"}
+                  <br><small class="text-muted">Idade: ${n.idade_min || "N/A"}-${n.idade_max || "N/A"}</small>
+                  ${refInfo}
+                </li>`;
               });
               normalidadeHtml += "</ul>";
               normalidadeDiv.innerHTML = normalidadeHtml;
@@ -858,10 +871,16 @@
             if (data.equacoes && data.equacoes.length > 0) {
               let equacoesHtml = '<ul class="list-group list-group-flush small">';
               data.equacoes.forEach((eq) => {
+                const ref = eq.referencia;
+                const refInfo = ref ? 
+                  `<br><small class="text-muted">(Ref: ${ref.titulo || "N/A"} (${ref.ano || ""}) ${ref.autores || ""})</small>` : 
+                  '<br><small class="text-muted">(Sem referência)</small>';
+                
                 equacoesHtml += `<li class="list-group-item">
-                  <strong>${eq.linguagem_desc || "N/A"}:</strong> 
-                  <code>${eq.equacao || "-"}</code><br>
-                  <small class="text-muted">(Ref: ${eq.ref_titulo || "N/A"} (${eq.ref_ano || ""}) ${eq.ref_autores || ""})</span></li>`;
+                  <strong>${eq.linguagem || "N/A"}:</strong> 
+                  <code>${eq.equacao || "-"}</code>
+                  ${refInfo}
+                </li>`;
               });
               equacoesHtml += "</ul>";
               equacoesDiv.innerHTML = equacoesHtml;

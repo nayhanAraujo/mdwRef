@@ -1805,3 +1805,186 @@ def excluir_classificacao(codclassificacao):
             return jsonify({'success': True, 'message': 'Classificação excluída com sucesso!'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Erro ao excluir classificação: {str(e)}'})
+
+@variaveis_bp.route('/visualizar_normalidades/<int:codvariavel>')
+def visualizar_normalidades(codvariavel):
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    try:
+        with get_db() as (conn, cur):
+            # Buscar informações da variável
+            cur.execute("""
+                SELECT v.CODVARIAVEL, v.NOME, v.DESCRICAO, v.UNIDADE, e.DESCRICAO as ESPECIALIDADE
+                FROM VARIAVEL v
+                LEFT JOIN ESPECIALIDADE e ON v.CODESPECIALIDADE = e.CODESPECIALIDADE
+                WHERE v.CODVARIAVEL = ?
+            """, (codvariavel,))
+            variavel = cur.fetchone()
+            
+            if not variavel:
+                flash("Variável não encontrada.", "error")
+                return redirect(url_for('variaveis.visualizar_variaveis'))
+
+            # Buscar normalidades com suas referências
+            cur.execute("""
+                SELECT n.CODNORMALIDADE, n.VALOR, 
+                       r.CODREFERENCIA, r.TITULO, r.ANO, r.DESCRICAO as REF_DESCRICAO,
+                       LIST(a.NOME || ' (' || COALESCE(a.ABREVIACAO, '') || ')', ', ') AS AUTORES,
+                       e.DESCRICAO as ESPECIALIDADE
+                FROM NORMALIDADE n
+                LEFT JOIN REFERENCIA r ON n.CODREFERENCIA = r.CODREFERENCIA
+                LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
+                LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
+                LEFT JOIN ESPECIALIDADE e ON r.CODESPECIALIDADE = e.CODESPECIALIDADE
+                WHERE n.CODVARIAVEL = ?
+                GROUP BY n.CODNORMALIDADE, n.VALOR, r.CODREFERENCIA, r.TITULO, r.ANO, r.DESCRICAO, e.DESCRICAO
+                ORDER BY r.ANO DESC
+            """, (codvariavel,))
+            normalidades_raw = cur.fetchall()
+
+            # Formatar os dados para o template
+            normalidades = []
+            for n in normalidades_raw:
+                normalidade = {
+                    'codigo': n[0],
+                    'valor': n[1],
+                    'referencia': {
+                        'codigo': n[2],
+                        'titulo': n[3],
+                        'ano': n[4],
+                        'descricao': n[5],
+                        'autores': n[6],
+                        'especialidade': n[7]
+                    }
+                }
+                normalidades.append(normalidade)
+
+            variavel_dict = {
+                'codigo': variavel[0],
+                'nome': variavel[1],
+                'descricao': variavel[2],
+                'unidade': variavel[3],
+                'especialidade': variavel[4]
+            }
+
+            return render_template('visualizar_normalidades.html', 
+                                variavel=variavel_dict,
+                                normalidades=normalidades)
+    except Exception as e:
+        current_app.logger.error(f"Erro ao carregar normalidades: {str(e)}")
+        flash("Erro ao carregar normalidades.", "error")
+        return redirect(url_for('variaveis.visualizar_variaveis'))
+
+@variaveis_bp.route('/get_detalhes_completos/<int:codvariavel>')
+def get_detalhes_completos(codvariavel):
+    if 'usuario' not in session:
+        return jsonify({'error': 'Usuário não autenticado'}), 401
+
+    try:
+        with get_db() as (conn, cur):
+            # Buscar normalidades
+            cur.execute("""
+                SELECT 
+                    n.CODNORMALIDADE,
+                    n.SEXO,
+                    n.VALORMIN,
+                    n.VALORMAX,
+                    n.IDADE_MIN,
+                    n.IDADE_MAX,
+                    r.CODREFERENCIA,
+                    r.TITULO as ref_titulo,
+                    r.ANO as ref_ano,
+                    r.DESCRICAO as ref_descricao,
+                    LIST(a.NOME || ' (' || COALESCE(a.ABREVIACAO, '') || ')', ', ') as ref_autores
+                FROM NORMALIDADE n
+                LEFT JOIN REFERENCIA r ON n.CODREFERENCIA = r.CODREFERENCIA
+                LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
+                LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
+                WHERE n.CODVARIAVEL = ?
+                GROUP BY 
+                    n.CODNORMALIDADE,
+                    n.SEXO,
+                    n.VALORMIN,
+                    n.VALORMAX,
+                    n.IDADE_MIN,
+                    n.IDADE_MAX,
+                    r.CODREFERENCIA,
+                    r.TITULO,
+                    r.ANO,
+                    r.DESCRICAO
+                ORDER BY r.ANO DESC NULLS LAST, n.CODNORMALIDADE
+            """, (codvariavel,))
+            
+            normalidades = []
+            for row in cur.fetchall():
+                normalidade = {
+                    'codnormalidade': row[0],
+                    'sexo': row[1],
+                    'valormin': row[2],
+                    'valormax': row[3],
+                    'idade_min': row[4],
+                    'idade_max': row[5],
+                    'referencia': {
+                        'codreferencia': row[6],
+                        'titulo': row[7],
+                        'ano': row[8],
+                        'descricao': row[9],
+                        'autores': row[10]
+                    } if row[6] else None
+                }
+                normalidades.append(normalidade)
+
+            # Buscar equações
+            cur.execute("""
+                SELECT 
+                    el.CODEQUACAO,
+                    el.LINGUAGEM,
+                    el.EQUACAO,
+                    r.CODREFERENCIA,
+                    r.TITULO as ref_titulo,
+                    r.ANO as ref_ano,
+                    r.DESCRICAO as ref_descricao,
+                    LIST(a.NOME || ' (' || COALESCE(a.ABREVIACAO, '') || ')', ', ') as ref_autores
+                FROM FORMULA_VARIAVEL fv
+                JOIN FORMULAS f ON fv.CODFORMULA = f.CODFORMULA
+                JOIN EQUACOES_LINGUAGEM el ON f.CODFORMULA = el.CODFORMULA
+                LEFT JOIN REFERENCIA r ON el.CODREFERENCIA = r.CODREFERENCIA
+                LEFT JOIN REFERENCIA_AUTORES ra ON r.CODREFERENCIA = ra.CODREFERENCIA
+                LEFT JOIN AUTORES a ON ra.CODAUTOR = a.CODAUTOR
+                WHERE fv.CODVARIAVEL = ?
+                GROUP BY 
+                    el.CODEQUACAO,
+                    el.LINGUAGEM,
+                    el.EQUACAO,
+                    r.CODREFERENCIA,
+                    r.TITULO,
+                    r.ANO,
+                    r.DESCRICAO
+                ORDER BY r.ANO DESC NULLS LAST, el.CODEQUACAO
+            """, (codvariavel,))
+            
+            equacoes = []
+            for row in cur.fetchall():
+                equacao = {
+                    'codequacao': row[0],
+                    'linguagem': row[1],
+                    'equacao': row[2],
+                    'referencia': {
+                        'codreferencia': row[3],
+                        'titulo': row[4],
+                        'ano': row[5],
+                        'descricao': row[6],
+                        'autores': row[7]
+                    } if row[3] else None
+                }
+                equacoes.append(equacao)
+
+            return jsonify({
+                'normalidades': normalidades,
+                'equacoes': equacoes
+            })
+
+    except Exception as e:
+        current_app.logger.error(f"Erro ao buscar detalhes da variável {codvariavel}: {str(e)}")
+        return jsonify({'error': str(e)}), 500

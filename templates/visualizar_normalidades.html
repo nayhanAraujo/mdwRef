@@ -1,0 +1,201 @@
+{% extends 'layout.html' %}
+
+{% set content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold text-primary mb-0">
+    <i class="bi bi-graph-up me-2"></i> Normalidades da Variável: {{ variavel.nome }}
+  </h3>
+  <div class="text-muted small">
+    Usuário logado: <strong>{{ session['usuario']['nome'] }}</strong>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="mb-4">
+      <h5 class="text-primary mb-3">Informações da Variável</h5>
+      <div class="row">
+        <div class="col-md-6">
+          <p><strong>Nome:</strong> {{ variavel.nome }}</p>
+          <p><strong>Descrição:</strong> {{ variavel.descricao or 'N/A' }}</p>
+        </div>
+        <div class="col-md-6">
+          <p><strong>Unidade:</strong> {{ variavel.unidade or 'N/A' }}</p>
+          <p><strong>Especialidade:</strong> {{ variavel.especialidade or 'N/A' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="text-center" style="width: 5%">#</th>
+            <th class="text-start">Referência</th>
+            <th class="text-start">Autores</th>
+            <th class="text-center" style="width: 10%">Ano</th>
+            <th class="text-start">Normalidade</th>
+            <th class="text-center" style="width: 15%">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if normalidades %}
+            {% for normalidade in normalidades %}
+              <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td class="text-start">{{ normalidade.referencia.titulo }}</td>
+                <td class="text-start">{{ normalidade.referencia.autores or 'N/A' }}</td>
+                <td class="text-center">{{ normalidade.referencia.ano or '-' }}</td>
+                <td class="text-start">{{ normalidade.valor }}</td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button
+                      type="button"
+                      class="btn btn-outline-info preview-btn"
+                      data-bs-toggle="modal"
+                      data-bs-target="#referenciaModal"
+                      data-codreferencia="{{ normalidade.referencia.codigo }}"
+                      data-titulo="{{ normalidade.referencia.titulo }}"
+                      data-ano="{{ normalidade.referencia.ano or '-' }}"
+                      data-autores="{{ normalidade.referencia.autores or 'Nenhum autor' }}"
+                      data-descricao="{{ normalidade.referencia.descricao or '-' }}"
+                      data-especialidade="{{ normalidade.referencia.especialidade or '-' }}"
+                      title="Visualizar Detalhes da Referência"
+                    >
+                      <i class="bi bi-eye-fill"></i> Detalhes
+                    </button>
+                    <a
+                      href="{{ url_for('variaveis.editar_variavel', codvariavel=variavel.codigo) }}"
+                      class="btn btn-outline-secondary"
+                      title="Editar Normalidade"
+                    >
+                      <i class="bi bi-pencil-square"></i> Editar
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center text-muted fst-italic">
+                Nenhuma normalidade encontrada para esta variável.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 text-end">
+      <a href="{{ url_for('variaveis.visualizar_variaveis') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left-circle me-1"></i> Voltar para Variáveis
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalhes da Referência -->
+<div class="modal fade" id="referenciaModal" tabindex="-1" aria-labelledby="referenciaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="referenciaModalLabel">
+          <i class="bi bi-info-circle-fill me-2"></i>Detalhes da Referência
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Título:</strong> <span id="modal-titulo"></span></p>
+        <p><strong>Ano:</strong> <span id="modal-ano"></span></p>
+        <p><strong>Autores:</strong> <span id="modal-autores"></span></p>
+        <p><strong>Descrição:</strong> <span id="modal-descricao" class="preserve-newlines"></span></p>
+        <p><strong>Especialidade:</strong> <span id="modal-especialidade"></span></p>
+        <hr />
+        <h6 class="mt-3"><i class="bi bi-paperclip me-1"></i>Anexos Vinculados:</h6>
+        <div id="modal-anexos-container">
+          <ul id="modal-anexos-list" class="list-group list-group-flush">
+            <!-- Anexos serão carregados aqui pelo JavaScript -->
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .preserve-newlines {
+    white-space: pre-line;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const referenciaModal = document.getElementById("referenciaModal");
+    if (referenciaModal) {
+      referenciaModal.addEventListener("show.bs.modal", async function (event) {
+        const button = event.relatedTarget;
+        
+        document.getElementById("modal-titulo").textContent = button.dataset.titulo;
+        document.getElementById("modal-ano").textContent = button.dataset.ano;
+        document.getElementById("modal-autores").textContent = button.dataset.autores;
+        document.getElementById("modal-descricao").textContent = button.dataset.descricao;
+        document.getElementById("modal-especialidade").textContent = button.dataset.especialidade;
+
+        const anexosList = document.getElementById("modal-anexos-list");
+        anexosList.innerHTML = `
+          <li class="list-group-item text-center">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+            <span class="ms-2 text-muted small">Carregando anexos...</span>
+          </li>`;
+
+        try {
+          const response = await fetch(`/referencias/get_anexos/${button.dataset.codreferencia}`);
+          const data = await response.json();
+          anexosList.innerHTML = "";
+          
+          if (data.error) {
+            anexosList.innerHTML = `<li class="list-group-item text-danger">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>Erro ao carregar anexos: ${data.error}
+            </li>`;
+          } else if (data.length > 0) {
+            data.forEach((anexo) => {
+              const li = document.createElement("li");
+              li.className = "list-group-item d-flex justify-content-between align-items-center";
+              let anexoDisplayLink = '<span class="text-muted fst-italic">Link indisponível</span>';
+
+              if (anexo.caminho) {
+                if (anexo.tipo === "URL") {
+                  anexoDisplayLink = `<a href="${anexo.caminho}" target="_blank" class="anexo-link text-decoration-none">
+                    <i class="bi bi-link-45deg me-1"></i>Visualizar URL
+                  </a>`;
+                } else {
+                  anexoDisplayLink = `<a href="${anexo.caminho}" target="_blank" class="anexo-link text-decoration-none">
+                    <i class="bi bi-file-earmark-text-fill me-1"></i>Visualizar Arquivo
+                  </a>`;
+                }
+              }
+
+              li.innerHTML = `<span><i class="bi bi-paperclip me-2"></i>${anexo.descricao || "Anexo"} (${anexo.tipo || "N/D"})</span> ${anexoDisplayLink}`;
+              anexosList.appendChild(li);
+            });
+          } else {
+            anexosList.innerHTML = '<li class="list-group-item text-muted fst-italic">
+              <i class="bi bi-info-circle me-1"></i>Nenhum anexo disponível para esta referência.
+            </li>';
+          }
+        } catch (error) {
+          anexosList.innerHTML = '<li class="list-group-item text-danger">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>Erro de rede ao carregar anexos.
+          </li>';
+          console.error("Erro ao buscar anexos:", error);
+        }
+      });
+    }
+  });
+</script>
+{% endset %} 

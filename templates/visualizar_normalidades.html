@@ -46,7 +46,12 @@
                 <td class="text-start">{{ normalidade.referencia.titulo }}</td>
                 <td class="text-start">{{ normalidade.referencia.autores or 'N/A' }}</td>
                 <td class="text-center">{{ normalidade.referencia.ano or '-' }}</td>
-                <td class="text-start">{{ normalidade.valor }}</td>
+<td class="text-start">
+  <strong>Sexo:</strong> {{ normalidade.sexo or 'N/A' }},
+  <strong>Min:</strong> {{ normalidade.valormin if normalidade.valormin is not none else '-' }},
+  <strong>Max:</strong> {{ normalidade.valormax if normalidade.valormax is not none else '-' }}
+  <br><small class="text-muted">Idade: {{ normalidade.idade_min or 'N/A' }} - {{ normalidade.idade_max or 'N/A' }}</small>
+</td>
                 <td class="text-center">
                   <div class="btn-group btn-group-sm" role="group">
                     <button

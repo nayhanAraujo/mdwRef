@@ -22,9 +22,9 @@
     <div class="card-header bg-light py-3">
       <div class="d-flex justify-content-between align-items-center">
         <h5 class="mb-0 text-primary">Listagem de Modelos de Modo Texto</h5>
-        <a href="{{ url_for('modelos.novo_modelo') }}" class="btn btn-primary">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoModeloModal">
           <i class="bi bi-plus-circle-fill me-1"></i> Novo Modelo
-        </a>
+        </button>
       </div>
     </div>
     <div class="card-body">
@@ -164,6 +164,38 @@
   </div>
 </div>
 
+<!-- Modal Novo Modelo -->
+<div class="modal fade" id="novoModeloModal" tabindex="-1" aria-labelledby="novoModeloModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="novoModeloModalLabel">
+          <i class="bi bi-plus-circle-fill me-2 text-primary"></i>Novo Modelo
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formNovoModelo" method="POST" action="{{ url_for('modelos.novo_modelo') }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="nome" class="form-label">Nome do Modelo</label>
+            <input type="text" class="form-control" id="nome" name="nome" required 
+                   placeholder="Digite o nome do modelo" autocomplete="off">
+            <div class="invalid-feedback">O nome do modelo é obrigatório.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <style>
   /* Estilos do Page Header (se não estiverem globais) */
   .page-header .page-title {font-weight: 600; color: #343a40; font-size: 1.75rem;}
@@ -175,12 +207,77 @@
 document.addEventListener('DOMContentLoaded', function() {
   const swalMixin = Swal.mixin({
     customClass: {
-      confirmButton: 'btn btn-success mx-1', // Botão de confirmação verde
-      cancelButton: 'btn btn-danger mx-1'   // Botão de cancelar vermelho
+      confirmButton: 'btn btn-success mx-1',
+      cancelButton: 'btn btn-danger mx-1'
     },
     buttonsStyling: false,
     popup: 'swal2-zindex-high' 
   });
+
+  // Validação do formulário de novo modelo
+  const formNovoModelo = document.getElementById('formNovoModelo');
+  if (formNovoModelo) {
+    formNovoModelo.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const nomeInput = document.getElementById('nome');
+      const nome = nomeInput.value.trim();
+      
+      if (!nome) {
+        nomeInput.classList.add('is-invalid');
+        return;
+      }
+      
+      // Enviar o formulário via AJAX
+      fetch(formNovoModelo.action, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams(new FormData(formNovoModelo))
+      })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || `Erro ${response.status}`);
+        }
+        return data;
+      })
+      .then(data => {
+        if (data.success) {
+          swalMixin.fire({
+            title: 'Sucesso!',
+            text: data.message || 'Modelo criado com sucesso!',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            window.location.reload();
+          });
+        } else {
+          swalMixin.fire({
+            title: 'Erro!',
+            text: data.error || 'Erro ao criar modelo.',
+            icon: 'error'
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        swalMixin.fire({
+          title: 'Erro!',
+          text: error.message || 'Ocorreu um erro ao processar sua solicitação.',
+          icon: 'error'
+        });
+      });
+    });
+
+    // Limpar validação quando o input for alterado
+    document.getElementById('nome').addEventListener('input', function() {
+      this.classList.remove('is-invalid');
+    });
+  }
 
   function escapeJSString(unsafe) { // Função para escapar strings para uso em HTML/JS
     if (unsafe === null || typeof unsafe === 'undefined') return '';

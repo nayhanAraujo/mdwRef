@@ -8,30 +8,40 @@ modelos_bp = Blueprint('modelos', __name__)
 @modelos_bp.route('/novo_modelo', methods=['GET', 'POST'])
 def novo_modelo():
     if 'usuario' not in session:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'error': 'Usuário não autenticado'}), 401
         return redirect(url_for('auth.login'))
 
     current_app.logger.info(f"Conteúdo de session['usuario']: {session['usuario']}")
 
     if not isinstance(session['usuario'], dict) or 'codusuario' not in session['usuario']:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'error': 'Erro na sessão do usuário'}), 401
         flash("Erro na sessão do usuário. Por favor, faça login novamente.", "error")
         return redirect(url_for('auth.logout'))
 
     if request.method == 'POST':
-        nome = request.form['nome'].strip()
+        nome = request.form.get('nome', '').strip()
 
         if not nome:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': 'O nome do modelo é obrigatório'}), 400
             flash("O nome do modelo é obrigatório.", "error")
             return redirect(request.url)
 
         codusuario = session['usuario']['codusuario']
 
-        with get_db() as (conn, cur):
-            cur.execute("SELECT 1 FROM MODELO_MODO_TEXTO WHERE UPPER(NOME) = UPPER(?) AND CODUSUARIO = ?", (nome, codusuario))
-            if cur.fetchone():
-                flash("Já existe um modelo com esse nome.", "error")
-                return redirect(request.url)
+        try:
+            with get_db() as (conn, cur):
+                # Verificar se já existe um modelo com o mesmo nome
+                cur.execute("SELECT 1 FROM MODELO_MODO_TEXTO WHERE UPPER(NOME) = UPPER(?) AND CODUSUARIO = ?", (nome, codusuario))
+                if cur.fetchone():
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return jsonify({'success': False, 'error': 'Já existe um modelo com esse nome'}), 400
+                    flash("Já existe um modelo com esse nome.", "error")
+                    return redirect(request.url)
 
-            try:
+                # Inserir o novo modelo
                 cur.execute("""
                     INSERT INTO MODELO_MODO_TEXTO (NOME, CODUSUARIO)
                     VALUES (?, ?)
@@ -39,12 +49,23 @@ def novo_modelo():
                 """, (nome, codusuario))
                 codmodelo = cur.fetchone()[0]
                 conn.commit()
+
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({
+                        'success': True,
+                        'message': 'Modelo criado com sucesso!',
+                        'codmodelo': codmodelo
+                    })
+
                 flash("Modelo criado com sucesso!", "success")
                 return redirect(url_for('modelos.visualizar_modelos'))
-            except Exception as e:
-                conn.rollback()
-                flash(f"Erro ao criar modelo: {str(e)}", "error")
-                return redirect(request.url)
+
+        except Exception as e:
+            current_app.logger.error(f"Erro ao criar modelo: {str(e)}", exc_info=True)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': f'Erro ao criar modelo: {str(e)}'}), 500
+            flash(f"Erro ao criar modelo: {str(e)}", "error")
+            return redirect(request.url)
 
     return render_template('novo_modelo.html')
 

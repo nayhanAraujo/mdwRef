@@ -142,10 +142,10 @@ def create_app():
       
     ('Dashboards', 'variaveis.home', 'speedometer'),  # Painel → velocímetro
     ('Novo Script', 'scripts.novo_script', 'file-earmark-plus'),  # Novo → arquivo com +
-    ('Visualizar Scripts', 'scripts.visualizar_scripts', 'file-earmark-text'),  # Visualizar → arquivo com texto
+    ('Visualizar pacotes', 'scripts.visualizar_scripts', 'box-seam'),  # Visualizar → arquivo com texto
     #('Nova Seção', 'secoes.nova_secao', 'file-earmark-plus'),  # Seções → arquivo com +
     #('Visualizar Seções', 'secoes.visualizar_secoes', 'file-earmark-text'),  
-    ('Novo Modelo', 'modelos.novo_modelo', 'file-earmark-plus'),  # Novo modelo → arquivo com +
+    #('Novo Modo texto', 'modelos.novo_modelo', 'file-earmark-plus'),  # Novo modelo → arquivo com +
     ('Visualizar Modelos', 'modelos.visualizar_modelos', 'file-earmark-text'),  # Visualizar modelo → arquivo com texto
     ('Nova Variável', 'variaveis.nova_variavel', 'clipboard-plus'),  # Nova variável → clipboard +
     #('Nova Fórmula', 'formulas.nova_formula', 'calculator'),  # Fórmula → calculadora
@@ -162,7 +162,7 @@ def create_app():
 
     #('Códigos Universais', 'codigos_universais.visualizar_codigos_universais', 'qr-code-scan'),  
     ('Biblioteca', 'bibliotecas.biblioteca', 'bookshelf'),  # Biblioteca → prateleira de livros
-    ('Pacotes', 'pacotes.visualizar_pacotes', 'box-seam')
+    #('Pacotes', 'pacotes.visualizar_pacotes', 'box-seam')
     
 ]
 

@@ -1970,130 +1970,167 @@ def get_detalhes_completos(codvariavel):
 
 @variaveis_bp.route('/vincular_especialidades/<int:codvariavel>', methods=['GET'])
 def vincular_especialidades(codvariavel):
-    """Rota para exibir a página de vinculação de especialidades a uma variável."""
+    """Exibe a página de vínculo de especialidades a uma variável."""
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
     try:
-        # Busca os detalhes da variável
-        variavel = db.session.query(Variavel).filter_by(codvariavel=codvariavel).first_or_404()
-        
-        # Busca as especialidades já vinculadas
-        especialidades_vinculadas = db.session.query(
-            VARIAVEL_ESPECIALIDADE.c.codespecialidade,
-            Especialidade.nome.label('nome_especialidade'),
-            VARIAVEL_ESPECIALIDADE.c.descricao
-        ).join(
-            Especialidade,
-            Especialidade.codespecialidade == VARIAVEL_ESPECIALIDADE.c.codespecialidade
-        ).filter(
-            VARIAVEL_ESPECIALIDADE.c.codvariavel == codvariavel
-        ).all()
-        
-        # Busca as especialidades disponíveis (não vinculadas)
-        especialidades_disponiveis = db.session.query(Especialidade).filter(
-            ~Especialidade.codespecialidade.in_(
-                db.session.query(VARIAVEL_ESPECIALIDADE.c.codespecialidade)
-                .filter(VARIAVEL_ESPECIALIDADE.c.codvariavel == codvariavel)
+        with get_db() as (conn, cur):
+            # Detalhes da variável
+            cur.execute(
+                "SELECT CODVARIAVEL, NOME, DESCRICAO FROM VARIAVEIS WHERE CODVARIAVEL = ?",
+                (codvariavel,)
             )
-        ).all()
-        
-        return render_template('vincular_especialidades.html',
-                             variavel=variavel,
-                             especialidades_vinculadas=especialidades_vinculadas,
-                             especialidades_disponiveis=especialidades_disponiveis)
+            row = cur.fetchone()
+            if not row:
+                flash('Variável não encontrada.', 'error')
+                return redirect(url_for('variaveis.visualizar_variaveis'))
+            variavel = {
+                'codvariavel': row[0],
+                'nome': row[1],
+                'descricao': row[2],
+            }
+
+            # Especialidades vinculadas
+            cur.execute(
+                """
+                SELECT ve.CODESPECIALIDADE, e.NOME, ve.DESCRICAO
+                FROM VARIAVEL_ESPECIALIDADE ve
+                JOIN ESPECIALIDADE e ON ve.CODESPECIALIDADE = e.CODESPECIALIDADE
+                WHERE ve.CODVARIAVEL = ?
+                ORDER BY e.NOME
+                """,
+                (codvariavel,),
+            )
+            especialidades_vinculadas = [
+                {
+                    'codespecialidade': r[0],
+                    'nome_especialidade': r[1],
+                    'descricao': r[2],
+                }
+                for r in cur.fetchall()
+            ]
+
+            # Especialidades disponíveis para vínculo
+            cur.execute(
+                """
+                SELECT e.CODESPECIALIDADE, e.NOME
+                FROM ESPECIALIDADE e
+                WHERE e.CODESPECIALIDADE NOT IN (
+                    SELECT CODESPECIALIDADE FROM VARIAVEL_ESPECIALIDADE WHERE CODVARIAVEL = ?
+                )
+                ORDER BY e.NOME
+                """,
+                (codvariavel,),
+            )
+            especialidades_disponiveis = [
+                {'codespecialidade': r[0], 'nome': r[1]} for r in cur.fetchall()
+            ]
+
+        return render_template(
+            'vincular_especialidades.html',
+            variavel=variavel,
+            especialidades_vinculadas=especialidades_vinculadas,
+            especialidades_disponiveis=especialidades_disponiveis,
+        )
     except Exception as e:
-        flash(f'Erro ao carregar página: {str(e)}', 'danger')
+        current_app.logger.error(f"Erro ao carregar página de vínculo: {str(e)}")
+        flash('Erro ao carregar página.', 'danger')
         return redirect(url_for('variaveis.visualizar_variaveis'))
 
 @variaveis_bp.route('/vincular_especialidade/<int:codvariavel>', methods=['POST'])
 @admin_required
 def vincular_especialidade(codvariavel):
-    """Rota para vincular uma especialidade a uma variável."""
+    """Realiza o vínculo de uma especialidade à variável."""
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    codespecialidade = request.form.get('codespecialidade')
+    descricao = request.form.get('descricao')
+
+    if not codespecialidade:
+        flash('Selecione uma especialidade para vincular.', 'warning')
+        return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
+
+    codusuario = session['usuario']['codusuario']
+
     try:
-        codespecialidade = request.form.get('codespecialidade')
-        descricao = request.form.get('descricao')
-        
-        if not codespecialidade:
-            flash('Selecione uma especialidade para vincular.', 'warning')
-            return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
-        
-        # Verifica se o vínculo já existe
-        vinculo_existente = db.session.query(VARIAVEL_ESPECIALIDADE).filter_by(
-            codvariavel=codvariavel,
-            codespecialidade=codespecialidade
-        ).first()
-        
-        if vinculo_existente:
-            flash('Esta especialidade já está vinculada a esta variável.', 'warning')
-            return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
-        
-        # Insere o novo vínculo
-        db.session.execute(
-            VARIAVEL_ESPECIALIDADE.insert().values(
-                codvariavel=codvariavel,
-                codespecialidade=codespecialidade,
-                descricao=descricao,
-                codusuario=session['usuario']['codusuario'],
-                dthrultmodificacao=datetime.now()
+        with get_db() as (conn, cur):
+            cur.execute(
+                "SELECT 1 FROM VARIAVEL_ESPECIALIDADE WHERE CODVARIAVEL = ? AND CODESPECIALIDADE = ?",
+                (codvariavel, codespecialidade),
             )
-        )
-        db.session.commit()
-        
-        flash('Especialidade vinculada com sucesso!', 'success')
+            if cur.fetchone():
+                flash('Esta especialidade já está vinculada a esta variável.', 'warning')
+                return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
+
+            cur.execute(
+                """
+                INSERT INTO VARIAVEL_ESPECIALIDADE
+                    (CODVARIAVEL, CODESPECIALIDADE, DESCRICAO, CODUSUARIO, DTHRULTMODIFICACAO)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (codvariavel, codespecialidade, descricao, codusuario, datetime.now()),
+            )
+            conn.commit()
+            flash('Especialidade vinculada com sucesso!', 'success')
     except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao vincular especialidade: {str(e)}', 'danger')
-    
+        if 'conn' in locals():
+            conn.rollback()
+        current_app.logger.error(f"Erro ao vincular especialidade: {str(e)}")
+        flash('Erro ao vincular especialidade.', 'danger')
+
     return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
 
 @variaveis_bp.route('/editar_vinculo_especialidade/<int:codvariavel>/<int:codespecialidade>', methods=['POST'])
 @admin_required
 def editar_vinculo_especialidade(codvariavel, codespecialidade):
-    """Rota para editar a descrição do vínculo entre variável e especialidade."""
+    """Atualiza a descrição do vínculo entre variável e especialidade."""
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    descricao = request.form.get('descricao')
+    codusuario = session['usuario']['codusuario']
+
     try:
-        descricao = request.form.get('descricao')
-        
-        # Atualiza a descrição do vínculo
-        db.session.execute(
-            VARIAVEL_ESPECIALIDADE.update()
-            .where(
-                and_(
-                    VARIAVEL_ESPECIALIDADE.c.codvariavel == codvariavel,
-                    VARIAVEL_ESPECIALIDADE.c.codespecialidade == codespecialidade
-                )
+        with get_db() as (conn, cur):
+            cur.execute(
+                """
+                UPDATE VARIAVEL_ESPECIALIDADE
+                SET DESCRICAO = ?, CODUSUARIO = ?, DTHRULTMODIFICACAO = ?
+                WHERE CODVARIAVEL = ? AND CODESPECIALIDADE = ?
+                """,
+                (descricao, codusuario, datetime.now(), codvariavel, codespecialidade),
             )
-            .values(
-                descricao=descricao,
-                codusuario=session['usuario']['codusuario'],
-                dthrultmodificacao=datetime.now()
-            )
-        )
-        db.session.commit()
-        
-        flash('Vínculo atualizado com sucesso!', 'success')
+            conn.commit()
+            flash('Vínculo atualizado com sucesso!', 'success')
     except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao atualizar vínculo: {str(e)}', 'danger')
-    
+        if 'conn' in locals():
+            conn.rollback()
+        current_app.logger.error(f"Erro ao atualizar vínculo: {str(e)}")
+        flash('Erro ao atualizar vínculo.', 'danger')
+
     return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
 
 @variaveis_bp.route('/desvincular_especialidade/<int:codvariavel>/<int:codespecialidade>', methods=['POST'])
 @admin_required
 def desvincular_especialidade(codvariavel, codespecialidade):
-    """Rota para desvincular uma especialidade de uma variável."""
+    """Remove o vínculo entre a variável e a especialidade."""
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
     try:
-        # Remove o vínculo
-        db.session.execute(
-            VARIAVEL_ESPECIALIDADE.delete().where(
-                and_(
-                    VARIAVEL_ESPECIALIDADE.c.codvariavel == codvariavel,
-                    VARIAVEL_ESPECIALIDADE.c.codespecialidade == codespecialidade
-                )
+        with get_db() as (conn, cur):
+            cur.execute(
+                "DELETE FROM VARIAVEL_ESPECIALIDADE WHERE CODVARIAVEL = ? AND CODESPECIALIDADE = ?",
+                (codvariavel, codespecialidade),
             )
-        )
-        db.session.commit()
-        
-        flash('Especialidade desvinculada com sucesso!', 'success')
+            conn.commit()
+            flash('Especialidade desvinculada com sucesso!', 'success')
     except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao desvincular especialidade: {str(e)}', 'danger')
-    
+        if 'conn' in locals():
+            conn.rollback()
+        current_app.logger.error(f"Erro ao desvincular especialidade: {str(e)}")
+        flash('Erro ao desvincular especialidade.', 'danger')
+
     return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))

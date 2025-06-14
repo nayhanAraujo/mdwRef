@@ -1,10 +1,10 @@
 {% extends 'layout.html' %}
 
-{% block title %}Buscar Faixas de Normalidade{% endblock %}
+{% block title %}Buscar Fórmulas{% endblock %}
 
 {% set content %}
 <div class="container mt-4">
-    <h3 class="mb-4"><i class="bi bi-search me-2"></i>Busca de Faixas de Normalidade</h3>
+    <h3 class="mb-4"><i class="bi bi-calculator me-2"></i>Busca de Fórmulas</h3>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -19,7 +19,7 @@
 
     <div class="card shadow-sm">
         <div class="card-header">
-            <h5>Buscar Faixas de Normalidade</h5>
+            <h5>Buscar Fórmulas</h5>
         </div>
         <div class="card-body">
             <form id="searchForm">
@@ -32,8 +32,8 @@
                         {% endfor %}
                     </datalist>
                 </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search me-2"></i>Buscar Faixas de Normalidade
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-search me-2"></i>Buscar Fórmulas
                 </button>
             </form>
         </div>
@@ -41,14 +41,14 @@
 
     <div id="searchResults"></div>
 
-    {% if normalized_data %}
+    {% if formulas_data %}
     <div class="card shadow-sm mt-4">
         <div class="card-header">
-            <h5>Faixas de Normalidade Encontradas para {{ measure_name }}</h5>
+            <h5>Fórmulas Encontradas para {{ measure_name }}</h5>
         </div>
         <div class="card-body">
             <div class="list-group">
-                {% for study in normalized_data %}
+                {% for study in formulas_data %}
                 <div class="list-group-item mb-3">
                     <h5>{{ study.title }}</h5>
                     <p class="mb-1">
@@ -60,25 +60,40 @@
                     </p>
                     
                     <div class="mt-2">
-                        <h6>Valores de Referência:</h6>
+                        <h6>Fórmulas Encontradas:</h6>
                         <ul class="list-group list-group-flush">
-                            {% for range in study.reference_ranges %}
+                            {% for formula in study.formulas %}
                             <li class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <strong>{{ range.nome_medida }}:</strong>
-                                        {{ range.valor_min|default('N/A') }} a {{ range.valor_max|default('N/A') }} {{ range.unidade_medida }}
-                                        {% if range.condicao_adicional %}({{ range.condicao_adicional }}){% endif %}
-                                        <br>
-                                        <small class="text-muted">Fonte: {{ range.texto_original_relevante[:150] }}...</small>
+                                        <strong>Fórmula:</strong>
+                                        <div class="formula-display my-2">
+                                            {{ formula.expressao }}
+                                        </div>
+                                        <div class="mt-2">
+                                            <strong>Variáveis:</strong>
+                                            <ul class="list-unstyled">
+                                                {% for var in formula.variaveis %}
+                                                <li>
+                                                    <i class="bi bi-arrow-right"></i>
+                                                    {{ var.nome }}: {{ var.descricao }}
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% if formula.condicao_adicional %}
+                                        <div class="mt-2">
+                                            <strong>Condições de Aplicação:</strong>
+                                            <p class="mb-0">{{ formula.condicao_adicional }}</p>
+                                        </div>
+                                        {% endif %}
+                                        <small class="text-muted">Fonte: {{ formula.texto_original_relevante[:150] }}...</small>
                                     </div>
-                                    <button class="btn btn-sm btn-success add-normalidade" 
-                                            data-nome-medida="{{ range.nome_medida }}"
-                                            data-valor-min="{{ range.valor_min }}"
-                                            data-valor-max="{{ range.valor_max }}"
-                                            data-unidade="{{ range.unidade_medida }}"
-                                            data-condicao="{{ range.condicao_adicional }}"
-                                            data-fonte="{{ range.texto_original_relevante }}"
+                                    <button class="btn btn-sm btn-success add-formula" 
+                                            data-expressao="{{ formula.expressao }}"
+                                            data-variaveis="{{ formula.variaveis|tojson }}"
+                                            data-condicao="{{ formula.condicao_adicional }}"
+                                            data-fonte="{{ formula.texto_original_relevante }}"
                                             data-pmid="{{ study.pmid }}">
                                         <i class="bi bi-plus-circle"></i> Adicionar
                                     </button>
@@ -114,7 +129,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     try {
         resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Carregando...</span></div></div>';
         
-        const response = await fetch('/agente/buscar-faixas-normalidade', {
+        const response = await fetch('/agente/buscar-formulas', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -125,7 +140,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         const data = await response.json();
         
         if (!response.ok) {
-            throw new Error(data.error || 'Erro ao buscar faixas de normalidade');
+            throw new Error(data.error || 'Erro ao buscar fórmulas');
         }
         
         if (data.message) {
@@ -154,30 +169,45 @@ document.getElementById('searchForm').addEventListener('submit', async function(
                                 <p class="card-text">${article.abstract}</p>
                             </div>`;
             
-            if (article.reference_ranges && article.reference_ranges.length > 0) {
+            if (article.formulas && article.formulas.length > 0) {
                 html += `
                     <div class="mt-3">
-                        <h6>Faixas de Normalidade Encontradas:</h6>
+                        <h6>Fórmulas Encontradas:</h6>
                         <ul class="list-group list-group-flush">`;
                 
-                article.reference_ranges.forEach(range => {
+                article.formulas.forEach(formula => {
                     html += `
                         <li class="list-group-item">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <strong>${range.nome_medida}:</strong><br>
-                                    ${range.valor_min !== null ? range.valor_min : '<'} a ${range.valor_max !== null ? range.valor_max : '>'} ${range.unidade_medida}
-                                    ${range.condicao_adicional ? `<br><small>(${range.condicao_adicional})</small>` : ''}
-                                    <br>
-                                    <small class="text-muted">${range.texto_original_relevante}</small>
+                                    <strong>Fórmula:</strong>
+                                    <div class="formula-display my-2">
+                                        ${formula.expressao}
+                                    </div>
+                                    <div class="mt-2">
+                                        <strong>Variáveis:</strong>
+                                        <ul class="list-unstyled">
+                                            ${formula.variaveis.map(var => `
+                                                <li>
+                                                    <i class="bi bi-arrow-right"></i>
+                                                    ${var.nome}: ${var.descricao}
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                    ${formula.condicao_adicional ? `
+                                        <div class="mt-2">
+                                            <strong>Condições de Aplicação:</strong>
+                                            <p class="mb-0">${formula.condicao_adicional}</p>
+                                        </div>
+                                    ` : ''}
+                                    <small class="text-muted">${formula.texto_original_relevante}</small>
                                 </div>
-                                <button class="btn btn-sm btn-success add-normalidade" 
-                                        data-nome-medida="${range.nome_medida}"
-                                        data-valor-min="${range.valor_min}"
-                                        data-valor-max="${range.valor_max}"
-                                        data-unidade="${range.unidade_medida}"
-                                        data-condicao="${range.condicao_adicional}"
-                                        data-fonte="${range.texto_original_relevante}"
+                                <button class="btn btn-sm btn-success add-formula" 
+                                        data-expressao="${formula.expressao}"
+                                        data-variaveis='${JSON.stringify(formula.variaveis)}'
+                                        data-condicao="${formula.condicao_adicional}"
+                                        data-fonte="${formula.texto_original_relevante}"
                                         data-pmid="${article.pmid}">
                                     <i class="bi bi-plus-circle"></i> Adicionar
                                 </button>
@@ -194,14 +224,12 @@ document.getElementById('searchForm').addEventListener('submit', async function(
         html += '</div>';
         resultsDiv.innerHTML = html;
         
-        // Adiciona event listeners para os botões de adicionar normalidade
-        document.querySelectorAll('.add-normalidade').forEach(button => {
+        // Adiciona event listeners para os botões de adicionar fórmula
+        document.querySelectorAll('.add-formula').forEach(button => {
             button.addEventListener('click', async function() {
                 const data = {
-                    nome_medida: this.dataset.nomeMedida,
-                    valor_min: this.dataset.valorMin,
-                    valor_max: this.dataset.valorMax,
-                    unidade: this.dataset.unidade,
+                    expressao: this.dataset.expressao,
+                    variaveis: JSON.parse(this.dataset.variaveis),
                     condicao: this.dataset.condicao,
                     fonte: this.dataset.fonte,
                     pmid: this.dataset.pmid,
@@ -212,7 +240,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
                 };
                 
                 try {
-                    const response = await fetch('/agente/adicionar-normalidade', {
+                    const response = await fetch('/agente/adicionar-formula', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -223,11 +251,11 @@ document.getElementById('searchForm').addEventListener('submit', async function(
                     const result = await response.json();
                     
                     if (response.ok) {
-                        alert('Valor de normalidade adicionado com sucesso!');
+                        alert('Fórmula adicionada com sucesso!');
                         this.disabled = true;
                         this.innerHTML = '<i class="bi bi-check-circle"></i> Adicionado';
                     } else {
-                        throw new Error(result.error || 'Erro ao adicionar valor de normalidade');
+                        throw new Error(result.error || 'Erro ao adicionar fórmula');
                     }
                 } catch (error) {
                     alert(error.message);
@@ -240,4 +268,15 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     }
 });
 </script>
-{% endset %}
+
+<style>
+.formula-display {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 1.2em;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    text-align: center;
+}
+</style>
+{% endset %} 

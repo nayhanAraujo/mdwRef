@@ -1,0 +1,129 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard de Agentes{% endblock %}
+
+{% set content %}
+<div class="container mt-4">
+    <h3 class="mb-4"><i class="bi bi-robot me-2"></i>Dashboard de Agentes</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Agente de Normalidade -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-search me-2"></i>Agente de Faixas de Normalidade
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Este agente busca e extrai automaticamente faixas de normalidade para medidas específicas a partir de artigos científicos.
+                    </p>
+                    <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Busca em artigos científicos
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Extrai valores de referência
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Identifica condições específicas
+                        </li>
+                    </ul>
+                    <a href="{{ url_for('agente_referencias.processar_documento') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Acessar Agente
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agente de Fórmulas -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calculator me-2"></i>Agente de Fórmulas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Este agente busca e extrai fórmulas matemáticas para o cálculo de medidas específicas a partir de artigos científicos.
+                    </p>
+                    <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Identifica fórmulas matemáticas
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Extrai variáveis e parâmetros
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Valida a aplicabilidade
+                        </li>
+                    </ul>
+                    <a href="{{ url_for('agente_referencias.processar_formulas') }}" class="btn btn-success">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Acessar Agente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas dos Agentes -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Estatísticas dos Agentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="text-primary">{{ total_normalidades }}</h3>
+                                    <p class="text-muted mb-0">Faixas de Normalidade Extraídas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="text-success">{{ total_formulas }}</h3>
+                                    <p class="text-muted mb-0">Fórmulas Extraídas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="text-info">{{ total_artigos }}</h3>
+                                    <p class="text-muted mb-0">Artigos Processados</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endset %} 

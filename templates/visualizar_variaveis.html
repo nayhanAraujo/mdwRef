@@ -81,9 +81,13 @@
         <span class="me-3 mb-1"
           ><i class="bi bi-paperclip text-dark"></i> Vincular Anexo</span
         >
+
         <span class="me-3 mb-1"
           ><i class="bi bi-pencil-square text-primary"></i> Editar</span
         >
+        <span class="me-3 mb-1"
+          ><i class="bi bi-graph-up text-success"></i> Visualizar Normalidades</span>
+
         <span class="me-3 mb-1"
           ><i class="bi bi-search-heart text-info"></i> Detalhes</span
         >
@@ -95,7 +99,11 @@
         >
         <span class="me-3 mb-1"
           ><i class="bi bi-qr-code-scan text-info"></i> Ver Códigos DICOM</span
-        >
+        
+       >
+       <span class="me-3 mb-1"
+          ><i class="bi bi-link-45deg text-primary"></i> Vincular Especialidades</span>
+
         <span class="me-3 mb-1"
           ><i class="bi bi-trash text-danger"></i> Excluir</span
         >
@@ -242,7 +250,7 @@
                   class="btn btn-outline-primary"
                   title="Visualizar Normalidades"
                 >
-                  <i class="bi bi-graph-up"></i> Normalidades
+                  <i class="bi bi-graph-up"></i> 
                 </a>
                 <button
                   type="button"
@@ -287,6 +295,13 @@
                 >
                   <i class="bi bi-qr-code-scan"></i>
                 </button>
+                <a
+                  href="{{ url_for('variaveis.vincular_especialidades', codvariavel=detalhe.variavel[0]) }}"
+                  class="btn btn-outline-primary"
+                  title="Vincular Especialidades"
+                >
+                  <i class="bi bi-link-45deg"></i> 
+                </a>
                 <form
                   action="{{ url_for('variaveis.excluir_variavel', codvariavel=detalhe.variavel[0]) }}"
                   method="POST"

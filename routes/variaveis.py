@@ -1967,3 +1967,133 @@ def get_detalhes_completos(codvariavel):
     except Exception as e:
         current_app.logger.error(f"Erro ao buscar detalhes da variável {codvariavel}: {str(e)}")
         return jsonify({'error': 'Erro ao buscar detalhes da variável'}), 500
+
+@variaveis_bp.route('/vincular_especialidades/<int:codvariavel>', methods=['GET'])
+def vincular_especialidades(codvariavel):
+    """Rota para exibir a página de vinculação de especialidades a uma variável."""
+    try:
+        # Busca os detalhes da variável
+        variavel = db.session.query(Variavel).filter_by(codvariavel=codvariavel).first_or_404()
+        
+        # Busca as especialidades já vinculadas
+        especialidades_vinculadas = db.session.query(
+            VARIAVEL_ESPECIALIDADE.c.codespecialidade,
+            Especialidade.nome.label('nome_especialidade'),
+            VARIAVEL_ESPECIALIDADE.c.descricao
+        ).join(
+            Especialidade,
+            Especialidade.codespecialidade == VARIAVEL_ESPECIALIDADE.c.codespecialidade
+        ).filter(
+            VARIAVEL_ESPECIALIDADE.c.codvariavel == codvariavel
+        ).all()
+        
+        # Busca as especialidades disponíveis (não vinculadas)
+        especialidades_disponiveis = db.session.query(Especialidade).filter(
+            ~Especialidade.codespecialidade.in_(
+                db.session.query(VARIAVEL_ESPECIALIDADE.c.codespecialidade)
+                .filter(VARIAVEL_ESPECIALIDADE.c.codvariavel == codvariavel)
+            )
+        ).all()
+        
+        return render_template('vincular_especialidades.html',
+                             variavel=variavel,
+                             especialidades_vinculadas=especialidades_vinculadas,
+                             especialidades_disponiveis=especialidades_disponiveis)
+    except Exception as e:
+        flash(f'Erro ao carregar página: {str(e)}', 'danger')
+        return redirect(url_for('variaveis.visualizar_variaveis'))
+
+@variaveis_bp.route('/vincular_especialidade/<int:codvariavel>', methods=['POST'])
+@admin_required
+def vincular_especialidade(codvariavel):
+    """Rota para vincular uma especialidade a uma variável."""
+    try:
+        codespecialidade = request.form.get('codespecialidade')
+        descricao = request.form.get('descricao')
+        
+        if not codespecialidade:
+            flash('Selecione uma especialidade para vincular.', 'warning')
+            return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
+        
+        # Verifica se o vínculo já existe
+        vinculo_existente = db.session.query(VARIAVEL_ESPECIALIDADE).filter_by(
+            codvariavel=codvariavel,
+            codespecialidade=codespecialidade
+        ).first()
+        
+        if vinculo_existente:
+            flash('Esta especialidade já está vinculada a esta variável.', 'warning')
+            return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
+        
+        # Insere o novo vínculo
+        db.session.execute(
+            VARIAVEL_ESPECIALIDADE.insert().values(
+                codvariavel=codvariavel,
+                codespecialidade=codespecialidade,
+                descricao=descricao,
+                codusuario=session['usuario']['codusuario'],
+                dthrultmodificacao=datetime.now()
+            )
+        )
+        db.session.commit()
+        
+        flash('Especialidade vinculada com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao vincular especialidade: {str(e)}', 'danger')
+    
+    return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
+
+@variaveis_bp.route('/editar_vinculo_especialidade/<int:codvariavel>/<int:codespecialidade>', methods=['POST'])
+@admin_required
+def editar_vinculo_especialidade(codvariavel, codespecialidade):
+    """Rota para editar a descrição do vínculo entre variável e especialidade."""
+    try:
+        descricao = request.form.get('descricao')
+        
+        # Atualiza a descrição do vínculo
+        db.session.execute(
+            VARIAVEL_ESPECIALIDADE.update()
+            .where(
+                and_(
+                    VARIAVEL_ESPECIALIDADE.c.codvariavel == codvariavel,
+                    VARIAVEL_ESPECIALIDADE.c.codespecialidade == codespecialidade
+                )
+            )
+            .values(
+                descricao=descricao,
+                codusuario=session['usuario']['codusuario'],
+                dthrultmodificacao=datetime.now()
+            )
+        )
+        db.session.commit()
+        
+        flash('Vínculo atualizado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao atualizar vínculo: {str(e)}', 'danger')
+    
+    return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
+
+@variaveis_bp.route('/desvincular_especialidade/<int:codvariavel>/<int:codespecialidade>', methods=['POST'])
+@admin_required
+def desvincular_especialidade(codvariavel, codespecialidade):
+    """Rota para desvincular uma especialidade de uma variável."""
+    try:
+        # Remove o vínculo
+        db.session.execute(
+            VARIAVEL_ESPECIALIDADE.delete().where(
+                and_(
+                    VARIAVEL_ESPECIALIDADE.c.codvariavel == codvariavel,
+                    VARIAVEL_ESPECIALIDADE.c.codespecialidade == codespecialidade
+                )
+            )
+        )
+        db.session.commit()
+        
+        flash('Especialidade desvinculada com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao desvincular especialidade: {str(e)}', 'danger')
+    
+    return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))

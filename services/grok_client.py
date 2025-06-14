@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 GROK_API_URL = "https://api.x.ai/v1/chat/completions" 
 
 def get_reference_ranges_from_grok(text_content):
-    api_key = "xai-IwhlDBCTsCK4px3l0ABoBSYliZB359syDOgZDEX4aa33g39zb9aTUotpmVwHKBLv9nnd4ajXXSDvAtW0"
+    api_key = "xai-ImHSuNwvu1OyXNplrIcAdRNSnidIwgUGZygTpNrgcs6zAqMneYrUlzTJuQKrIhQTvrN3EwnnUCJmux0x"
     if not api_key:
         logger.error("GROK_API_KEY não configurada.")
         return None

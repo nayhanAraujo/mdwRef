@@ -158,7 +158,7 @@ def create_app():
     #('Visualizar Especialidades', 'especialidades.visualizar_especialidades', 'briefcase'),  # Profissões → maleta
     #('Visualizar Linguagens', 'linguagens.visualizar_linguagens', 'translate'),  # Linguagens → ícone de tradução
     ('Gerenciar Classificações', 'variaveis.gerenciar_grupos_classificacoes', 'tags-fill'),  # Classificações → tags
-    ('Agentes', 'agente_referencias.processar_documento', 'robot'), # Ícone 'robot' ou outro de sua preferência
+    ('Agentes', 'agente_referencias.dashboard', 'robot'), # Ícone 'robot' ou outro de sua preferência
 
     #('Códigos Universais', 'codigos_universais.visualizar_codigos_universais', 'qr-code-scan'),  
     ('Biblioteca', 'bibliotecas.biblioteca', 'bookshelf'),  # Biblioteca → prateleira de livros

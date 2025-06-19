@@ -149,7 +149,6 @@
         <p class="module-desc">Ajuste unidades de medida, especialidades e tipos de linguagem.</p>
         <div class="mt-auto module-actions">
           <a href="{{ url_for('unidades.visualizar_unidades') }}" class="module-action">Unidades</a>
-          <a href="{{ url_for('especialidades.visualizar_especialidades') }}" class="module-action">Especialidades</a>
           <a href="{{ url_for('linguagens.visualizar_linguagens') }}" class="module-action">Linguagens</a>
         </div>
       </div>
@@ -196,11 +195,28 @@
     <div class="col-md-6 col-lg-4">
       <div class="module-card">
         <div class="module-icon bg-purple" style="background-color: #22c2b4 ;"> <i class="bi bi-robot"></i> </div>
-        <h5 class="module-title">Agente de Extração de Referências</h5>
+        <h5 class="module-title">Agentes</h5>
         <p class="module-desc">Utilize IA para extrair faixas de normalidade de documentos acadêmicos e atualizar o banco de dados.</p>
         <div class="module-actions">
           <a href="{{ url_for('agente_referencias.processar_documento') }}" class="module-action">Processar Documento</a>
           </div>
+      </div>
+    </div>
+
+    <!-- Módulo de Especialidades -->
+    <div class="col-md-6 col-lg-4">
+      <div class="module-card">
+        <div class="module-icon" style="background-color: #0d6efd;"> <i class="bi bi-link-45deg"></i> </div>
+        <h5 class="module-title">Especialidades</h5>
+        <p class="module-desc">Gerencie especialidades médicas e vincule-as às variáveis do sistema.</p>
+        <div class="mt-auto module-actions">
+          <a href="{{ url_for('especialidades.visualizar_especialidades') }}" class="module-action">
+            <i class="bi bi-list-ul me-1"></i> Listar Especialidades
+          </a>
+          <a href="{{ url_for('variaveis.vincular_especialidades_em_lote') }}" class="module-action">
+            <i class="bi bi-check2-all me-1"></i> Vincular às variáveis
+          </a>
+        </div>
       </div>
     </div>
 

@@ -1,0 +1,322 @@
+{% extends 'layout.html' %}
+
+{% block title %}Vincular Especialidades em Lote{% endblock %}
+
+{% set content %}
+<div class="page-header mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="page-title mb-0">
+        <i class="bi bi-link-45deg me-2 icon-gradient"></i> Vincular Especialidade 
+      </h2>
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-person-circle me-1"></i> Usuário: <strong>{{ session['usuario']['nome']|e }}</strong>
+    </div>
+  </div>
+  <hr class="mt-2 mb-0 page-header-divider">
+</div>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light py-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-primary">Vincular Variáveis a uma Especialidade</h5>
+          </div>
+        </div>
+        <div class="card-body">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          <form method="POST" action="{{ url_for('variaveis.vincular_especialidades_em_lote') }}" class="needs-validation mb-4" novalidate>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="especialidade" class="form-label">Especialidade <span class="text-danger">*</span></label>
+                  <select class="form-select" id="especialidade" name="codespecialidade" required>
+                    <option value="">Selecione uma especialidade...</option>
+                    {% for esp in especialidades %}
+                      <option value="{{ esp.codespecialidade }}">{{ esp.nome }}</option>
+                    {% endfor %}
+                  </select>
+                  <div class="invalid-feedback">Por favor, selecione uma especialidade.</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="descricao" class="form-label">Descrição do Vínculo</label>
+                  <textarea class="form-control" id="descricao" name="descricao" rows="3" placeholder="Descreva a relação entre as variáveis e a especialidade..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAll">
+                  <i class="bi bi-check-all me-1"></i> Selecionar Todas
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAll">
+                  <i class="bi bi-x-lg me-1"></i> Desmarcar Todas
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 50px;">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
+                      </div>
+                    </th>
+                    <th>Código</th>
+                    <th>Nome Clínico</th>
+                    <th>Variável</th>
+                    <th>Grupo</th>
+                    <th>Especialidades Atuais</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for var in variaveis %}
+                  <tr class="variavel-row">
+                    <td>
+                      <div class="form-check">
+                        <input class="form-check-input variavel-checkbox" type="checkbox" 
+                               name="variaveis[]" value="{{ var.codvariavel }}">
+                      </div>
+                    </td>
+                    <td>{{ var.codvariavel }}</td>
+                    <td>{{ var.nome }}</td>
+                    <td><code>{{ var.codigo }}</code></td>
+                    <td>{{ var.grupo or '-' }}</td>
+                    <td>
+                      {% if var.especialidades %}
+                        <ul class="list-unstyled mb-0">
+                          {% for esp in var.especialidades %}
+                            <li>
+                              <small>
+                                <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                {{ esp.nome }}
+                                {% if esp.descricao %}
+                                  <br><span class="text-muted ms-3">{{ esp.descricao }}</span>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('variaveis.desvincular_especialidade', codvariavel=var.codvariavel, codespecialidade=esp.codespecialidade) }}" class="d-inline ms-2" onsubmit="return confirmarDesvinculacao(event)">
+                                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-x-circle"></i>
+                                  </button>
+                                </form>
+                              </small>
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      {% else %}
+                        <span class="text-muted fst-italic">Nenhuma especialidade vinculada</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <div class="text-muted small">
+                <span id="selectedCount">0</span> variável(is) selecionada(s)
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save-fill me-1"></i> Salvar Vínculos
+              </button>
+            </div>
+          </form>
+
+          <div class="d-flex justify-content-end align-items-center mb-3">
+            <form method="GET" action="{{ url_for('variaveis.vincular_especialidades_em_lote') }}" class="d-flex gap-2">
+              <div class="input-group" style="max-width: 300px;">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" name="search" placeholder="Buscar variáveis..." 
+                       value="{{ search_term or '' }}">
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+              {% if search_term %}
+                <a href="{{ url_for('variaveis.vincular_especialidades_em_lote') }}" class="btn btn-outline-secondary">
+                  <i class="bi bi-x-lg"></i> Limpar
+                </a>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if total_paginas > 1 %}
+<nav aria-label="Paginação de Variáveis" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if pagina_atual > 1 %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for('variaveis.vincular_especialidades_em_lote', page=pagina_atual-1, search=search_term) }}">
+        <i class="bi bi-chevron-left"></i> Anterior
+      </a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+      <span class="page-link">
+        <i class="bi bi-chevron-left"></i> Anterior
+      </span>
+    </li>
+    {% endif %}
+
+    {% set delta = 2 %}
+    {% set left = pagina_atual - delta %}
+    {% set right = pagina_atual + delta + 1 %}
+    {% set range_ = [] %}
+    {% set range_with_dots = [] %}
+    {% set l = 0 %}
+
+    {% for i in range(1, total_paginas + 1) %}
+      {% if i == 1 or i == total_paginas or (i >= left and i < right) %}
+        {% if range_.append(i) %}{% endif %}
+      {% endif %}
+    {% endfor %}
+
+    {% for i in range_ %}
+      {% if l %}
+        {% if i - l == 2 %}
+          {% if range_with_dots.append(l + 1) %}{% endif %}
+        {% elif i - l != 1 %}
+          {% if range_with_dots.append('...') %}{% endif %}
+        {% endif %}
+      {% endif %}
+      {% if range_with_dots.append(i) %}{% endif %}
+      {% set l = i %}
+    {% endfor %}
+
+    {% for i in range_with_dots %}
+      {% if i == '...' %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+      {% elif i == pagina_atual %}
+        <li class="page-item active" aria-current="page">
+          <span class="page-link">{{ i }}</span>
+        </li>
+      {% else %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('variaveis.vincular_especialidades_em_lote', page=i, search=search_term) }}">{{ i }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+
+    {% if pagina_atual < total_paginas %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for('variaveis.vincular_especialidades_em_lote', page=pagina_atual+1, search=search_term) }}">
+        Próxima <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+      <span class="page-link">
+        Próxima <i class="bi bi-chevron-right"></i>
+      </span>
+    </li>
+    {% endif %}
+  </ul>
+  <p class="text-center text-muted small mt-2">
+    Página {{ pagina_atual }} de {{ total_paginas }} (Total de {{ total_variaveis }} variáveis)
+    {% if search_term %}
+      <br>Resultados para: "{{ search_term }}"
+    {% endif %}
+  </p>
+</nav>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Selecionar/Deselecionar todas as variáveis
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  const selectAllBtn = document.getElementById('selectAll');
+  const deselectAllBtn = document.getElementById('deselectAll');
+  const checkboxes = document.querySelectorAll('.variavel-checkbox');
+  const selectedCount = document.getElementById('selectedCount');
+
+  function updateSelectedCount() {
+    const count = document.querySelectorAll('.variavel-checkbox:checked').length;
+    selectedCount.textContent = count;
+  }
+
+  selectAllCheckbox.addEventListener('change', function() {
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = this.checked;
+    });
+    updateSelectedCount();
+  });
+
+  selectAllBtn.addEventListener('click', function() {
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = true;
+    });
+    selectAllCheckbox.checked = true;
+    updateSelectedCount();
+  });
+
+  deselectAllBtn.addEventListener('click', function() {
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+    selectAllCheckbox.checked = false;
+    updateSelectedCount();
+  });
+
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      updateSelectedCount();
+      // Atualiza o estado do checkbox "Selecionar Todos"
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      selectAllCheckbox.checked = allChecked;
+    });
+  });
+
+  // Validação do formulário apenas no envio
+  const form = document.querySelector('form[method="POST"]');
+  form.addEventListener('submit', function(event) {
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    form.classList.add('was-validated');
+  });
+});
+
+function confirmarDesvinculacao(event) {
+  event.preventDefault();
+  const form = event.target;
+  
+  Swal.fire({
+    title: 'Confirmar Desvinculação',
+    text: 'Tem certeza que deseja desvincular esta especialidade?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Sim, desvincular',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      form.submit();
+    }
+  });
+  
+  return false;
+}
+</script>
+{% endset %}

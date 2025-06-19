@@ -1688,6 +1688,7 @@ def editar_grupo(codgrupo):
             conn.rollback()
             return jsonify({'success': False, 'message': f'Erro ao atualizar grupo: {str(e)}'})
 
+
 @variaveis_bp.route('/excluir_grupo/<int:codgrupo>')
 def excluir_grupo(codgrupo):
     if 'usuario' not in session:
@@ -2134,3 +2135,134 @@ def desvincular_especialidade(codvariavel, codespecialidade):
         flash('Erro ao desvincular especialidade.', 'danger')
 
     return redirect(url_for('variaveis.vincular_especialidades', codvariavel=codvariavel))
+
+@variaveis_bp.route('/vincular_especialidades_em_lote', methods=['GET', 'POST'])
+@admin_required
+def vincular_especialidades_em_lote():
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        codespecialidade = request.form.get('codespecialidade')
+        descricao = request.form.get('descricao')
+        variaveis_ids = request.form.getlist('variaveis[]')
+
+        if not codespecialidade or not variaveis_ids:
+            flash('Por favor, selecione uma especialidade e pelo menos uma variável.', 'warning')
+            return redirect(url_for('variaveis.vincular_especialidades_em_lote'))
+
+        try:
+            with get_db() as (conn, cur):
+                cur.execute("""
+                    DELETE FROM VARIAVEL_ESPECIALIDADE 
+                    WHERE CODESPECIALIDADE = ? AND CODVARIAVEL IN ({})
+                """.format(','.join(['?'] * len(variaveis_ids))), [codespecialidade] + variaveis_ids)
+
+                codusuario = session['usuario']['codusuario']
+                for codvariavel in variaveis_ids:
+                    cur.execute("""
+                        INSERT INTO VARIAVEL_ESPECIALIDADE 
+                        (CODVARIAVEL, CODESPECIALIDADE, DESCRICAO, CODUSUARIO, DTHRULTMODIFICACAO)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (codvariavel, codespecialidade, descricao, codusuario, datetime.now()))
+
+                conn.commit()
+                flash(f'Vínculos criados com sucesso para {len(variaveis_ids)} variável(is)!', 'success')
+                return redirect(url_for('variaveis.visualizar_variaveis'))
+
+        except Exception as e:
+            current_app.logger.error(f"Erro ao criar vínculos: {str(e)}")
+            flash(f'Erro ao criar vínculos: {str(e)}', 'danger')
+            return redirect(url_for('variaveis.vincular_especialidades_em_lote'))
+
+    # GET request - mostrar o formulário
+    try:
+        page = int(request.args.get('page', 1))
+        search_term = request.args.get('search', '').strip()
+        per_page = 10
+        offset = (page - 1) * per_page
+
+        with get_db() as (conn, cur):
+            cur.execute("""
+                SELECT CODESPECIALIDADE, NOME 
+                FROM ESPECIALIDADE 
+                ORDER BY NOME
+            """)
+            especialidades_raw = cur.fetchall()
+            especialidades = [{'codespecialidade': e[0], 'nome': e[1]} for e in especialidades_raw]
+
+            # Query base para contar total de variáveis
+            count_query = "SELECT COUNT(*) FROM VARIAVEIS v"
+            # Query base para buscar variáveis
+            select_query = """
+                SELECT 
+                    v.CODVARIAVEL,
+                    v.NOME,
+                    v.VARIAVEL as codigo,
+                    g.NOME as grupo,
+                    LIST(e.CODESPECIALIDADE, ',') as codespecialidades,
+                    LIST(e.NOME, ',') as especialidades,
+                    LIST(ve.DESCRICAO, ',') as descricoes_especialidades
+                FROM VARIAVEIS v
+                LEFT JOIN GRUPOS_CLASSIFICACOES g ON v.CODGRUPO = g.CODGRUPO
+                LEFT JOIN VARIAVEL_ESPECIALIDADE ve ON v.CODVARIAVEL = ve.CODVARIAVEL
+                LEFT JOIN ESPECIALIDADE e ON ve.CODESPECIALIDADE = e.CODESPECIALIDADE
+            """
+
+            # Adiciona condição de busca se houver termo de pesquisa
+            where_clause = ""
+            params = []
+            if search_term:
+                where_clause = " WHERE REPLACE(v.NOME, ' ', '') CONTAINING ? OR REPLACE(v.VARIAVEL, ' ', '') CONTAINING ?"
+                search_pattern = search_term.replace(' ', '')
+                params = [search_pattern, search_pattern]
+
+            # Executa query de contagem
+            cur.execute(count_query + where_clause, params)
+            total_variaveis = cur.fetchone()[0]
+            total_paginas = (total_variaveis + per_page - 1) // per_page
+
+            # Executa query principal
+            cur.execute(f"""
+                {select_query}
+                {where_clause}
+                GROUP BY v.CODVARIAVEL, v.NOME, v.VARIAVEL, g.NOME
+                ORDER BY v.NOME
+                ROWS ? TO ?
+            """, params + [offset + 1, offset + per_page])
+            variaveis_raw = cur.fetchall()
+
+            variaveis = []
+            for var in variaveis_raw:
+                codespecialidades = var[4].split(',') if var[4] else []
+                especialidades_var = var[5].split(',') if var[5] else []
+                descricoes = var[6].split(',') if var[6] else []
+                especialidades_com_descricao = [
+                    {
+                        'codespecialidade': codespecialidades[i],
+                        'nome': especialidades_var[i],
+                        'descricao': descricoes[i] if i < len(descricoes) else None
+                    }
+                    for i in range(len(especialidades_var))
+                ]
+                variaveis.append({
+                    'codvariavel': var[0],
+                    'nome': var[1],
+                    'codigo': var[2],
+                    'grupo': var[3],
+                    'especialidades': especialidades_com_descricao
+                })
+
+            return render_template('vincular_especialidades_em_lote.html', 
+                                   especialidades=especialidades,
+                                   variaveis=variaveis,
+                                   total_variaveis=total_variaveis,
+                                   total_paginas=total_paginas,
+                                   pagina_atual=page,
+                                   search_term=search_term)
+
+    except Exception as e:
+        current_app.logger.error(f"Erro ao carregar dados: {str(e)}")
+        flash('Erro ao carregar dados.', 'danger')
+        return redirect(url_for('variaveis.visualizar_variaveis'))
+
